@@ -226,20 +226,50 @@ class SnapshotResource(CloudResource):
 
 
 class BucketResource(CloudResource):
-    __slots__ = ('name', 'is_public_policy', 'is_public_acls', 'folder_id')
+    __slots__ = ('name',
+                 'is_public_policy',
+                 'is_public_acls',
+                 'folder_id',
+                 'intelligent_tiering_enabled',
+                 'intelligent_tiering_configs',
+                 'lifecycle_rules',
+                 'storage_class_analysis',
+                 'metrics_configurations',
+                )
 
-    def __init__(self, name=None, is_public_policy=False, is_public_acls=False,
-                 folder_id=None, **kwargs):
-        super().__init__(**kwargs)
-        self.name = name
-        self.is_public_policy = is_public_policy
-        self.is_public_acls = is_public_acls
-        self.folder_id = folder_id
+    def __init__(self,
+                name=None,
+                is_public_policy=False,
+                is_public_acls=False,
+                folder_id=None,
+                intelligent_tiering_enabled=False,
+                intelligent_tiering_configs=None,
+                lifecycle_rules=None,
+                storage_class_analysis=None,
+                metrics_configurations=None,
+                **kwargs
+            ):
+        
+                super().__init__(**kwargs)
+                self.name = name
+                self.is_public_policy = is_public_policy
+                self.is_public_acls = is_public_acls
+                self.folder_id = folder_id
+
+                self.intelligent_tiering_enabled = intelligent_tiering_enabled
+                self.intelligent_tiering_configs = intelligent_tiering_configs or []
+                self.lifecycle_rules = lifecycle_rules or []
+                self.storage_class_analysis = storage_class_analysis or []
+                self.metrics_configurations = metrics_configurations or []
 
     def __repr__(self):
-        return 'Bucket {0} name={1} is_public_policy={2} is_public_acls={3}'.format(
-            self.cloud_resource_id, self.name, self.is_public_policy,
-            self.is_public_acls)
+        return (
+            f"Bucket {self.cloud_resource_id} "
+            f"name={self.name} "
+            f"is_public_policy={self.is_public_policy} "
+            f"is_public_acls={self.is_public_acls} "
+            f"IT_enabled={self.intelligent_tiering_enabled}"
+        )
 
     @property
     def meta(self):
@@ -247,7 +277,12 @@ class BucketResource(CloudResource):
         meta.update({
             'is_public_policy': self.is_public_policy,
             'is_public_acls': self.is_public_acls,
-            'folder_id': self.folder_id
+            'folder_id': self.folder_id,
+            'intelligent_tiering_enabled': self.intelligent_tiering_enabled,
+            'intelligent_tiering_configs': self.intelligent_tiering_configs,
+            'lifecycle_rules': self.lifecycle_rules,
+            'storage_class_analysis': self.storage_class_analysis,
+            'metrics_configurations': self.metrics_configurations,
         })
         return meta
 

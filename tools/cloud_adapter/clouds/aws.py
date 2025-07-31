@@ -469,7 +469,7 @@ class Aws(S3CloudMixin):
         else:
             raise exc
 
-    def _get_bucket_public_settings(self, bucket_s3, bucket_name):
+    def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
         try:
@@ -481,6 +481,7 @@ class Aws(S3CloudMixin):
             # not found
             self._handle_specific_error(
                 exc, 'NoSuchPublicAccessBlockConfiguration')
+            
         access_block_config = public_access_block.get(
             'PublicAccessBlockConfiguration', {})
         block_public_policy = access_block_config.get(
@@ -488,6 +489,7 @@ class Aws(S3CloudMixin):
         block_public_acls = access_block_config.get('BlockPublicAcls', False)
         if block_public_policy and block_public_acls:
             return is_public_policy, is_public_acls
+        
         if block_public_policy is False:
             try:
                 is_public_blocked_map = bucket_s3.get_bucket_policy_status(
@@ -515,7 +517,21 @@ class Aws(S3CloudMixin):
                 is_public_acls = has_permission and has_accepted_uris
                 if is_public_acls:
                     break
-        return is_public_policy, is_public_acls
+    
+        # Intelligent-Tiering metadata
+        it_meta = self._get_bucket_intelligent_tiering_metadata(
+            s3_client=s3_client,
+            bucket_name=bucket_name
+        )
+        
+        result = {
+            'is_public_policy': is_public_policy,
+            'is_public_acls':   is_public_acls,
+            'public_access_block': public_access_block,
+        }
+        result.update(it_meta)
+
+        return result
 
     @staticmethod
     def get_region_from_location(region_info):
@@ -537,8 +553,14 @@ class Aws(S3CloudMixin):
         # explicitly, so we find region first and initialize client for
         # specific region
         s3 = self.session.client('s3', region_name=region)
-        is_public_policy, is_public_acls = self._get_bucket_public_settings(
-            s3, bucket_name)
+
+        public_and_tiering = self._get_bucket_public_settings(
+            bucket_s3=s3,
+            s3_client=s3,
+            bucket_name=bucket_name
+        )
+        is_public_policy = public_and_tiering['is_public_policy']
+        is_public_acls   = public_and_tiering['is_public_acls']
 
         try:
             tags = s3.get_bucket_tagging(Bucket=bucket_name)
@@ -548,7 +570,13 @@ class Aws(S3CloudMixin):
                 tags = {}
             else:
                 raise
-        bucket_resource = BucketResource(
+
+        it_metadata = self._get_bucket_intelligent_tiering_metadata(
+            s3_client=s3,
+            bucket_name=bucket_name
+        )
+
+        bucket_resource = BucketResource (
             cloud_resource_id=bucket_name,
             cloud_account_id=self.cloud_account_id,
             region=region,
@@ -558,6 +586,9 @@ class Aws(S3CloudMixin):
             is_public_policy=is_public_policy,
             is_public_acls=is_public_acls
         )
+
+        bucket_resource.meta = it_metadata
+
         self._set_cloud_link(bucket_resource, region)
         yield bucket_resource
 
