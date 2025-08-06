@@ -3,12 +3,12 @@ import enum
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
 from functools import wraps
+from importlib import metadata
 import json
 import logging
 import os
 import random
 import re
-
 import boto3
 from botocore.config import Config as CoreConfig
 from botocore.exceptions import (ClientError,
@@ -470,8 +470,10 @@ class Aws(S3CloudMixin):
             raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
+        
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
+
         try:
             public_access_block = bucket_s3.get_public_access_block(
                 Bucket=bucket_name)
@@ -488,8 +490,12 @@ class Aws(S3CloudMixin):
             'BlockPublicPolicy', False)
         block_public_acls = access_block_config.get('BlockPublicAcls', False)
         if block_public_policy and block_public_acls:
-            return is_public_policy, is_public_acls
-        
+            return {
+                'is_public_policy': False,
+                'is_public_acls': False,
+                'public_access_block': public_access_block
+            }
+
         if block_public_policy is False:
             try:
                 is_public_blocked_map = bucket_s3.get_bucket_policy_status(
@@ -517,21 +523,69 @@ class Aws(S3CloudMixin):
                 is_public_acls = has_permission and has_accepted_uris
                 if is_public_acls:
                     break
-    
-        # Intelligent-Tiering metadata
-        it_meta = self._get_bucket_intelligent_tiering_metadata(
-            s3_client=s3_client,
-            bucket_name=bucket_name
-        )
         
         result = {
             'is_public_policy': is_public_policy,
-            'is_public_acls':   is_public_acls,
+            'is_public_acls': is_public_acls,
             'public_access_block': public_access_block,
         }
-        result.update(it_meta)
 
         return result
+    
+    def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
+
+        metadata = {
+        'intelligent_tiering_enabled': False,
+        'intelligent_tiering_configs': [],
+        'lifecycle_rules': [],
+        'has_lifecycle': False,
+        'storage_class_analysis': [],
+        'metrics_configurations': []
+    }
+        try:
+            it_configs = s3_client.list_bucket_intelligent_tiering_configurations(
+                Bucket=bucket_name
+            )
+            configs_list = it_configs.get('IntelligentTieringConfigurationList', [])
+            metadata['intelligent_tiering_enabled'] = bool(configs_list)
+            metadata['intelligent_tiering_configs'] = configs_list
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') != 'NoSuchConfiguration':
+                LOG.warning(f"[IT] Erro ao obter config IT do bucket {bucket_name}: {str(exc)}")
+
+        try:
+            lifecycle = s3_client.get_bucket_lifecycle_configuration(
+                Bucket=bucket_name
+            )
+            metadata['lifecycle_rules'] = lifecycle.get('Rules', [])
+            metadata['has_lifecycle'] = True
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') != 'NoSuchLifecycleConfiguration':
+                LOG.warning(f"[IT] Erro ao obter lifecycle do bucket {bucket_name}: {str(exc)}")
+
+        try:
+            analytics = s3_client.list_bucket_analytics_configurations(
+                Bucket=bucket_name
+            )
+            metadata['storage_class_analysis'] = analytics.get(
+                'AnalyticsConfigurationList', []
+            )
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchAnalyticsConfiguration']:
+                LOG.warning(f"[IT] Erro ao obter analytics do bucket {bucket_name}: {str(exc)}")
+
+        try:
+            metrics = s3_client.list_bucket_metrics_configurations(
+                Bucket=bucket_name
+            )
+            metadata['metrics_configurations'] = metrics.get(
+                'MetricsConfigurationList', []
+            )
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchMetricsConfiguration']:
+                LOG.warning(f"[IT] Erro ao obter métricas do bucket {bucket_name}: {str(exc)}") 
+
+        return metadata
 
     @staticmethod
     def get_region_from_location(region_info):
@@ -554,13 +608,9 @@ class Aws(S3CloudMixin):
         # specific region
         s3 = self.session.client('s3', region_name=region)
 
-        public_and_tiering = self._get_bucket_public_settings(
-            bucket_s3=s3,
-            s3_client=s3,
-            bucket_name=bucket_name
-        )
-        is_public_policy = public_and_tiering['is_public_policy']
-        is_public_acls   = public_and_tiering['is_public_acls']
+        public_and_tiering = self._get_bucket_public_settings(s3, s3, bucket_name)
+        is_public_policy = public_and_tiering.get('is_public_policy', False)
+        is_public_acls = public_and_tiering.get('is_public_acls', False)
 
         try:
             tags = s3.get_bucket_tagging(Bucket=bucket_name)
@@ -576,7 +626,7 @@ class Aws(S3CloudMixin):
             bucket_name=bucket_name
         )
 
-        bucket_resource = BucketResource (
+        bucket_resource = BucketResource(
             cloud_resource_id=bucket_name,
             cloud_account_id=self.cloud_account_id,
             region=region,
@@ -584,10 +634,13 @@ class Aws(S3CloudMixin):
             name=bucket_name,
             tags=self._extract_tags(tags, dict_name='TagSet'),
             is_public_policy=is_public_policy,
-            is_public_acls=is_public_acls
+            is_public_acls=is_public_acls,
+            intelligent_tiering_enabled=it_metadata.get('intelligent_tiering_enabled', False),
+            intelligent_tiering_configs=it_metadata.get('intelligent_tiering_configs', []),
+            lifecycle_rules=it_metadata.get('lifecycle_rules', []),
+            storage_class_analysis=it_metadata.get('storage_class_analysis', []),
+            metrics_configurations=it_metadata.get('metrics_configurations', [])
         )
-
-        bucket_resource.meta = it_metadata
 
         self._set_cloud_link(bucket_resource, region)
         yield bucket_resource
