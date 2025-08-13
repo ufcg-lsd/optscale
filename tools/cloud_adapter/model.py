@@ -269,6 +269,10 @@ class BucketResource(CloudResource):
             f"is_public_policy={self.is_public_policy} "
             f"is_public_acls={self.is_public_acls} "
             f"IT_enabled={self.intelligent_tiering_enabled}"
+            f"IT_configs={self.intelligent_tiering_configs}"
+            f"lifecycle_rules={self.lifecycle_rules}"
+            f"storage_class_analysis={self.storage_class_analysis}"
+            f"metrics_configurations={self.metrics_configurations}"
         )
 
     @property
