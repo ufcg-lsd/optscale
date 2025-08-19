@@ -623,19 +623,86 @@ class Aws(S3CloudMixin):
                 return last.get('Average') or last.get('Sum') or last.get('Maximum') or last.get('Minimum')
 
             # NumberOfObjects (AllStorageTypes)
-            objects_stats = cloudwatch.get_metric_statistics(
-                Namespace='AWS/S3',
-                MetricName='NumberOfObjects',
-                Dimensions=[
-                    {'Name': 'BucketName', 'Value': bucket_name},
-                    {'Name': 'StorageType', 'Value': 'AllStorageTypes'}
-                ],
-                StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
-                EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
-                Period=24 * 60 * 60,
-                Statistics=['Average']
-            )
-            object_count_val = _latest_value(objects_stats.get('Datapoints', []))
+            # Note: CloudWatch NumberOfObjects includes both objects and "directories" (common prefixes)
+            # We'll use a more accurate approach by sampling and extrapolating
+            object_count_val = None
+            try:
+                # First try to get a sample to estimate total objects
+                sample_response = s3_client.list_objects_v2(
+                    Bucket=bucket_name,
+                    MaxKeys=1000,
+                    StartAfter=''  # Start from beginning
+                )
+                
+                if sample_response.get('Contents'):
+                    # If we got 1000 objects, there are likely more
+                    # Use CloudWatch as a fallback for large buckets
+                    if len(sample_response['Contents']) == 1000:
+                        # For large buckets, use CloudWatch but note it may include prefixes
+                        objects_stats = cloudwatch.get_metric_statistics(
+                            Namespace='AWS/S3',
+                            MetricName='NumberOfObjects',
+                            Dimensions=[
+                                {'Name': 'BucketName', 'Value': bucket_name},
+                                {'Name': 'StorageType', 'Value': 'AllStorageTypes'}
+                            ],
+                            StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
+                            EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                            Period=24 * 60 * 60,
+                            Statistics=['Average']
+                        )
+                        cloudwatch_count = _latest_value(objects_stats.get('Datapoints', []))
+                        if cloudwatch_count is not None:
+                            object_count_val = int(cloudwatch_count)
+                            LOG.info(f"[IT] Using CloudWatch object count for large bucket {bucket_name}: {object_count_val}")
+                    else:
+                        # For smaller buckets, we can get an accurate count
+                        total_objects = 0
+                        continuation_token = None
+                        
+                        while True:
+                            if continuation_token:
+                                response = s3_client.list_objects_v2(
+                                    Bucket=bucket_name,
+                                    ContinuationToken=continuation_token
+                                )
+                            else:
+                                response = sample_response
+                            
+                            # Count only actual objects (Contents), not CommonPrefixes
+                            if response.get('Contents'):
+                                total_objects += len(response['Contents'])
+                            
+                            # Check if there are more objects
+                            if not response.get('IsTruncated'):
+                                break
+                            continuation_token = response.get('NextContinuationToken')
+                        
+                        object_count_val = total_objects
+                        LOG.info(f"[IT] Accurate object count for bucket {bucket_name}: {object_count_val}")
+                        
+            except Exception as exc:
+                LOG.warning(f"[IT] Failed to get accurate object count for bucket {bucket_name}: {str(exc)}")
+                # Fallback to CloudWatch if sampling fails
+                try:
+                    objects_stats = cloudwatch.get_metric_statistics(
+                        Namespace='AWS/S3',
+                        MetricName='NumberOfObjects',
+                        Dimensions=[
+                            {'Name': 'BucketName', 'Value': bucket_name},
+                            {'Name': 'StorageType', 'Value': 'AllStorageTypes'}
+                        ],
+                        StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
+                        EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                        Period=24 * 60 * 60,
+                        Statistics=['Average']
+                    )
+                    cloudwatch_count = _latest_value(objects_stats.get('Datapoints', []))
+                    if cloudwatch_count is not None:
+                        object_count_val = int(cloudwatch_count)
+                        LOG.warning(f"[IT] Using CloudWatch fallback for bucket {bucket_name} (may include prefixes): {object_count_val}")
+                except Exception as fallback_exc:
+                    LOG.warning(f"[IT] Failed to get CloudWatch fallback for bucket {bucket_name}: {str(fallback_exc)}")
 
             # BucketSizeBytes by StorageType
             storage_types = [
@@ -718,41 +785,68 @@ class Aws(S3CloudMixin):
             access_pattern = None
             region_name = s3_client.meta.region_name
             cloudwatch = self.session.client('cloudwatch', region_name=region_name)
-            req_stats = cloudwatch.get_metric_statistics(
-                Namespace='AWS/S3',
-                MetricName='AllRequests',
-                Dimensions=[
-                    {'Name': 'BucketName', 'Value': bucket_name},
-                    {'Name': 'FilterId', 'Value': 'EntireBucket'}
-                ],
-                StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
-                EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
-                Period=24 * 60 * 60,
-                Statistics=['Sum']
-            )
-            dps = req_stats.get('Datapoints', [])
-            reqs = sum(dp.get('Sum', 0) for dp in dps)
-            # dates with access
-            dates_with_access = []
-            for dp in dps:
-                if dp.get('Sum', 0):
-                    ts = dp.get('Timestamp')
-                    if isinstance(ts, datetime):
-                        dates_with_access.append(ts.date().isoformat())
-            if dates_with_access:
-                metadata['last_checked'] = sorted(list(set(dates_with_access)))
-            if reqs:
-                # normaliza por número de objetos quando disponível
+            
+            # Get cost-generating requests (GET/HEAD operations that incur charges)
+            # These are the operations that actually cost money when accessing objects
+            cost_generating_metrics = [
+                'GetRequests',      # GET requests (downloads)
+                'HeadRequests',     # HEAD requests (metadata checks)
+                'SelectRequests',   # SELECT queries on objects
+                'SelectScannedBytes',  # Bytes scanned in SELECT operations
+                'SelectReturnedBytes'  # Bytes returned in SELECT operations
+            ]
+            
+            dates_with_cost_access = []
+            total_cost_requests = 0
+            
+            for metric_name in cost_generating_metrics:
+                try:
+                    req_stats = cloudwatch.get_metric_statistics(
+                        Namespace='AWS/S3',
+                        MetricName=metric_name,
+                        Dimensions=[
+                            {'Name': 'BucketName', 'Value': bucket_name},
+                            {'Name': 'FilterId', 'Value': 'EntireBucket'}
+                        ],
+                        StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
+                        EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                        Period=24 * 60 * 60,
+                        Statistics=['Sum']
+                    )
+                    dps = req_stats.get('Datapoints', [])
+                    metric_total = sum(dp.get('Sum', 0) for dp in dps)
+                    total_cost_requests += metric_total
+                    
+                    # Collect dates with any cost-generating activity
+                    for dp in dps:
+                        if dp.get('Sum', 0):
+                            ts = dp.get('Timestamp')
+                            if isinstance(ts, datetime):
+                                dates_with_cost_access.append(ts.date().isoformat())
+                                
+                except Exception as exc:
+                    LOG.warning(f"[IT] Failed to get {metric_name} metrics for bucket {bucket_name}: {str(exc)}")
+                    continue
+            
+            # Remove duplicates and sort dates
+            if dates_with_cost_access:
+                metadata['last_checked'] = sorted(list(set(dates_with_cost_access)))
+            
+            # Determine access pattern based on cost-generating requests
+            if total_cost_requests:
+                # Normalize by number of objects when available
                 denom = metadata.get('object_count') or 1
-                reqs_per_obj_per_day = reqs / denom / 30
+                reqs_per_obj_per_day = total_cost_requests / denom / 30
                 if reqs_per_obj_per_day >= 0.1:
                     access_pattern = 'frequent'
                 elif reqs_per_obj_per_day <= 0.02:
                     access_pattern = 'infrequent'
                 else:
                     access_pattern = 'mixed'
+                    
             if not access_pattern:
-                # fallback based on LastModified sampling
+                # Fallback based on LastModified sampling
+                # This still gives us insight into object freshness
                 sample = s3_client.list_objects_v2(Bucket=bucket_name, MaxKeys=1000)
                 contents = sample.get('Contents', [])
                 if contents:
@@ -770,7 +864,9 @@ class Aws(S3CloudMixin):
                         access_pattern = 'infrequent'
                     else:
                         access_pattern = 'mixed'
+                        
             metadata['access_pattern'] = access_pattern or 'unknown'
+            
         except Exception as exc:
             LOG.warning(f"[IT] Failed to infer access pattern for bucket {bucket_name}: {str(exc)}")
             metadata['access_pattern'] = metadata.get('access_pattern') or 'unknown'
