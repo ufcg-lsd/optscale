@@ -235,6 +235,12 @@ class BucketResource(CloudResource):
                  'lifecycle_rules',
                  'storage_class_analysis',
                  'metrics_configurations',
+                 'total_size_bytes',
+                 'object_count',
+                 'access_pattern',
+                 'it_status_bucket',
+                 'tiers',
+                 'last_checked',
                 )
 
     def __init__(self,
@@ -247,6 +253,12 @@ class BucketResource(CloudResource):
                 lifecycle_rules=None,
                 storage_class_analysis=None,
                 metrics_configurations=None,
+                total_size_bytes=None,
+                object_count=None,
+                access_pattern=None,
+                it_status_bucket=None,
+                tiers=None,
+                last_checked=None,
                 **kwargs
             ):
         
@@ -261,6 +273,12 @@ class BucketResource(CloudResource):
                 self.lifecycle_rules = lifecycle_rules or []
                 self.storage_class_analysis = storage_class_analysis or []
                 self.metrics_configurations = metrics_configurations or []
+                self.total_size_bytes = total_size_bytes
+                self.object_count = object_count
+                self.access_pattern = access_pattern
+                self.it_status_bucket = it_status_bucket
+                self.tiers = tiers or []
+                self.last_checked = last_checked or []
 
     def __repr__(self):
         return (
@@ -273,6 +291,12 @@ class BucketResource(CloudResource):
             f"lifecycle_rules={self.lifecycle_rules}"
             f"storage_class_analysis={self.storage_class_analysis}"
             f"metrics_configurations={self.metrics_configurations}"
+            f"total_size_bytes={self.total_size_bytes}"
+            f"object_count={self.object_count}"
+            f"access_pattern={self.access_pattern}"
+            f"it_status_bucket={self.it_status_bucket}"
+            f"tiers={self.tiers}"
+            f"last_checked={self.last_checked}"
         )
 
     @property
@@ -287,6 +311,12 @@ class BucketResource(CloudResource):
             'lifecycle_rules': self.lifecycle_rules,
             'storage_class_analysis': self.storage_class_analysis,
             'metrics_configurations': self.metrics_configurations,
+            'total_size_bytes': self.total_size_bytes,
+            'object_count': self.object_count,
+            'access_pattern': self.access_pattern,
+            'it_status_bucket': self.it_status_bucket,
+            'tiers': self.tiers,
+            'last_checked': self.last_checked,
         })
         return meta
 
