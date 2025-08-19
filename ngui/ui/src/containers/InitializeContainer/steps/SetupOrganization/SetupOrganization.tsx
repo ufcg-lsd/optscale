@@ -1,10 +1,9 @@
 import { useCallback, useEffect } from "react";
-import { useMutation } from "@apollo/client";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import Button from "components/Button";
 import MailTo from "components/MailTo";
-import { CREATE_ORGANIZATION } from "graphql/api/restapi/queries/restapi.queries";
+import { useCreateOrganizationMutation } from "graphql/__generated__/hooks/restapi";
 import { useSignOut } from "hooks/useSignOut";
 import { EMAIL_SUPPORT } from "urls";
 import { Title } from "../../common";
@@ -19,8 +18,7 @@ const getOrganizationName = (userEmail: string) => `${userEmail}'s Organization`
 const SetupOrganization = ({ userEmail, refetchOrganizations }: SetupOrganizationProps) => {
   const signOut = useSignOut();
 
-  const [createOrganization, { error: createOrganizationError }] = useMutation(CREATE_ORGANIZATION);
-
+  const [createOrganization, { error: createOrganizationError }] = useCreateOrganizationMutation();
   const setupOrganization = useCallback(async () => {
     const { data } = await createOrganization({
       variables: {

@@ -1,0 +1,345 @@
+fragment AwsDataSourceConfigFragment on AwsDataSource {
+  config {
+    assume_role_account_id
+    assume_role_name
+    access_key_id
+    linked
+    use_edp_discount
+    cur_version
+    bucket_name
+    bucket_prefix
+    config_scheme
+    region_name
+    report_name
+  }
+}
+
+fragment AzureTenantDataSourceConfigFragment on AzureTenantDataSource {
+  config {
+    client_id
+    tenant
+  }
+}
+
+fragment AzureSubscriptionDataSourceConfigFragment on AzureSubscriptionDataSource {
+  config {
+    client_id
+    expense_import_scheme
+    subscription_id
+    tenant
+    export_name
+    container
+    directory
+  }
+}
+
+fragment GcpDataSourceConfigFragment on GcpDataSource {
+  config {
+    billing_data {
+      dataset_name
+      table_name
+      project_id
+    }
+  }
+}
+
+fragment GcpTenantDataSourceConfigFragment on GcpTenantDataSource {
+  config {
+    billing_data {
+      dataset_name
+      table_name
+      project_id
+    }
+  }
+}
+
+fragment AlibabaDataSourceConfigFragment on AlibabaDataSource {
+  config {
+    access_key_id
+  }
+}
+
+fragment NebiusDataSourceConfigFragment on NebiusDataSource {
+  config {
+    cloud_name
+    service_account_id
+    key_id
+    access_key_id
+    bucket_name
+    bucket_prefix
+  }
+}
+
+fragment DatabricksDataSourceConfigFragment on DatabricksDataSource {
+  config {
+    account_id
+    client_id
+  }
+}
+
+fragment K8sDataSourceConfigFragment on K8sDataSource {
+  config {
+    cost_model {
+      cpu_hourly_cost
+      memory_hourly_cost
+    }
+    custom_price
+    user
+  }
+}
+
+query Organizations {
+  organizations {
+    id
+    name
+    pool_id
+    currency
+    is_demo
+    disabled
+  }
+}
+
+mutation CreateOrganization($organizationName: String!) {
+  createOrganization(organizationName: $organizationName) {
+    id
+    name
+  }
+}
+
+mutation UpdateOrganization($organizationId: ID!, $params: UpdateOrganizationInput!) {
+  updateOrganization(organizationId: $organizationId, params: $params) {
+    id
+    name
+    currency
+  }
+}
+
+mutation DeleteOrganization($organizationId: ID!) {
+  deleteOrganization(organizationId: $organizationId)
+}
+
+query CurrentEmployee($organizationId: ID!) {
+  currentEmployee(organizationId: $organizationId) {
+    id
+    jira_connected
+    slack_connected
+  }
+}
+
+query DataSources($organizationId: ID!) {
+  dataSources(organizationId: $organizationId) {
+    account_id
+    id
+    last_getting_metric_attempt_at
+    last_getting_metric_attempt_error
+    last_getting_metrics_at
+    last_import_at
+    last_import_attempt_at
+    last_import_attempt_error
+    name
+    parent_id
+    type
+    details {
+      cost
+      resources
+      forecast
+      last_month_cost
+    }
+    ...AwsDataSourceConfigFragment
+    ...AzureTenantDataSourceConfigFragment
+    ...AzureSubscriptionDataSourceConfigFragment
+    ...GcpDataSourceConfigFragment
+    ...GcpTenantDataSourceConfigFragment
+    ...AlibabaDataSourceConfigFragment
+    ...NebiusDataSourceConfigFragment
+    ...DatabricksDataSourceConfigFragment
+    ...K8sDataSourceConfigFragment
+  }
+}
+
+query DataSource($dataSourceId: ID!, $requestParams: DataSourceRequestParams) {
+  dataSource(dataSourceId: $dataSourceId, requestParams: $requestParams) {
+    account_id
+    id
+    last_getting_metric_attempt_at
+    last_getting_metric_attempt_error
+    last_getting_metrics_at
+    last_import_at
+    last_import_attempt_at
+    last_import_attempt_error
+    name
+    parent_id
+    type
+    details {
+      cost
+      discovery_infos {
+        cloud_account_id
+        created_at
+        deleted_at
+        enabled
+        id
+        last_discovery_at
+        last_error
+        last_error_at
+        observe_time
+        resource_type
+      }
+      forecast
+      last_month_cost
+      resources
+    }
+    ...AwsDataSourceConfigFragment
+    ...AzureTenantDataSourceConfigFragment
+    ...AzureSubscriptionDataSourceConfigFragment
+    ...GcpDataSourceConfigFragment
+    ...GcpTenantDataSourceConfigFragment
+    ...AlibabaDataSourceConfigFragment
+    ...NebiusDataSourceConfigFragment
+    ...DatabricksDataSourceConfigFragment
+    ...K8sDataSourceConfigFragment
+  }
+}
+
+query Invitations {
+  invitations {
+    id
+    owner_name
+    owner_email
+    organization
+    invite_assignments {
+      id
+      scope_id
+      scope_name
+      scope_type
+      purpose
+    }
+  }
+}
+
+mutation UpdateInvitation($invitationId: String!, $action: String!) {
+  updateInvitation(invitationId: $invitationId, action: $action)
+}
+
+query OrganizationFeatures($organizationId: ID!) {
+  organizationFeatures(organizationId: $organizationId)
+}
+
+query OrganizationThemeSettings($organizationId: ID!) {
+  organizationThemeSettings(organizationId: $organizationId)
+}
+
+mutation UpdateOrganizationThemeSettings($organizationId: ID!, $value: JSONObject!) {
+  updateOrganizationThemeSettings(organizationId: $organizationId, value: $value)
+}
+
+query OrganizationPerspectives($organizationId: ID!) {
+  organizationPerspectives(organizationId: $organizationId)
+}
+
+mutation UpdateOrganizationPerspectives($organizationId: ID!, $value: JSONObject!) {
+  updateOrganizationPerspectives(organizationId: $organizationId, value: $value)
+}
+
+mutation CreateDataSource($organizationId: ID!, $params: CreateDataSourceInput!) {
+  createDataSource(organizationId: $organizationId, params: $params) {
+    id
+    name
+  }
+}
+
+query EmployeeEmails($employeeId: ID!) {
+  employeeEmails(employeeId: $employeeId) {
+    id
+    employee_id
+    email_template
+    enabled
+    available_by_role
+  }
+}
+
+query GetOrganizationConstraint($constraintId: ID!) {
+  organizationConstraint(constraintId: $constraintId) {
+    id
+    name
+    type
+    definition
+    filters
+    last_run_result
+  }
+}
+
+mutation UpdateEmployeeEmails($employeeId: ID!, $params: UpdateEmployeeEmailsInput!) {
+  updateEmployeeEmails(employeeId: $employeeId, params: $params) {
+    id
+    employee_id
+    email_template
+    enabled
+    available_by_role
+  }
+}
+
+query GetResourceCountBreakdown($organizationId: ID!, $params: BreakdownParams) {
+  resourceCountBreakdown(organizationId: $organizationId, params: $params) {
+    breakdown
+    counts
+    start_date
+    end_date
+  }
+}
+
+mutation UpdateEmployeeEmail($employeeId: ID!, $params: UpdateEmployeeEmailInput!) {
+  updateEmployeeEmail(employeeId: $employeeId, params: $params) {
+    id
+    employee_id
+    email_template
+    enabled
+    available_by_role
+  }
+}
+
+mutation UpdateDataSource($dataSourceId: ID!, $params: UpdateDataSourceInput!) {
+  updateDataSource(dataSourceId: $dataSourceId, params: $params) {
+    id
+    name
+    ...AwsDataSourceConfigFragment
+    ...AzureTenantDataSourceConfigFragment
+    ...AzureSubscriptionDataSourceConfigFragment
+    ...GcpDataSourceConfigFragment
+    ...AlibabaDataSourceConfigFragment
+    ...NebiusDataSourceConfigFragment
+    ...DatabricksDataSourceConfigFragment
+    ...K8sDataSourceConfigFragment
+  }
+}
+
+mutation DeleteDataSource($dataSourceId: ID!) {
+  deleteDataSource(dataSourceId: $dataSourceId)
+}
+
+query GetExpensesDailyBreakdown($organizationId: ID!, $params: BreakdownParams) {
+  expensesDailyBreakdown(organizationId: $organizationId, params: $params) {
+    breakdown
+    counts
+  }
+}
+
+query GetOrganizationLimitHits($organizationId: ID!, $constraintId: ID!) {
+  organizationLimitHits(organizationId: $organizationId, constraintId: $constraintId) {
+    run_result
+    created_at
+    value
+    constraint_limit
+  }
+}
+
+query RelevantFlavors($organizationId: ID!, $requestParams: JSONObject) {
+  relevantFlavors(organizationId: $organizationId, requestParams: $requestParams)
+}
+
+query CleanExpenses($organizationId: ID!, $params: CleanExpensesParams) {
+  cleanExpenses(organizationId: $organizationId, params: $params)
+}
+
+query CloudPolicies($organizationId: ID!, $params: CloudPoliciesParams) {
+  cloudPolicies(organizationId: $organizationId, params: $params)
+}

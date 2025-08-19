@@ -1,8 +1,7 @@
-import { useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
 import { GET_AVAILABLE_FILTERS } from "api/restapi/actionTypes";
 import ConnectCloudAccount from "components/ConnectCloudAccount";
-import { CREATE_DATA_SOURCE as APOLLO_CREATE_DATA_SOURCE, GET_DATA_SOURCES } from "graphql/api/restapi/queries/restapi.queries";
+import { DataSourcesDocument, useCreateDataSourceMutation } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { useRefetchApis } from "hooks/useRefetchApis";
 import { CLOUD_ACCOUNTS } from "urls";
@@ -27,7 +26,7 @@ const ConnectCloudAccountContainer = () => {
 
   const navigate = useNavigate();
 
-  const [createDataSource, { loading }] = useMutation(APOLLO_CREATE_DATA_SOURCE);
+  const [createDataSource, { loading }] = useCreateDataSourceMutation();
 
   const redirectToCloudsOverview = () => navigate(CLOUD_ACCOUNTS);
 
@@ -67,7 +66,7 @@ const ConnectCloudAccountContainer = () => {
           [configName]: config
         }
       },
-      refetchQueries: [GET_DATA_SOURCES]
+      refetchQueries: [DataSourcesDocument]
     }).then(() => {
       refetch([GET_AVAILABLE_FILTERS]);
       redirectToCloudsOverview();

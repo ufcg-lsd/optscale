@@ -1,8 +1,7 @@
-import { useLazyQuery } from "@apollo/client";
 import { Box, CircularProgress, FormControl } from "@mui/material";
 import { useFormContext } from "react-hook-form";
 import CodeBlock from "components/CodeBlock";
-import { GET_CLOUD_POLICIES as GET_CLOUD_POLICIES_GRAPHQL } from "graphql/api/restapi/queries/restapi.queries";
+import { useCloudPoliciesLazyQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { AWS_CNR } from "utils/constants";
 import { FIELD_NAMES as AWS_BILLING_BUCKET_FIELD_NAMES } from "../AwsBillingBucket";
@@ -17,7 +16,7 @@ const AwsAssumedRolePolicies = ({
 }) => {
   const { getValues } = useFormContext();
   const { organizationId } = useOrganizationInfo();
-  const [getPolicies, { data: { cloudPolicies } = {}, loading: isLoading }] = useLazyQuery(GET_CLOUD_POLICIES_GRAPHQL, {
+  const [getPolicies, { data: { cloudPolicies } = {}, loading: isLoading }] = useCloudPoliciesLazyQuery({
     fetchPolicy: "no-cache"
   });
 

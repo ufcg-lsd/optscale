@@ -1,12 +1,11 @@
-import { useQuery } from "@apollo/client";
 import OrganizationSelector from "components/OrganizationSelector";
-import { GET_ORGANIZATIONS } from "graphql/api/restapi/queries";
+import { useOrganizationsQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { useUpdateScope } from "hooks/useUpdateScope";
 import { HOME } from "urls";
 
 const OrganizationSelectorContainer = ({ isLoading = false }) => {
-  const { data: { organizations = [] } = {} } = useQuery(GET_ORGANIZATIONS, {
+  const { data: { organizations = [] } = {} } = useOrganizationsQuery({
     fetchPolicy: "cache-only"
   });
 

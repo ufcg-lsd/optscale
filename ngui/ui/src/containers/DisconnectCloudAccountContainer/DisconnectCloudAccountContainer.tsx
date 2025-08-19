@@ -1,9 +1,8 @@
-import { useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
 import { GET_AVAILABLE_FILTERS } from "api/restapi/actionTypes";
 import DisconnectCloudAccountForm from "components/forms/DisconnectCloudAccountForm";
 import { getReasonValue } from "components/forms/DisconnectCloudAccountForm/utils";
-import { DELETE_DATA_SOURCE, GET_DATA_SOURCES } from "graphql/api/restapi/queries/restapi.queries";
+import { DataSourcesDocument, useDeleteDataSourceMutation } from "graphql/__generated__/hooks/restapi";
 import { useAllDataSources } from "hooks/coreData/useAllDataSources";
 import { useRefetchApis } from "hooks/useRefetchApis";
 import DataSourcesService, { DATASOURCE_SURVEY_TYPES } from "services/DataSourcesService";
@@ -29,8 +28,8 @@ const DisconnectCloudAccountContainer = ({ id, type, parentId, onCancel }: Disco
 
   const { useCreateSurvey } = DataSourcesService();
 
-  const [deleteDataSource, { loading: isDisconnectDataSourceLoading }] = useMutation(DELETE_DATA_SOURCE, {
-    refetchQueries: [GET_DATA_SOURCES]
+  const [deleteDataSource, { loading: isDisconnectDataSourceLoading }] = useDeleteDataSourceMutation({
+    refetchQueries: [DataSourcesDocument]
   });
 
   const disconnect = () =>

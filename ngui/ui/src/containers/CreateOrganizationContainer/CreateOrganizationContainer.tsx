@@ -1,7 +1,6 @@
-import { useLazyQuery, useMutation } from "@apollo/client";
 import CreateOrganizationForm from "components/forms/CreateOrganizationForm";
 import { FormValues } from "components/forms/CreateOrganizationForm/types";
-import { CREATE_ORGANIZATION, GET_ORGANIZATIONS } from "graphql/api/restapi/queries";
+import { useCreateOrganizationMutation, useOrganizationsLazyQuery } from "graphql/__generated__/hooks/restapi";
 
 type CreateOrganizationContainerProps = {
   onSuccess: (id: string) => void;
@@ -9,9 +8,9 @@ type CreateOrganizationContainerProps = {
 };
 
 const CreateOrganizationContainer = ({ onSuccess, closeSideModal }: CreateOrganizationContainerProps) => {
-  const [createOrganization, { loading: createOrganizationLoading }] = useMutation(CREATE_ORGANIZATION);
+  const [createOrganization, { loading: createOrganizationLoading }] = useCreateOrganizationMutation();
 
-  const [getOrganizations, { loading: isOrganizationsLoading }] = useLazyQuery(GET_ORGANIZATIONS, {
+  const [getOrganizations, { loading: isOrganizationsLoading }] = useOrganizationsLazyQuery({
     fetchPolicy: "network-only"
   });
 

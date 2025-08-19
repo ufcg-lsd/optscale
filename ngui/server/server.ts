@@ -9,15 +9,17 @@ import bodyParser from "body-parser";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import checkEnvironment from "./checkEnvironment.js";
 import KeeperClient from "./api/keeper/client.js";
-import keeperResolvers from "./graphql/resolvers/keeper.js";
-import slackerResolvers from "./graphql/resolvers/slacker.js";
-import authResolvers from "./graphql/resolvers/auth.js";
-import restapiResolvers from "./graphql/resolvers/restapi.js";
 import SlackerClient from "./api/slacker/client.js";
-import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
-import { loadFilesSync } from "@graphql-tools/load-files";
 import RestApiClient from "./api/restapi/client.js";
 import AuthClient from "./api/auth/client.js";
+import { schema } from "./graphql/schema.js";
+
+if (process.env.NODE_ENV === "development") {
+  const dotenv = await import("dotenv");
+  const dotenvExpand = await import("dotenv-expand");
+  const myEnv = dotenv.config();
+  dotenvExpand.expand(myEnv);
+}
 
 checkEnvironment(["UI_BUILD_PATH", "PROXY_URL"]);
 
@@ -25,7 +27,7 @@ const app = express();
 
 const httpServer = http.createServer(app);
 
-interface ContextValue {
+export interface ContextValue {
   dataSources: {
     keeper: KeeperClient;
     slacker: SlackerClient;
@@ -34,27 +36,11 @@ interface ContextValue {
   };
 }
 
-const typesArray = loadFilesSync("./graphql/schemas", {
-  extensions: ["graphql"],
-});
-const typeDefs = mergeTypeDefs(typesArray);
-
-// loadFilesSync does not support yet ES modules under the hood:
-// https://github.com/ardatan/graphql-tools/issues/1750#issuecomment-716939594
-const resolvers = mergeResolvers([
-  keeperResolvers,
-  slackerResolvers,
-  restapiResolvers,
-  authResolvers,
-]);
-
-// Same ApolloServer initialization as before, plus the drain plugin
-// for our httpServer.
 const server = new ApolloServer<ContextValue>({
-  typeDefs,
-  resolvers,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  schema,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })]
 });
+
 // Ensure we wait for our server to start
 await server.start();
 
@@ -79,10 +65,10 @@ app.use(
           keeper: new KeeperClient({ cache }, token, "http://keeper"),
           slacker: new SlackerClient({ cache }, token, "http://slacker"),
           restapi: new RestApiClient({ cache }, token, "http://restapi"),
-          auth: new AuthClient({ cache }, token, "http://auth"),
-        },
+          auth: new AuthClient({ cache }, token, "http://auth")
+        }
       };
-    },
+    }
   })
 );
 
@@ -90,7 +76,7 @@ app.use(
 const proxyMiddleware = createProxyMiddleware({
   target: process.env.PROXY_URL,
   changeOrigin: true,
-  secure: false,
+  secure: false
 });
 
 app.use("/auth", proxyMiddleware);
@@ -107,7 +93,5 @@ app.get("/*", function (req, res) {
 });
 
 // Modified server startup
-await new Promise<void>((resolve) =>
-  httpServer.listen({ port: 4000 }, resolve)
-);
+await new Promise<void>((resolve) => httpServer.listen({ port: 4000 }, resolve));
 console.log(`🚀 Server ready at http://localhost:4000/`);

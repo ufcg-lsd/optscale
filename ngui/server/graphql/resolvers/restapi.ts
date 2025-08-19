@@ -1,5 +1,5 @@
 import { JSONObjectResolver } from "graphql-scalars";
-import { Resolvers } from "./restapi.generated.js";
+import { Resolvers } from "../__generated__/types/restapi";
 
 const resolvers: Resolvers = {
   JSONObject: JSONObjectResolver,

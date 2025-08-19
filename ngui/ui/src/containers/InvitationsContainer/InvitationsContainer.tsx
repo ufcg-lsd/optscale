@@ -1,6 +1,6 @@
-import { NetworkStatus, useLazyQuery, useQuery } from "@apollo/client";
+import { NetworkStatus } from "@apollo/client";
 import Invitations from "components/Invitations";
-import { GET_INVITATIONS, GET_ORGANIZATIONS } from "graphql/api/restapi/queries";
+import { useInvitationsQuery, useOrganizationsLazyQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 
 const InvitationsContainer = () => {
@@ -10,14 +10,14 @@ const InvitationsContainer = () => {
     data: { invitations = [] } = {},
     networkStatus,
     refetch: refetchInvitations
-  } = useQuery(GET_INVITATIONS, {
+  } = useInvitationsQuery({
     variables: {
       organizationId
     },
     notifyOnNetworkStatusChange: true
   });
 
-  const [getOrganizations] = useLazyQuery(GET_ORGANIZATIONS, {
+  const [getOrganizations] = useOrganizationsLazyQuery({
     fetchPolicy: "network-only"
   });
 

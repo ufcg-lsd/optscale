@@ -1,11 +1,10 @@
-import { useQuery } from "@apollo/client";
-import { GET_INVITATIONS } from "graphql/api/restapi/queries";
+import { useInvitationsQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "../useOrganizationInfo";
 
 export const useInvitations = () => {
   const { organizationId } = useOrganizationInfo();
 
-  const { data: { invitations = [] } = {} } = useQuery(GET_INVITATIONS, {
+  const { data: { invitations = [] } = {} } = useInvitationsQuery({
     variables: {
       organizationId
     },

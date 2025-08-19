@@ -1,13 +1,12 @@
-import { useQuery } from "@apollo/client";
 import CloudAccountDetails from "components/CloudAccountDetails";
-import { GET_DATA_SOURCE } from "graphql/api/restapi/queries";
+import { useDataSourceQuery } from "graphql/__generated__/hooks/restapi";
 
 type CloudAccountDetailsContainerProps = {
   cloudAccountId: string;
 };
 
 const CloudAccountDetailsContainer = ({ cloudAccountId }: CloudAccountDetailsContainerProps) => {
-  const { loading, data } = useQuery(GET_DATA_SOURCE, {
+  const { loading, data } = useDataSourceQuery({
     variables: {
       dataSourceId: cloudAccountId,
       requestParams: {
