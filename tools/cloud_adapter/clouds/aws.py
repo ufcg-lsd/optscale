@@ -630,12 +630,28 @@ class Aws(S3CloudMixin):
                 # First try to get a sample to estimate total objects
                 sample_response = s3_client.list_objects_v2(
                     Bucket=bucket_name,
-                    MaxKeys=1000,
-                    StartAfter=''  # Start from beginning
+                    MaxKeys=1000
+                    # Don't use StartAfter for initial sample
                 )
                 
-                if sample_response.get('Contents'):
-                    # If we got 1000 objects, there are likely more
+                # Handle empty buckets
+                if not sample_response.get('Contents'):
+                    object_count_val = 0
+                    LOG.info(f"[IT] Bucket {bucket_name} is empty: 0 objects")
+                else:
+                    # Filter out directories/prefixes - only count actual objects
+                    def is_actual_object(obj):
+                        # Objects have Size > 0 or don't end with '/'
+                        # Directories/prefixes typically have Size = 0 and may end with '/'
+                        key = obj.get('Key', '')
+                        size = obj.get('Size', 0)
+                        # Consider it an object if it has content (size > 0) or doesn't look like a directory
+                        return size > 0 or not key.endswith('/')
+                    
+                    actual_objects = [obj for obj in sample_response['Contents'] if is_actual_object(obj)]
+                    sample_count = len(actual_objects)
+                    
+                    # If we got exactly 1000 objects, there are likely more
                     # Use CloudWatch as a fallback for large buckets
                     if len(sample_response['Contents']) == 1000:
                         # For large buckets, use CloudWatch but note it may include prefixes
@@ -655,28 +671,34 @@ class Aws(S3CloudMixin):
                         if cloudwatch_count is not None:
                             object_count_val = int(cloudwatch_count)
                             LOG.info(f"[IT] Using CloudWatch object count for large bucket {bucket_name}: {object_count_val}")
+                        else:
+                            LOG.warning(f"[IT] CloudWatch returned no data for bucket {bucket_name}, using sample estimate")
+                            object_count_val = sample_count
                     else:
                         # For smaller buckets, we can get an accurate count
-                        total_objects = 0
-                        continuation_token = None
+                        total_objects = sample_count  # Start with what we already have
+                        continuation_token = sample_response.get('NextContinuationToken')
                         
-                        while True:
-                            if continuation_token:
+                        # Continue pagination if there are more objects
+                        while continuation_token:
+                            try:
                                 response = s3_client.list_objects_v2(
                                     Bucket=bucket_name,
                                     ContinuationToken=continuation_token
                                 )
-                            else:
-                                response = sample_response
-                            
-                            # Count only actual objects (Contents), not CommonPrefixes
-                            if response.get('Contents'):
-                                total_objects += len(response['Contents'])
-                            
-                            # Check if there are more objects
-                            if not response.get('IsTruncated'):
+                                
+                                # Count only actual objects (Contents), not CommonPrefixes
+                                if response.get('Contents'):
+                                    # Filter out directories/prefixes
+                                    actual_objects = [obj for obj in response['Contents'] if is_actual_object(obj)]
+                                    total_objects += len(actual_objects)
+                                
+                                # Check if there are more objects
+                                continuation_token = response.get('NextContinuationToken')
+                                
+                            except Exception as page_exc:
+                                LOG.warning(f"[IT] Failed to get page for bucket {bucket_name}: {str(page_exc)}")
                                 break
-                            continuation_token = response.get('NextContinuationToken')
                         
                         object_count_val = total_objects
                         LOG.info(f"[IT] Accurate object count for bucket {bucket_name}: {object_count_val}")
@@ -701,6 +723,8 @@ class Aws(S3CloudMixin):
                     if cloudwatch_count is not None:
                         object_count_val = int(cloudwatch_count)
                         LOG.warning(f"[IT] Using CloudWatch fallback for bucket {bucket_name} (may include prefixes): {object_count_val}")
+                    else:
+                        LOG.warning(f"[IT] CloudWatch fallback also failed for bucket {bucket_name}")
                 except Exception as fallback_exc:
                     LOG.warning(f"[IT] Failed to get CloudWatch fallback for bucket {bucket_name}: {str(fallback_exc)}")
 
