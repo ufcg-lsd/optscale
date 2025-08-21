@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 
 
 NONEXISTENT_VOLUME_ID = 'vol-ffffffff'
@@ -542,7 +543,7 @@ class LoadBalancerResource(CloudResource):
 # CloudWatch Log Group resource
 class LogGroupResource(CloudResource):
     __slots__ = ('name', 'stored_bytes', 'retention_in_days', 'creation_time',
-                 'arn', 'kms_key_id')
+                 'arn', 'kms_key_id', 'metrics')
 
     def __init__(self, name=None, stored_bytes=None, retention_in_days=None,
                  creation_time=None, arn=None, kms_key_id=None, **kwargs):
@@ -553,6 +554,7 @@ class LogGroupResource(CloudResource):
         self.creation_time = creation_time  # datetime aware (UTC) ou None
         self.arn = arn
         self.kms_key_id = kms_key_id
+        self.metrics = metrics or {}
 
     def __repr__(self):
         return 'Log Group {0} name={1}'.format(self.cloud_resource_id, self.name)
@@ -560,19 +562,30 @@ class LogGroupResource(CloudResource):
     @property
     def meta(self):
         meta = super().meta
-        # se creation_time é datetime, serializa para ISO; senão mantém None/valor.
         creation_iso = None
         if isinstance(self.creation_time, datetime):
             creation_iso = self.creation_time.isoformat()
+        metrics_meta = {}
+        if hasattr(self, 'metrics'):
+            for metric_name, data_points in self.metrics.items():
+                metrics_meta[metric_name] = [
+                    {
+                        'timestamp': dp['Timestamp'].isoformat() if isinstance(dp['Timestamp'], datetime) else dp['Timestamp'],
+                        'value': dp[list(dp.keys())[2]]
+                    }
+                    for dp in data_points
+                ]
         meta.update({
             'name': self.name,
             'stored_bytes': self.stored_bytes,
             'retention_in_days': self.retention_in_days,
             'creation_time': creation_iso,
             'arn': self.arn,
-            'kms_key_id': self.kms_key_id
+            'kms_key_id': self.kms_key_id,
+            'metrics': metrics_meta
         })
         return meta
+
 
 # resource type in mariadb -> resource model
 RES_MODEL_MAP = {

@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 from datetime import timedelta
+import time
+from concurrent.futures import as_completed
 import enum
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -183,7 +185,8 @@ class Aws(S3CloudMixin):
             SnapshotResource: self.snapshot_discovery_calls,
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
-            LoadBalancerResource: self.load_balancer_discovery_calls
+            LoadBalancerResource: self.load_balancer_discovery_calls,
+            LogGroupResource: self.log_group_discovery_calls
         }
 
     @property
@@ -201,6 +204,10 @@ class Aws(S3CloudMixin):
     @property
     def s3_resource(self):
         return self.session.resource('s3')
+    
+    @property
+    def logs(self):
+        return self.session.client('logs')
 
     @property
     def cf(self):
@@ -461,6 +468,14 @@ class Aws(S3CloudMixin):
         as tuples (adapter_method, arguments_tuple)
         """
         return [(self.discover_region_snapshots, (r,))
+                for r in self.list_regions()]
+    
+    def log_group_discovery_calls(self):
+        """
+        Returns list of discovery calls to discover log groups presented
+        as tuples (adapter_method, arguments_tuple)
+        """
+        return [(self.list_all_log_groups, (r,))
                 for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code):
@@ -2008,59 +2023,6 @@ class Aws(S3CloudMixin):
             if code == 'InvalidParameterException':
                 raise ValueError(str(e))
             raise
-    def get_log_groups_metrics(self, log_group_names, region, dias_atras=7, max_workers=20):
-        try:
-            metrics_to_fetch = {
-                'ingestion': ('IncomingBytes', 3600, 'Sum'),
-                'storage': ('StoredBytes', 86400, 'Maximum'),
-                'query_proxy': ('IncomingLogEvents', 3600, 'Sum')
-            }
-            # prepare
-            result = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
-            end_time = datetime.now(timezone.utc)
-            start_time = end_time - timedelta(days=dias_atras)
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            cw = session.client('cloudwatch', region_name=region)
-
-            # normalize periods
-            normalized = {k: (mn, _ensure_period(period), stat) for k, (mn, period, stat) in metrics_to_fetch.items()}
-
-            # adjust workers heuristically to avoid throttling
-            max_workers = max(2, min(max_workers, max(5, len(log_group_names) * len(metrics_to_fetch))))
-
-            futures = {}
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for lg in log_group_names:
-                    for metric_key, (metric_name, period, stat) in normalized.items():
-                        params = {
-                            'Namespace': 'AWS/Logs',
-                            'MetricName': metric_name,
-                            'Dimensions': [{'Name': 'LogGroupName', 'Value': lg}],
-                            'StartTime': start_time,
-                            'EndTime': end_time,
-                            'Period': period,
-                            'Statistics': [stat]
-                        }
-                        # schedule the call inside backoff wrapper to run in thread
-                        future = executor.submit(_exp_backoff_retry, cw.get_metric_statistics, **params)
-                        futures[future] = (lg, metric_key)
-
-                for fut in as_completed(futures):
-                    lg, metric_key = futures[fut]
-                    try:
-                        resp = fut.result()
-                        dps = resp.get('Datapoints', []) if isinstance(resp, dict) else []
-                        dps.sort(key=lambda x: x['Timestamp'])
-                        result[lg][metric_key] = dps
-                    except Exception as e:
-                        LOG.exception("Error fetching metric %s for %s: %s", metric_key, lg, e)
-                        result[lg][metric_key] = []
-            return result
-        except ClientError as e:
-            code = e.response.get('Error', {}).get('Code')
-            if code == 'InvalidParameterException':
-                raise ValueError(str(e))
-            raise
 
     def get_log_groups_details(self, log_group_names, region):
         try:
@@ -2146,3 +2108,176 @@ class Aws(S3CloudMixin):
         except Exception as e:
             LOG.exception(f"Error creating log group resources for region {region}: {e}")
             raise
+
+    def discover_region_log_groups(self, region):
+        try:
+            session = self.get_session()
+            logs_client = session.client('logs', region_name=region)
+            log_group_names = []
+            paginator = logs_client.get_paginator('describe_log_groups')
+            
+            for page in paginator.paginate():
+                for log_group in page.get('logGroups', []):
+                    log_group_names.append(log_group['logGroupName'])
+
+            if not log_group_names:
+                LOG.info(f"No log groups found in region {region}")
+                return []
+            
+            metrics = self.get_log_groups_metrics(log_group_names, region, days_ago=30)
+            log_group_resources = []   
+
+            for log_group_name in log_group_names:
+                try:
+                    response = logs_client.describe_log_groups(
+                    logGroupNamePrefix=log_group_name,
+                    limit=1
+                    )
+                    log_groups = response.get('logGroups', [])
+                    if not log_groups:
+                        LOG.warning(f"Log group {log_group_name} not found during detail fetch")
+                        continue
+                    
+                    log_group = log_groups[0]
+                    if log_group['logGroupName'] != log_group_name:
+                        LOG.warning(f"Name mismatch: expected {log_group_name}, got {log_group['logGroupName']}")
+                        continue
+                
+                    creation_time = None
+                    if 'creationTime' in log_group:
+                        creation_time = datetime.fromtimestamp(
+                            log_group['creationTime'] / 1000.0, 
+                            tz=timezone.utc
+                        )
+                
+                    tags = self.get_log_group_tags(logs_client, log_group_name)
+
+                    log_group_resource = LogGroupResource(
+                        cloud_resource_id=log_group['logGroupName'],
+                        cloud_account_id=self.cloud_account_id,
+                        region=region,
+                        organization_id=self.organization_id,
+                        name=log_group.get('logGroupName'),
+                        stored_bytes=log_group.get('storedBytes', 0),
+                        retention_in_days=log_group.get('retentionInDays'),
+                        creation_time=creation_time,
+                        arn=log_group.get('arn'),
+                        kms_key_id=log_group.get('kmsKeyId'),
+                        metrics=metrics.get(log_group_name, {}),
+                        tags=tags
+                    )
+                    
+                    log_group_resource.cloud_console_link = self._generate_log_group_cloud_link(
+                        region, log_group_name
+                    )
+                    
+                    log_group_resources.append(log_group_resource)
+                
+                except Exception as e:
+                    LOG.error(f"Error processing log group {log_group_name}: {str(e)}")
+                    continue
+        
+            LOG.info(f"Successfully discovered {len(log_group_resources)} log groups in region {region}")
+            return log_group_resources
+        
+        except Exception as e:
+            LOG.error(f"Error discovering log groups in region {region}: {str(e)}")
+            return []
+
+
+    def get_log_group_tags(self, logs_client, log_group_name):
+        try:
+            response = logs_client.list_tags_log_group(logGroupName=log_group_name)
+            return response.get('tags', {})
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+                return {}
+            LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
+            return {}
+
+    def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
+
+        if not log_group_names:
+            return {}
+    
+        metrics_to_fetch = {
+            'IngestionBytes': {
+                'MetricName': 'IncomingBytes',
+                'Period': 3600,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
+            },
+            'StorageBytes': {
+                'MetricName': 'Bytes',
+                'Period': 86400,
+                'Stat': 'Average',
+                'Unit': 'Bytes'
+            },
+            'QueryBytes': {
+                'MetricName': 'QueryScannedBytes',
+                'Period': 3600,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
+            }
+        }
+        
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=days_ago)
+        
+        session = self.get_session()
+        cw = session.client('cloudwatch', region_name=region)
+        
+        results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {}
+            
+            for lg_name in log_group_names:
+                for metric_key, metric_config in metrics_to_fetch.items():
+                    params = {
+                        'Namespace': 'AWS/Logs',
+                        'MetricName': metric_config['MetricName'],
+                        'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
+                        'StartTime': start_time,
+                        'EndTime': end_time,
+                        'Period': metric_config['Period'],
+                        'Statistics': [metric_config['Stat']],
+                        'Unit': metric_config['Unit']
+                    }
+                    
+                    future = executor.submit(
+                        self._exp_backoff_retry, 
+                        cw.get_metric_statistics, 
+                        **params
+                    )
+                    future_to_key[future] = (lg_name, metric_key)
+            
+            for future in as_completed(future_to_key):
+                lg_name, metric_key = future_to_key[future]
+                try:
+                    response = future.result(timeout=60)
+                    results[lg_name][metric_key] = response.get('Datapoints', [])
+                    LOG.debug(f"Collected {len(response.get('Datapoints', []))} datapoints for {metric_key} on {lg_name}")
+                except Exception as e:
+                    LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
+                    results[lg_name][metric_key] = []
+        
+        return results
+    
+    def _generate_log_group_cloud_link(self, region, log_group_name):
+        encoded_name = log_group_name.replace('/', '$252F')
+        return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
+    
+    def _exp_backoff_retry(self, func, max_retries=3, base_delay=1, *args, **kwargs):
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except ClientError as e:
+                error_code = e.response.get('Error', {}).get('Code', '')
+                if error_code in ['Throttling', 'RequestLimitExceeded'] and attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    LOG.warning(f"CloudWatch throttling, retrying in {delay:.2f}s (attempt {attempt + 1})")
+                    time.sleep(delay)
+                    continue
+                raise
+        return func(*args, **kwargs)
