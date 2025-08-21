@@ -18,6 +18,7 @@ class ResourceTypes(Enum):
     reserved_instances = 'Reserved Instances'
     image = 'Image'
     load_balancer = 'Load Balancer'
+    log_group = 'Log Group'
 
     @classmethod
     def has_value(cls, value):
@@ -538,6 +539,41 @@ class LoadBalancerResource(CloudResource):
         return meta
 
 
+# CloudWatch Log Group resource
+class LogGroupResource(CloudResource):
+    __slots__ = ('name', 'stored_bytes', 'retention_in_days', 'creation_time',
+                 'arn', 'kms_key_id')
+
+    def __init__(self, name=None, stored_bytes=None, retention_in_days=None,
+                 creation_time=None, arn=None, kms_key_id=None, **kwargs):
+        super().__init__(**kwargs)
+        self.name = name
+        self.stored_bytes = stored_bytes
+        self.retention_in_days = retention_in_days
+        self.creation_time = creation_time  # datetime aware (UTC) ou None
+        self.arn = arn
+        self.kms_key_id = kms_key_id
+
+    def __repr__(self):
+        return 'Log Group {0} name={1}'.format(self.cloud_resource_id, self.name)
+
+    @property
+    def meta(self):
+        meta = super().meta
+        # se creation_time é datetime, serializa para ISO; senão mantém None/valor.
+        creation_iso = None
+        if isinstance(self.creation_time, datetime):
+            creation_iso = self.creation_time.isoformat()
+        meta.update({
+            'name': self.name,
+            'stored_bytes': self.stored_bytes,
+            'retention_in_days': self.retention_in_days,
+            'creation_time': creation_iso,
+            'arn': self.arn,
+            'kms_key_id': self.kms_key_id
+        })
+        return meta
+
 # resource type in mariadb -> resource model
 RES_MODEL_MAP = {
     ResourceTypes.instance.name: InstanceResource,
@@ -552,4 +588,5 @@ RES_MODEL_MAP = {
     ResourceTypes.reserved_instances.name: ReservedInstancesResource,
     ResourceTypes.image.name: ImageResource,
     ResourceTypes.load_balancer.name: LoadBalancerResource,
+    ResourceTypes.log_group.name: LogGroupResource,
 }

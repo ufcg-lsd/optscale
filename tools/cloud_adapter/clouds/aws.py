@@ -1,14 +1,15 @@
 from datetime import datetime, timezone
+from datetime import timedelta
 import enum
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
 from functools import wraps
+from importlib import metadata
 import json
 import logging
 import os
 import random
 import re
-
 import boto3
 from botocore.config import Config as CoreConfig
 from botocore.exceptions import (ClientError,
@@ -469,9 +470,11 @@ class Aws(S3CloudMixin):
         else:
             raise exc
 
-    def _get_bucket_public_settings(self, bucket_s3, bucket_name):
+    def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
+        
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
+
         try:
             public_access_block = bucket_s3.get_public_access_block(
                 Bucket=bucket_name)
@@ -481,13 +484,19 @@ class Aws(S3CloudMixin):
             # not found
             self._handle_specific_error(
                 exc, 'NoSuchPublicAccessBlockConfiguration')
+            
         access_block_config = public_access_block.get(
             'PublicAccessBlockConfiguration', {})
         block_public_policy = access_block_config.get(
             'BlockPublicPolicy', False)
         block_public_acls = access_block_config.get('BlockPublicAcls', False)
         if block_public_policy and block_public_acls:
-            return is_public_policy, is_public_acls
+            return {
+                'is_public_policy': False,
+                'is_public_acls': False,
+                'public_access_block': public_access_block
+            }
+
         if block_public_policy is False:
             try:
                 is_public_blocked_map = bucket_s3.get_bucket_policy_status(
@@ -515,7 +524,314 @@ class Aws(S3CloudMixin):
                 is_public_acls = has_permission and has_accepted_uris
                 if is_public_acls:
                     break
-        return is_public_policy, is_public_acls
+        
+        result = {
+            'is_public_policy': is_public_policy,
+            'is_public_acls': is_public_acls,
+            'public_access_block': public_access_block,
+        }
+
+        return result
+    
+    def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
+
+        metadata = {
+        'intelligent_tiering_enabled': False,
+        'intelligent_tiering_configs': [],
+        'lifecycle_rules': [],
+        'has_lifecycle': False,
+        'storage_class_analysis': [],
+        'metrics_configurations': [],
+        'total_size_bytes': None,
+        'object_count': None,
+        'access_pattern': None,
+        'it_status_bucket': None,
+        'tiers': [],
+        'last_checked': []
+    }
+        try:
+            it_configs = s3_client.list_bucket_intelligent_tiering_configurations(
+                Bucket=bucket_name
+            )
+            configs_list = it_configs.get('IntelligentTieringConfigurationList', [])
+            metadata['intelligent_tiering_enabled'] = bool(configs_list)
+            metadata['intelligent_tiering_configs'] = configs_list
+            # Check if IT applies to entire bucket (no filter or empty prefix)
+            full_bucket = False
+            for cfg in configs_list:
+                flt = cfg.get('Filter')
+                if not flt:
+                    full_bucket = True
+                    break
+                # Check for empty prefix or no tags
+                prefix = flt.get('Prefix')
+                and_map = flt.get('And', {}) if isinstance(flt, dict) else {}
+                and_prefix = and_map.get('Prefix')
+                and_tags = and_map.get('Tags')
+                if (prefix == '' or prefix is None) and (not and_tags) and (and_prefix in (None, '')):
+                    full_bucket = True
+                    break
+            metadata['it_status_bucket'] = 'enabled' if (metadata['intelligent_tiering_enabled'] and full_bucket) else 'disabled'
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') != 'NoSuchConfiguration':
+                LOG.warning(f"[IT] Failed to get Intelligent-Tiering config for bucket {bucket_name}: {str(exc)}")
+
+        try:
+            lifecycle = s3_client.get_bucket_lifecycle_configuration(
+                Bucket=bucket_name
+            )
+            metadata['lifecycle_rules'] = lifecycle.get('Rules', [])
+            metadata['has_lifecycle'] = True
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') != 'NoSuchLifecycleConfiguration':
+                LOG.warning(f"[IT] Failed to get lifecycle config for bucket {bucket_name}: {str(exc)}")
+
+        try:
+            analytics = s3_client.list_bucket_analytics_configurations(
+                Bucket=bucket_name
+            )
+            metadata['storage_class_analysis'] = analytics.get(
+                'AnalyticsConfigurationList', []
+            )
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchAnalyticsConfiguration']:
+                LOG.warning(f"[IT] Failed to get analytics config for bucket {bucket_name}: {str(exc)}")
+
+        try:
+            metrics = s3_client.list_bucket_metrics_configurations(
+                Bucket=bucket_name
+            )
+            metadata['metrics_configurations'] = metrics.get(
+                'MetricsConfigurationList', []
+            )
+        except ClientError as exc:
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchMetricsConfiguration']:
+                LOG.warning(f"[IT] Failed to get metrics config for bucket {bucket_name}: {str(exc)}") 
+
+        # Get bucket size and object count via CloudWatch
+        try:
+            region_name = s3_client.meta.region_name
+            cloudwatch = self.session.client('cloudwatch', region_name=region_name)
+
+            def _latest_value(datapoints):
+                if not datapoints:
+                    return None
+                # Get most recent value from CloudWatch
+                last = sorted(datapoints, key=lambda x: x['Timestamp'])[-1]
+                return last.get('Average') or last.get('Sum') or last.get('Maximum') or last.get('Minimum')
+
+            object_count_val = None
+            try:
+                # Sample bucket to estimate object count
+                sample_response = s3_client.list_objects_v2(
+                    Bucket=bucket_name,
+                    MaxKeys=1000
+                )
+                
+                if not sample_response.get('Contents'):
+                    object_count_val = 0
+                    LOG.info(f"[IT] Bucket {bucket_name} is empty: 0 objects")
+                else:
+                    # Filter out directories - only count actual objects
+                    def is_actual_object(obj):
+                        key = obj.get('Key', '')
+                        size = obj.get('Size', 0)
+                        return size > 0 or not key.endswith('/')
+                    
+                    actual_objects = [obj for obj in sample_response['Contents'] if is_actual_object(obj)]
+                    sample_count = len(actual_objects)
+                    
+                    # For large buckets, use CloudWatch
+                    if len(sample_response['Contents']) == 1000:
+                        objects_stats = cloudwatch.get_metric_statistics(
+                            Namespace='AWS/S3',
+                            MetricName='NumberOfObjects',
+                            Dimensions=[
+                                {'Name': 'BucketName', 'Value': bucket_name},
+                                {'Name': 'StorageType', 'Value': 'AllStorageTypes'}
+                            ],
+                            StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
+                            EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                            Period=24 * 60 * 60,
+                            Statistics=['Average']
+                        )
+                        cloudwatch_count = _latest_value(objects_stats.get('Datapoints', []))
+                        if cloudwatch_count is not None:
+                            object_count_val = int(cloudwatch_count)
+                            LOG.info(f"[IT] Using CloudWatch object count for large bucket {bucket_name}: {object_count_val}")
+                        else:
+                            LOG.warning(f"[IT] CloudWatch returned no data for bucket {bucket_name}, using sample estimate")
+                            object_count_val = sample_count
+                    else:
+                        # For smaller buckets, paginate to get accurate count
+                        total_objects = sample_count
+                        continuation_token = sample_response.get('NextContinuationToken')
+                        
+                        while continuation_token:
+                            try:
+                                response = s3_client.list_objects_v2(
+                                    Bucket=bucket_name,
+                                    ContinuationToken=continuation_token
+                                )
+                                
+                                if response.get('Contents'):
+                                    actual_objects = [obj for obj in response['Contents'] if is_actual_object(obj)]
+                                    total_objects += len(actual_objects)
+                                
+                                continuation_token = response.get('NextContinuationToken')
+                                
+                            except Exception as page_exc:
+                                LOG.warning(f"[IT] Failed to get page for bucket {bucket_name}: {str(page_exc)}")
+                                break
+                        
+                        object_count_val = total_objects
+                        LOG.info(f"[IT] Accurate object count for bucket {bucket_name}: {object_count_val}")
+                        
+            except Exception as exc:
+                LOG.warning(f"[IT] Failed to get accurate object count for bucket {bucket_name}: {str(exc)}")
+                # Fallback to CloudWatch if sampling fails
+                try:
+                    objects_stats = cloudwatch.get_metric_statistics(
+                        Namespace='AWS/S3',
+                        MetricName='NumberOfObjects',
+                        Dimensions=[
+                            {'Name': 'BucketName', 'Value': bucket_name},
+                            {'Name': 'StorageType', 'Value': 'AllStorageTypes'}
+                        ],
+                        StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
+                        EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                        Period=24 * 60 * 60,
+                        Statistics=['Average']
+                    )
+                    cloudwatch_count = _latest_value(objects_stats.get('Datapoints', []))
+                    if cloudwatch_count is not None:
+                        object_count_val = int(cloudwatch_count)
+                        LOG.warning(f"[IT] Using CloudWatch fallback for bucket {bucket_name} (may include prefixes): {object_count_val}")
+                    else:
+                        LOG.warning(f"[IT] CloudWatch fallback also failed for bucket {bucket_name}")
+                except Exception as fallback_exc:
+                    LOG.warning(f"[IT] Failed to get CloudWatch fallback for bucket {bucket_name}: {str(fallback_exc)}")
+
+            # BucketSizeBytes by StorageType
+            storage_types = [
+                'StandardStorage',
+                'StandardIAStorage',
+                'OneZoneIAStorage',
+                'ReducedRedundancyStorage',
+                'GlacierStorage',
+                'GlacierInstantRetrievalStorage',
+                'GlacierStagingStorage',
+                'GlacierS3ObjectOverhead',
+                'IntelligentTieringFAStorage',
+                'IntelligentTieringIAStorage',
+                'IntelligentTieringAAStorage',
+                'IntelligentTieringDAAStorage',
+                'DeepArchiveStorage',
+                'DeepArchiveS3ObjectOverhead',
+            ]
+            total_size = 0
+            any_size_dp = False
+            tiers_bytes = {}
+            for st in storage_types:
+                size_stats = cloudwatch.get_metric_statistics(
+                    Namespace='AWS/S3',
+                    MetricName='BucketSizeBytes',
+                    Dimensions=[
+                        {'Name': 'BucketName', 'Value': bucket_name},
+                        {'Name': 'StorageType', 'Value': st}
+                    ],
+                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=7),
+                    EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                    Period=24 * 60 * 60,
+                    Statistics=['Average']
+                )
+                val = _latest_value(size_stats.get('Datapoints', []))
+                if val is not None:
+                    any_size_dp = True
+                    total_size += int(val)
+                    tiers_bytes[st] = int(val)
+
+            if any_size_dp:
+                metadata['total_size_bytes'] = int(total_size)
+            if object_count_val is not None:
+                metadata['object_count'] = int(object_count_val)
+
+            # Build tiers list with sizes in GB
+            def _display_name(storage_type):
+                mapping = {
+                    'StandardStorage': 'Standard',
+                    'StandardIAStorage': 'Standard-IA',
+                    'OneZoneIAStorage': 'One Zone-IA',
+                    'ReducedRedundancyStorage': 'RRS',
+                    'GlacierStorage': 'Glacier',
+                    'GlacierInstantRetrievalStorage': 'Glacier IR',
+                    'GlacierStagingStorage': 'Glacier Staging',
+                    'GlacierS3ObjectOverhead': 'Glacier Overhead',
+                    'IntelligentTieringFAStorage': 'Intelligent Tiering - Frequent',
+                    'IntelligentTieringIAStorage': 'Intelligent Tiering - Infrequent',
+                    'IntelligentTieringAAStorage': 'Intelligent Tiering - Archive Access',
+                    'IntelligentTieringDAAStorage': 'Intelligent Tiering - Deep Archive Access',
+                    'DeepArchiveStorage': 'Deep Archive',
+                    'DeepArchiveS3ObjectOverhead': 'Deep Archive Overhead',
+                }
+                return mapping.get(storage_type, storage_type)
+
+            tiers_list = []
+            BYTES_IN_GB = 1024 ** 3
+            for st, b in tiers_bytes.items():
+                size_gb = round(b / BYTES_IN_GB, 3)
+                tiers_list.append([_display_name(st), size_gb])
+            metadata['tiers'] = tiers_list
+        except Exception as exc:
+            LOG.warning(f"[IT] Failed to fetch CloudWatch metrics for bucket {bucket_name}: {str(exc)}")
+
+        # Get last_checked dates from GET requests
+        try:
+            region_name = s3_client.meta.region_name
+            cloudwatch = self.session.client('cloudwatch', region_name=region_name)
+            
+            get_requests_metric = 'GetRequests'
+            dates_with_object_access = []
+            
+            try:
+                get_stats = cloudwatch.get_metric_statistics(
+                    Namespace='AWS/S3',
+                    MetricName=get_requests_metric,
+                    Dimensions=[
+                        {'Name': 'BucketName', 'Value': bucket_name},
+                        {'Name': 'FilterId', 'Value': 'EntireBucket'}
+                    ],
+                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
+                    EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
+                    Period=24 * 60 * 60,
+                    Statistics=['Sum']
+                )
+                get_dps = get_stats.get('Datapoints', [])
+                
+                # Collect dates with GET requests
+                for dp in get_dps:
+                    if dp.get('Sum', 0) > 0:
+                        ts = dp.get('Timestamp')
+                        if isinstance(ts, datetime):
+                            dates_with_object_access.append(ts.date().isoformat())
+                
+                # Store unique sorted dates
+                if dates_with_object_access:
+                    metadata['last_checked'] = sorted(list(set(dates_with_object_access)))
+                    LOG.info(f"[IT] Bucket {bucket_name} had object GETs on dates: {metadata['last_checked']}")
+                else:
+                    metadata['last_checked'] = []
+                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 30 days")
+                    
+            except Exception as exc:
+                LOG.warning(f"[IT] Failed to get {get_requests_metric} metrics for bucket {bucket_name}: {str(exc)}")
+                metadata['last_checked'] = []
+            
+        except Exception as exc:
+            LOG.warning(f"[IT] Failed to get access metrics for bucket {bucket_name}: {str(exc)}")
+            metadata['last_checked'] = []
+
+        return metadata
 
     @staticmethod
     def get_region_from_location(region_info):
@@ -537,8 +853,10 @@ class Aws(S3CloudMixin):
         # explicitly, so we find region first and initialize client for
         # specific region
         s3 = self.session.client('s3', region_name=region)
-        is_public_policy, is_public_acls = self._get_bucket_public_settings(
-            s3, bucket_name)
+
+        public_and_tiering = self._get_bucket_public_settings(s3, s3, bucket_name)
+        is_public_policy = public_and_tiering.get('is_public_policy', False)
+        is_public_acls = public_and_tiering.get('is_public_acls', False)
 
         try:
             tags = s3.get_bucket_tagging(Bucket=bucket_name)
@@ -548,6 +866,12 @@ class Aws(S3CloudMixin):
                 tags = {}
             else:
                 raise
+
+        it_metadata = self._get_bucket_intelligent_tiering_metadata(
+            s3_client=s3,
+            bucket_name=bucket_name
+        )
+
         bucket_resource = BucketResource(
             cloud_resource_id=bucket_name,
             cloud_account_id=self.cloud_account_id,
@@ -556,8 +880,19 @@ class Aws(S3CloudMixin):
             name=bucket_name,
             tags=self._extract_tags(tags, dict_name='TagSet'),
             is_public_policy=is_public_policy,
-            is_public_acls=is_public_acls
+            is_public_acls=is_public_acls,
+            intelligent_tiering_enabled=it_metadata.get('intelligent_tiering_enabled', False),
+            intelligent_tiering_configs=it_metadata.get('intelligent_tiering_configs', []),
+            lifecycle_rules=it_metadata.get('lifecycle_rules', []),
+            storage_class_analysis=it_metadata.get('storage_class_analysis', []),
+            metrics_configurations=it_metadata.get('metrics_configurations', []),
+            total_size_bytes=it_metadata.get('total_size_bytes'),
+            object_count=it_metadata.get('object_count'),
+            it_status_bucket=it_metadata.get('it_status_bucket'),
+            tiers=it_metadata.get('tiers', []),
+            last_checked=it_metadata.get('last_checked', []),
         )
+
         self._set_cloud_link(bucket_resource, region)
         yield bucket_resource
 
@@ -1654,3 +1989,160 @@ class Aws(S3CloudMixin):
                 raise InvalidResourceStateException(str(exc))
             else:
                 raise
+
+    def list_all_log_groups(self, region):
+        try:
+            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+            if session is None:
+                raise RuntimeError("No AWS session available")
+            logs_client = session.client('logs', region_name=region)
+            paginator = logs_client.get_paginator('describe_log_groups')
+            result = []
+            for page in paginator.paginate():
+                for g in page.get('logGroups', []):
+                    if 'logGroupName' in g:
+                        result.append(g['logGroupName'])
+            return result
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code')
+            if code == 'InvalidParameterException':
+                raise ValueError(str(e))
+            raise
+    def get_log_groups_metrics(self, log_group_names, region, dias_atras=7, max_workers=20):
+        try:
+            metrics_to_fetch = {
+                'ingestion': ('IncomingBytes', 3600, 'Sum'),
+                'storage': ('StoredBytes', 86400, 'Maximum'),
+                'query_proxy': ('IncomingLogEvents', 3600, 'Sum')
+            }
+            # prepare
+            result = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
+            end_time = datetime.now(timezone.utc)
+            start_time = end_time - timedelta(days=dias_atras)
+            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+            cw = session.client('cloudwatch', region_name=region)
+
+            # normalize periods
+            normalized = {k: (mn, _ensure_period(period), stat) for k, (mn, period, stat) in metrics_to_fetch.items()}
+
+            # adjust workers heuristically to avoid throttling
+            max_workers = max(2, min(max_workers, max(5, len(log_group_names) * len(metrics_to_fetch))))
+
+            futures = {}
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for lg in log_group_names:
+                    for metric_key, (metric_name, period, stat) in normalized.items():
+                        params = {
+                            'Namespace': 'AWS/Logs',
+                            'MetricName': metric_name,
+                            'Dimensions': [{'Name': 'LogGroupName', 'Value': lg}],
+                            'StartTime': start_time,
+                            'EndTime': end_time,
+                            'Period': period,
+                            'Statistics': [stat]
+                        }
+                        # schedule the call inside backoff wrapper to run in thread
+                        future = executor.submit(_exp_backoff_retry, cw.get_metric_statistics, **params)
+                        futures[future] = (lg, metric_key)
+
+                for fut in as_completed(futures):
+                    lg, metric_key = futures[fut]
+                    try:
+                        resp = fut.result()
+                        dps = resp.get('Datapoints', []) if isinstance(resp, dict) else []
+                        dps.sort(key=lambda x: x['Timestamp'])
+                        result[lg][metric_key] = dps
+                    except Exception as e:
+                        LOG.exception("Error fetching metric %s for %s: %s", metric_key, lg, e)
+                        result[lg][metric_key] = []
+            return result
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code')
+            if code == 'InvalidParameterException':
+                raise ValueError(str(e))
+            raise
+
+    def get_log_groups_details(self, log_group_names, region):
+        try:
+            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+            logs_client = session.client('logs', region_name=region)
+            result = {}
+            for lg_name in log_group_names:
+                try:
+                    resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
+                    chosen = None
+                    for g in resp.get('logGroups', []):
+                        if g.get('logGroupName') == lg_name:
+                            chosen = g
+                            break
+                    if not chosen:
+                        result[lg_name] = None
+                        continue
+
+                    ct = None
+                    if 'creationTime' in chosen and chosen['creationTime'] is not None:
+                        ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
+
+                    result[lg_name] = {
+                        'name': chosen.get('logGroupName'),
+                        'stored_bytes': chosen.get('storedBytes', 0),
+                        'retention_in_days': chosen.get('retentionInDays'),
+                        'creation_time': ct,
+                        'arn': chosen.get('arn'),
+                        'kms_key_id': chosen.get('kmsKeyId')
+                    }
+                except Exception as e:
+                    LOG.exception("Error getting details for %s: %s", lg_name, e)
+                    result[lg_name] = None
+            return result
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code')
+            if code == 'InvalidParameterException':
+                raise ValueError(str(e))
+            raise
+        
+
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+        try:
+            log_group_names = self.list_all_log_groups(region)
+            
+            if not log_group_names:
+                return []
+            
+            details = self.get_log_groups_details(log_group_names, region)
+            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+            resources = []
+            
+            for lg_name in log_group_names:
+                try:
+                    lg_details = details.get(lg_name)
+                    if lg_details is None:
+                        continue
+                    cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
+                    
+                    resource = LogGroupResource(
+                        name=lg_details['name'],
+                        stored_bytes=lg_details['stored_bytes'],
+                        retention_in_days=lg_details['retention_in_days'],
+                        creation_time=lg_details['creation_time'],
+                        arn=lg_details['arn'],
+                        kms_key_id=lg_details['kms_key_id'],
+                        
+                        cloud_resource_id=cloud_resource_id,
+                        cloud_account_id=getattr(self, 'cloud_account_id', None),
+                        region=region,
+                        organization_id=getattr(self, 'organization_id', None),
+                        tags={}
+                    )
+                    
+                    setattr(resource, 'metrics', metrics.get(lg_name, {}))
+                    resources.append(resource)
+                    
+                except Exception as e:
+                    LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
+                    continue
+            
+            return resources      
+        except Exception as e:
+            LOG.exception(f"Error creating log group resources for region {region}: {e}")
+            raise
