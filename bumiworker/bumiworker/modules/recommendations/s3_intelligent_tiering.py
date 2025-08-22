@@ -55,7 +55,7 @@ def _intelligent_tiering_cost(total_gb: float, eligible_objects: int, cold30: fl
     monitor = (eligible_objects / 1000.0) * IT_MONITOR_FEE_PER_1000
     return storage + monitor
 
-class S3AbandonedBuckets(S3AbandonedBucketsBase):
+class S3IntelligentTiering(S3AbandonedBucketsBase):
     SUPPORTED_CLOUD_TYPES = ["aws_cnr"]
 
     def __init__(self, organization_id, config_client, created_at):
@@ -102,7 +102,7 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         except Exception:
             return {}
 
-    def get(self, **kwargs) -> Dict[str, Any]:
+    def get(self, **kwargs) -> List[Dict[str, Any]]:
         options = self.get_options()
         excluded_pools = set((options.get("excluded_pools") or {}).keys())
         skip_accounts = set(options.get("skip_cloud_accounts") or [])
@@ -117,8 +117,8 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                 continue
             docs = self._aggregate_resources(ca_id)
             for d in docs:
-                if excluded_pools:
-                    pass
+                if excluded_pools and d.get("pool_id") in excluded_pools:
+                    continue
                 eval_res = self._candidate_and_saving(d)
                 if not eval_res["is_candidate"]:
                     continue
@@ -137,23 +137,24 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                     "is_with_intelligent_tiering": eval_res["is_with_it"],
                     "detected_at": self.created_at,
                     "cloud_account_name": ca_names.get(d.get("cloud_account_id")),
+                    "saving": round(eval_res["saving"], 2),
                 })
 
-        result = {
-            "intelligent_tiering": {
-                "count": total_count,
-                "saving": round(total_saving, 2),
-                "options": {
-                    "excluded_pools": options.get("excluded_pools") or {},
-                    "skip_cloud_accounts": options.get("skip_cloud_accounts") or [],
-                },
-                "items": items
-            }
-        }
-        return result
+        # result = {
+        #     "intelligent_tiering": {
+        #         "count": total_count,
+        #         "saving": round(total_saving, 2),
+        #         "options": {
+        #             "excluded_pools": options.get("excluded_pools") or {},
+        #             "skip_cloud_accounts": options.get("skip_cloud_accounts") or [],
+        #         },
+        #         "items": items
+        #     }
+        # }
+        return items
 
 def main(organization_id, config_client, created_at, **kwargs):
-    return S3AbandonedBuckets(organization_id, config_client, created_at).get()
+    return S3IntelligentTiering(organization_id, config_client, created_at).get()
 
 def get_module_email_name():
     return "S3 Intelligent-Tiering candidates"
