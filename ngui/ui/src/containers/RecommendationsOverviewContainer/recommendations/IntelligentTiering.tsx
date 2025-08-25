@@ -35,7 +35,7 @@ const columns = [
 ];
 
 class IntelligentTiering extends BaseRecommendation {
-  type = "intelligent_tiering";
+  type = "s3_intelligent_tiering";
 
   name = "intelligentTiering";
 

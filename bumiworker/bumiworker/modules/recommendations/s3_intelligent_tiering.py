@@ -140,17 +140,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "saving": round(eval_res["saving"], 2),
                 })
 
-        # result = {
-        #     "intelligent_tiering": {
-        #         "count": total_count,
-        #         "saving": round(total_saving, 2),
-        #         "options": {
-        #             "excluded_pools": options.get("excluded_pools") or {},
-        #             "skip_cloud_accounts": options.get("skip_cloud_accounts") or [],
-        #         },
-        #         "items": items
-        #     }
-        # }
         return items
 
 def main(organization_id, config_client, created_at, **kwargs):
