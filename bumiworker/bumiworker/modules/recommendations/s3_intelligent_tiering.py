@@ -210,7 +210,11 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
 
 def main(organization_id, config_client, created_at, **kwargs):
-    return S3IntelligentTiering(organization_id, config_client, created_at).get()
+    mod = S3IntelligentTiering(organization_id, config_client, created_at)
+    data = mod.get()
+    options = mod.get_options()
+    error = None
+    return data, options, error
 
 
 def get_module_email_name():
