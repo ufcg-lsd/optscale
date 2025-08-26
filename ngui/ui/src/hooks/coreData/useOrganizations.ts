@@ -1,8 +1,7 @@
-import { useQuery } from "@apollo/client";
-import { GET_ORGANIZATIONS } from "graphql/api/restapi/queries";
+import { useOrganizationsQuery } from "graphql/__generated__/hooks/restapi";
 
 export const useOrganizations = () => {
-  const { data: { organizations = [] } = {} } = useQuery(GET_ORGANIZATIONS, {
+  const { data: { organizations = [] } = {} } = useOrganizationsQuery({
     fetchPolicy: "cache-only"
   });
 

@@ -1,11 +1,10 @@
-import { useQuery } from "@apollo/client";
-import { GET_CURRENT_EMPLOYEE } from "graphql/api/restapi/queries";
+import { useCurrentEmployeeQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "../useOrganizationInfo";
 
 export const useCurrentEmployee = () => {
   const { organizationId } = useOrganizationInfo();
 
-  const { data } = useQuery(GET_CURRENT_EMPLOYEE, {
+  const { data } = useCurrentEmployeeQuery({
     variables: {
       organizationId
     },

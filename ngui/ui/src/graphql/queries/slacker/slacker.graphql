@@ -1,0 +1,9 @@
+query GetInstallationPath {
+  url
+}
+
+mutation ConnectSlackUser($secret: String!) {
+  connect(secret: $secret) {
+    slack_user_id
+  }
+}

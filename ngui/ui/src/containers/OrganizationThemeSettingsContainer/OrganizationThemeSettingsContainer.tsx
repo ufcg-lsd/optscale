@@ -1,18 +1,17 @@
-import { useMutation } from "@apollo/client";
 import ContentBackdropLoader from "components/ContentBackdropLoader";
 import {
-  GET_ORGANIZATION_THEME_SETTINGS,
-  UPDATE_ORGANIZATION_THEME_SETTINGS
-} from "graphql/api/restapi/queries/restapi.queries";
+  OrganizationThemeSettingsDocument,
+  useUpdateOrganizationThemeSettingsMutation
+} from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 
 const OrganizationThemeSettingsContainer = ({ children }) => {
   const { organizationId } = useOrganizationInfo();
 
-  const [updateOrganizationThemeSettingsMutation, { loading }] = useMutation(UPDATE_ORGANIZATION_THEME_SETTINGS, {
+  const [updateOrganizationThemeSettingsMutation, { loading }] = useUpdateOrganizationThemeSettingsMutation({
     update: (cache, { data: { updateOrganizationThemeSettings } }) => {
       cache.writeQuery({
-        query: GET_ORGANIZATION_THEME_SETTINGS,
+        query: OrganizationThemeSettingsDocument,
         variables: { organizationId },
         data: {
           organizationThemeSettings: updateOrganizationThemeSettings

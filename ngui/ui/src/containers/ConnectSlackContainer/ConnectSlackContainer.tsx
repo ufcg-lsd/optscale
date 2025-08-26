@@ -1,14 +1,13 @@
 import { useEffect } from "react";
-import { useMutation } from "@apollo/client";
 import ConnectSlack from "components/ConnectSlack";
-import { CONNECT_SLACK_USER } from "graphql/api/slacker/queries";
+import { useConnectSlackUserMutation } from "graphql/__generated__/hooks/slacker";
 
 type ConnectSlackContainerProps = {
   secret: string;
 };
 
 const ConnectSlackContainer = ({ secret }: ConnectSlackContainerProps) => {
-  const [connectSlackUser, { loading, error }] = useMutation(CONNECT_SLACK_USER, {
+  const [connectSlackUser, { loading, error }] = useConnectSlackUserMutation({
     variables: {
       secret
     }

@@ -1,0 +1,15 @@
+import { gql } from "graphql-tag";
+
+export default gql`
+  type SlackUser {
+    slack_user_id: String!
+  }
+
+  type Query {
+    url: String
+  }
+
+  type Mutation {
+    connect(secret: String!): SlackUser
+  }
+`;

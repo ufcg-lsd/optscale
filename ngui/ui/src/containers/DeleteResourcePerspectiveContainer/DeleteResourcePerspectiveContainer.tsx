@@ -1,6 +1,8 @@
-import { useMutation } from "@apollo/client";
 import DeleteResourcePerspective from "components/DeleteResourcePerspective";
-import { GET_ORGANIZATION_PERSPECTIVES, UPDATE_ORGANIZATION_PERSPECTIVES } from "graphql/api/restapi/queries/restapi.queries";
+import {
+  OrganizationPerspectivesDocument,
+  useUpdateOrganizationPerspectivesMutation
+} from "graphql/__generated__/hooks/restapi";
 import { useOrganizationPerspectives } from "hooks/coreData/useOrganizationPerspectives";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { removeKey } from "utils/objects";
@@ -10,10 +12,10 @@ const DeleteResourcePerspectiveContainer = ({ perspectiveName, onCancel, onSucce
 
   const { allPerspectives } = useOrganizationPerspectives();
 
-  const [updateOrganizationPerspectives, { loading }] = useMutation(UPDATE_ORGANIZATION_PERSPECTIVES, {
+  const [updateOrganizationPerspectives, { loading }] = useUpdateOrganizationPerspectivesMutation({
     update: (cache, { data }) => {
       cache.writeQuery({
-        query: GET_ORGANIZATION_PERSPECTIVES,
+        query: OrganizationPerspectivesDocument,
         variables: { organizationId },
         data: {
           organizationPerspectives: data.updateOrganizationPerspectives

@@ -1,4 +1,3 @@
-import { useMutation } from "@apollo/client";
 import { Box, CircularProgress, Stack, Switch, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import Accordion from "components/Accordion";
@@ -6,7 +5,7 @@ import Chip from "components/Chip";
 import KeyValueLabel from "components/KeyValueLabel";
 import PanelLoader from "components/PanelLoader";
 import SubTitle from "components/SubTitle";
-import { UPDATE_EMPLOYEE_EMAIL, UPDATE_EMPLOYEE_EMAILS } from "graphql/api/restapi/queries/restapi.queries";
+import { useUpdateEmployeeEmailMutation, useUpdateEmployeeEmailsMutation } from "graphql/__generated__/hooks/restapi";
 import { isEmpty as isEmptyArray } from "utils/arrays";
 import { SPACING_2 } from "utils/layouts";
 import { ObjectKeys } from "utils/types";
@@ -126,7 +125,7 @@ const LoadingSwitch = ({ checked, onChange, isLoading = false }: LoadingSwitchPr
 };
 
 const EmailSetting = ({ emailId, employeeId, enabled, emailTitle, description }: EmailSettingProps) => {
-  const [updateEmployeeEmail, { loading: updateEmployeeEmailLoading }] = useMutation(UPDATE_EMPLOYEE_EMAIL);
+  const [updateEmployeeEmail, { loading: updateEmployeeEmailLoading }] = useUpdateEmployeeEmailMutation();
 
   return (
     <Box>
@@ -160,7 +159,7 @@ const EmailSetting = ({ emailId, employeeId, enabled, emailTitle, description }:
 const UserEmailSettings = ({ title, employeeEmails }: UserEmailSettingsProps) => {
   const { employee_id: employeeId } = employeeEmails[0];
 
-  const [updateEmployeeEmails, { loading: updateEmployeeEmailsLoading }] = useMutation(UPDATE_EMPLOYEE_EMAILS);
+  const [updateEmployeeEmails, { loading: updateEmployeeEmailsLoading }] = useUpdateEmployeeEmailsMutation();
 
   const areAllEmailsEnabled = employeeEmails.every((email) => email.enabled);
 

@@ -1,11 +1,10 @@
-import { useQuery } from "@apollo/client";
-import { GET_DATA_SOURCES } from "graphql/api/restapi/queries";
+import { useDataSourcesQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "../useOrganizationInfo";
 
 export const useAllDataSources = () => {
   const { organizationId } = useOrganizationInfo();
 
-  const { data: { dataSources = [] } = {} } = useQuery(GET_DATA_SOURCES, {
+  const { data: { dataSources = [] } = {} } = useDataSourcesQuery({
     variables: {
       organizationId
     },

@@ -18,14 +18,12 @@ import {
   QueryEmployeeEmailsArgs,
   QueryRelevantFlavorsArgs,
   QueryCleanExpensesArgs,
-  QueryCloudPoliciesArgs,
-} from "../../graphql/resolvers/restapi.generated.js";
+  QueryCloudPoliciesArgs
+} from "../../graphql/__generated__/types/restapi";
 import { getParams } from "../../utils/getParams.js";
 
 class RestApiClient extends BaseClient {
-  override baseURL = `${
-    process.env.RESTAPI_ENDPOINT || this.endpoint
-  }/restapi/v2/`;
+  override baseURL = `${process.env.RESTAPI_ENDPOINT || this.endpoint}/restapi/v2/`;
 
   async getOrganizations() {
     const organizations = await this.get("organizations");
@@ -37,7 +35,7 @@ class RestApiClient extends BaseClient {
     const path = `organizations/${organizationId}/employees`;
 
     const currentEmployee = await this.get(path, {
-      params: getParams({ current_only: true }),
+      params: getParams({ current_only: true })
     });
 
     return currentEmployee.employees[0];
@@ -47,22 +45,19 @@ class RestApiClient extends BaseClient {
     const path = `organizations/${organizationId}/cloud_accounts`;
 
     const dataSources = await this.get(path, {
-      params: getParams({ details: true }),
+      params: getParams({ details: true })
     });
 
     return dataSources.cloud_accounts;
   }
 
-  async getDataSource(
-    dataSourceId: string,
-    requestParams: DataSourceRequestParams
-  ) {
+  async getDataSource(dataSourceId: string, requestParams: DataSourceRequestParams) {
     const path = `cloud_accounts/${dataSourceId}`;
 
     const dataSource = await this.get(path, {
       params: getParams({
-        details: requestParams.details,
-      }),
+        details: requestParams.details
+      })
     });
 
     return dataSource;
@@ -89,9 +84,9 @@ class RestApiClient extends BaseClient {
           ...params.alibabaConfig,
           ...params.nebiusConfig,
           ...params.databricksConfig,
-          ...params.k8sConfig,
-        },
-      },
+          ...params.k8sConfig
+        }
+      }
     });
 
     return dataSource;
@@ -119,9 +114,9 @@ class RestApiClient extends BaseClient {
           ...params.alibabaConfig,
           ...params.nebiusConfig,
           ...params.databricksConfig,
-          ...params.k8sConfig,
-        },
-      }),
+          ...params.k8sConfig
+        }
+      })
     });
 
     return dataSource;
@@ -142,14 +137,12 @@ class RestApiClient extends BaseClient {
     const path = `employees/${employeeId}/emails/bulk`;
 
     const emails = await this.post(path, {
-      body: params,
+      body: params
     });
 
     const emailIds = [...(params?.enable ?? []), ...(params.disable ?? [])];
 
-    return emails.employee_emails.filter((email) =>
-      emailIds.includes(email.id)
-    );
+    return emails.employee_emails.filter((email) => emailIds.includes(email.id));
   }
 
   async updateEmployeeEmail(
@@ -162,8 +155,8 @@ class RestApiClient extends BaseClient {
 
     const emails = await this.post(path, {
       body: {
-        [action === "enable" ? "enable" : "disable"]: [emailId],
-      },
+        [action === "enable" ? "enable" : "disable"]: [emailId]
+      }
     });
 
     const email = emails.employee_emails.find((email) => email.id === emailId);
@@ -188,14 +181,12 @@ class RestApiClient extends BaseClient {
 
     return await this.patch(path, {
       body: JSON.stringify({
-        action,
-      }),
+        action
+      })
     });
   }
 
-  async getOrganizationFeatures(
-    organizationId: QueryOrganizationFeaturesArgs["organizationId"]
-  ) {
+  async getOrganizationFeatures(organizationId: QueryOrganizationFeaturesArgs["organizationId"]) {
     const path = `organizations/${organizationId}/options/features`;
     const features = await this.get(path);
 
@@ -214,23 +205,18 @@ class RestApiClient extends BaseClient {
   }
 
   async updateOrganizationThemeSettings(organizationId, value) {
-    const themeSettings = await this.patch(
-      `organizations/${organizationId}/options/theme_settings`,
-      {
-        body: {
-          value: JSON.stringify(value),
-        },
+    const themeSettings = await this.patch(`organizations/${organizationId}/options/theme_settings`, {
+      body: {
+        value: JSON.stringify(value)
       }
-    );
+    });
 
     const parsedThemeSettings = JSON.parse(themeSettings.value);
 
     return parsedThemeSettings;
   }
 
-  async getOrganizationPerspectives(
-    organizationId: QueryOrganizationPerspectivesArgs["organizationId"]
-  ) {
+  async getOrganizationPerspectives(organizationId: QueryOrganizationPerspectivesArgs["organizationId"]) {
     const path = `organizations/${organizationId}/options/perspectives`;
     const perspectives = await this.get(path);
 
@@ -243,27 +229,22 @@ class RestApiClient extends BaseClient {
     organizationId: MutationUpdateOrganizationPerspectivesArgs["organizationId"],
     value: MutationUpdateOrganizationPerspectivesArgs["value"]
   ) {
-    const perspectives = await this.patch(
-      `organizations/${organizationId}/options/perspectives`,
-      {
-        body: {
-          value: JSON.stringify(value),
-        },
+    const perspectives = await this.patch(`organizations/${organizationId}/options/perspectives`, {
+      body: {
+        value: JSON.stringify(value)
       }
-    );
+    });
 
     const parsedPerspectives = JSON.parse(perspectives.value);
 
     return parsedPerspectives;
   }
 
-  async createOrganization(
-    organizationName: MutationCreateOrganizationArgs["organizationName"]
-  ) {
+  async createOrganization(organizationName: MutationCreateOrganizationArgs["organizationName"]) {
     return await this.post("organizations", {
       body: {
-        name: organizationName,
-      },
+        name: organizationName
+      }
     });
   }
 
@@ -272,19 +253,15 @@ class RestApiClient extends BaseClient {
     params: MutationUpdateOrganizationArgs["params"]
   ) {
     return await this.patch(`organizations/${organizationId}`, {
-      body: params,
+      body: params
     });
   }
 
-  async deleteOrganization(
-    organizationId: MutationDeleteOrganizationArgs["organizationId"]
-  ) {
+  async deleteOrganization(organizationId: MutationDeleteOrganizationArgs["organizationId"]) {
     return await this.delete(`organizations/${organizationId}`);
   }
 
-  async getOrganizationConstraint(
-    constraintId: QueryOrganizationConstraintArgs["constraintId"]
-  ) {
+  async getOrganizationConstraint(constraintId: QueryOrganizationConstraintArgs["constraintId"]) {
     const path = `organization_constraints/${constraintId}`;
 
     const organizationConstraint = await this.get(path);
@@ -299,7 +276,7 @@ class RestApiClient extends BaseClient {
     const path = `organizations/${organizationId}/resources_count`;
 
     const resourceCountBreakdown = await this.get(path, {
-      params: getParams(params),
+      params: getParams(params)
     });
 
     return resourceCountBreakdown;
@@ -312,7 +289,7 @@ class RestApiClient extends BaseClient {
     const path = `organizations/${organizationId}/breakdown_expenses`;
 
     const dailyExpensesBreakdown = await this.get(path, {
-      params: getParams(params),
+      params: getParams(params)
     });
 
     return dailyExpensesBreakdown;
@@ -326,8 +303,8 @@ class RestApiClient extends BaseClient {
 
     const organizationLimitHits = await this.get(path, {
       params: getParams({
-        constraint_id: constraintId,
-      }),
+        constraint_id: constraintId
+      })
     });
 
     return organizationLimitHits.organization_limit_hits;
@@ -340,33 +317,27 @@ class RestApiClient extends BaseClient {
     const path = `organizations/${organizationId}/relevant_flavors`;
 
     const flavors = await this.get(path, {
-      params: getParams(requestParams),
+      params: getParams(requestParams)
     });
 
     return flavors;
   }
 
-  async getCleanExpenses(
-    organizationId: QueryCleanExpensesArgs["organizationId"],
-    params: QueryCleanExpensesArgs["params"]
-  ) {
+  async getCleanExpenses(organizationId: QueryCleanExpensesArgs["organizationId"], params: QueryCleanExpensesArgs["params"]) {
     const path = `organizations/${organizationId}/clean_expenses`;
 
     const cleanExpenses = await this.get(path, {
-      params: getParams(params),
+      params: getParams(params)
     });
 
     return cleanExpenses;
   }
 
-  async getCloudPolicies(
-    organizationId: QueryCloudPoliciesArgs["organizationId"],
-    params: QueryCloudPoliciesArgs["params"]
-  ) {
+  async getCloudPolicies(organizationId: QueryCloudPoliciesArgs["organizationId"], params: QueryCloudPoliciesArgs["params"]) {
     const path = `organizations/${organizationId}/cloud_policies`;
 
     const cloudPolicies = await this.get(path, {
-      params: getParams(params),
+      params: getParams(params)
     });
 
     return cloudPolicies;

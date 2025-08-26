@@ -1,0 +1,36 @@
+query OrganizationAllowedActions($requestParams: OrganizationAllowedActionsRequestParams) {
+  organizationAllowedActions(requestParams: $requestParams)
+}
+
+mutation CreateToken($email: String!, $password: String, $code: String) {
+  token(email: $email, password: $password, code: $code) {
+    token
+    user_id
+    user_email
+  }
+}
+
+mutation CreateUser($email: String!, $password: String!, $name: String!) {
+  user(email: $email, password: $password, name: $name) {
+    token
+    user_id
+    user_email
+    verified
+  }
+}
+
+mutation SignIn($provider: String!, $token: String!, $tenantId: String, $redirectUri: String) {
+  signIn(provider: $provider, token: $token, tenantId: $tenantId, redirectUri: $redirectUri) {
+    token
+    user_id
+    user_email
+  }
+}
+
+mutation UpdateUser($id: ID!, $params: UpdateUserParams!) {
+  updateUser(id: $id, params: $params) {
+    token
+    user_id
+    user_email
+  }
+}
