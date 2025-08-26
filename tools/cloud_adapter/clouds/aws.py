@@ -2341,7 +2341,7 @@ class Aws(S3CloudMixin):
                 'MetricName': 'QueryBytes',
                 'Period': 86400,
                 'Stat': 'Sum',
-                'Unit': 'Bytes'
+                'Unit': 'Count'
             }
         }
         
@@ -2364,7 +2364,7 @@ class Aws(S3CloudMixin):
                         'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
                         'StartTime': start_time,
                         'EndTime': end_time,
-                        'Period': metric_config['Period'],
+                        'Period': _ensure_period(metric_config['Period']),
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }
