@@ -967,3 +967,73 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def create_risp_processing_tasks(self):
         self._create_risp_processing_tasks()
+
+    def discover_region_log_groups(self, region):
+        log_groups = self.cloud_adapter.create_log_group_resources(region)
+        for log_group in log_groups:
+            # Process metrics before yielding the resource
+            self.process_log_group_metrics(log_group)
+            yield log_group
+
+    def _datapoint_value(dp: dict):
+        for k in ('Sum', 'Maximum', 'Average', 'Minimum', 'SampleCount', 'Value'):
+            if k in dp:
+                return dp[k]
+        for k, v in dp.items():
+            if k not in ('Timestamp', 'Unit') and isinstance(v, (int, float)):
+                return v
+        return None
+
+    def process_log_group_metrics(self, log_group_resource):
+        if not hasattr(log_group_resource, 'metrics'):
+            return
+
+        # --- Persist raw datapoints into Mongo ---
+        raw_docs = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                ts = dp.get('Timestamp')
+                if isinstance(ts, datetime):
+                    ts = ts.astimezone(timezone.utc)
+                value = self._datapoint_value(dp)
+                if value is None:
+                    continue
+                raw_docs.append({
+                    'cloud_account_id': self.cloud_acc_id,
+                    'region': getattr(log_group_resource, 'region', None),
+                    'log_group_name': log_group_resource.name,
+                    'cloud_resource_id': log_group_resource.cloud_resource_id,
+                    'metric_name': metric_name,
+                    'timestamp': ts,
+                    'value': float(value),
+                    'retention_in_days': getattr(log_group_resource, 'retention_in_days', None),
+                    'stored_bytes': getattr(log_group_resource, 'stored_bytes', None),
+                    'arn': getattr(log_group_resource, 'arn', None),
+                    'collected_at': opttime.utcnow()
+                })
+        if raw_docs:
+            try:
+                self.mongo_cloudwatch.insert_many(raw_docs)
+            except Exception as exc:
+                LOG.warning('Failed to insert raw CloudWatch docs into Mongo: %s', str(exc))
+
+        # --- Existing behaviour: transform and save summary points to ClickHouse ---
+        metrics_data = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                ts = dp.get('Timestamp')
+                if isinstance(ts, datetime):
+                    ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+                value = self._datapoint_value(dp)
+                if value is None:
+                    continue
+                metrics_data.append([
+                    self.cloud_acc_id,
+                    log_group_resource.cloud_resource_id,
+                    metric_name,
+                    ts,
+                    float(value)
+                ])
+
+        if metrics_data:
+            self.save_cloudwatch_metrics(metrics_data)

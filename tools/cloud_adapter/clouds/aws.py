@@ -3,6 +3,7 @@ from datetime import timedelta
 import time
 from concurrent.futures import as_completed
 import enum
+import urllib.parse
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
 from functools import wraps
@@ -472,10 +473,9 @@ class Aws(S3CloudMixin):
     
     def log_group_discovery_calls(self):
         """
-        Returns list of discovery calls to discover log groups presented
-        as tuples (adapter_method, arguments_tuple)
+        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
         """
-        return [(self.list_all_log_groups, (r,))
+        return [(self.discover_region_log_groups, (r,))
                 for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code):
@@ -2110,79 +2110,15 @@ class Aws(S3CloudMixin):
             raise
 
     def discover_region_log_groups(self, region):
+        """
+        Discover LogGroupResource objects for region (delegates to create_log_group_resources).
+        """
         try:
-            session = self.get_session()
-            logs_client = session.client('logs', region_name=region)
-            log_group_names = []
-            paginator = logs_client.get_paginator('describe_log_groups')
-            
-            for page in paginator.paginate():
-                for log_group in page.get('logGroups', []):
-                    log_group_names.append(log_group['logGroupName'])
-
-            if not log_group_names:
-                LOG.info(f"No log groups found in region {region}")
-                return []
-            
-            metrics = self.get_log_groups_metrics(log_group_names, region, days_ago=30)
-            log_group_resources = []   
-
-            for log_group_name in log_group_names:
-                try:
-                    response = logs_client.describe_log_groups(
-                    logGroupNamePrefix=log_group_name,
-                    limit=1
-                    )
-                    log_groups = response.get('logGroups', [])
-                    if not log_groups:
-                        LOG.warning(f"Log group {log_group_name} not found during detail fetch")
-                        continue
-                    
-                    log_group = log_groups[0]
-                    if log_group['logGroupName'] != log_group_name:
-                        LOG.warning(f"Name mismatch: expected {log_group_name}, got {log_group['logGroupName']}")
-                        continue
-                
-                    creation_time = None
-                    if 'creationTime' in log_group:
-                        creation_time = datetime.fromtimestamp(
-                            log_group['creationTime'] / 1000.0, 
-                            tz=timezone.utc
-                        )
-                
-                    tags = self.get_log_group_tags(logs_client, log_group_name)
-
-                    log_group_resource = LogGroupResource(
-                        cloud_resource_id=log_group['logGroupName'],
-                        cloud_account_id=self.cloud_account_id,
-                        region=region,
-                        organization_id=self.organization_id,
-                        name=log_group.get('logGroupName'),
-                        stored_bytes=log_group.get('storedBytes', 0),
-                        retention_in_days=log_group.get('retentionInDays'),
-                        creation_time=creation_time,
-                        arn=log_group.get('arn'),
-                        kms_key_id=log_group.get('kmsKeyId'),
-                        metrics=metrics.get(log_group_name, {}),
-                        tags=tags
-                    )
-                    
-                    log_group_resource.cloud_console_link = self._generate_log_group_cloud_link(
-                        region, log_group_name
-                    )
-                    
-                    log_group_resources.append(log_group_resource)
-                
-                except Exception as e:
-                    LOG.error(f"Error processing log group {log_group_name}: {str(e)}")
-                    continue
-        
-            LOG.info(f"Successfully discovered {len(log_group_resources)} log groups in region {region}")
-            return log_group_resources
-        
+            for resource in self.create_log_group_resources(region):
+                yield resource
         except Exception as e:
-            LOG.error(f"Error discovering log groups in region {region}: {str(e)}")
-            return []
+            LOG.error("Error discovering log groups in %s: %s", region, e)
+            return
 
 
     def get_log_group_tags(self, logs_client, log_group_name):
@@ -2201,23 +2137,23 @@ class Aws(S3CloudMixin):
             return {}
     
         metrics_to_fetch = {
-            'IngestionBytes': {
+            'ingestion': {
                 'MetricName': 'IncomingBytes',
                 'Period': 3600,
                 'Stat': 'Sum',
                 'Unit': 'Bytes'
             },
-            'StorageBytes': {
-                'MetricName': 'Bytes',
+            'storage': {
+                'MetricName': 'StoredBytes',
                 'Period': 86400,
-                'Stat': 'Average',
+                'Stat': 'Maximum',
                 'Unit': 'Bytes'
             },
-            'QueryBytes': {
-                'MetricName': 'QueryScannedBytes',
+            'incoming_events': {
+                'MetricName': 'IncomingLogEvents',
                 'Period': 3600,
                 'Stat': 'Sum',
-                'Unit': 'Bytes'
+                'Unit': 'Count'
             }
         }
         
@@ -2240,7 +2176,7 @@ class Aws(S3CloudMixin):
                         'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
                         'StartTime': start_time,
                         'EndTime': end_time,
-                        'Period': metric_config['Period'],
+                        'Period': _ensure_period(metric_config['Period']),
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }
@@ -2265,19 +2201,21 @@ class Aws(S3CloudMixin):
         return results
     
     def _generate_log_group_cloud_link(self, region, log_group_name):
-        encoded_name = log_group_name.replace('/', '$252F')
+        encoded_name = urllib.parse.quote(log_group_name, safe='')
         return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
+
     
-    def _exp_backoff_retry(self, func, max_retries=3, base_delay=1, *args, **kwargs):
-        for attempt in range(max_retries):
+    def _exp_backoff_retry(self, func, max_retries=5, base_delay=1, *args, **kwargs):
+        attempt = 0
+        while True:
             try:
                 return func(*args, **kwargs)
-            except ClientError as e:
-                error_code = e.response.get('Error', {}).get('Code', '')
-                if error_code in ['Throttling', 'RequestLimitExceeded'] and attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                    LOG.warning(f"CloudWatch throttling, retrying in {delay:.2f}s (attempt {attempt + 1})")
-                    time.sleep(delay)
-                    continue
-                raise
-        return func(*args, **kwargs)
+            except (ClientError, BotoCoreError) as e:
+                attempt += 1
+                if attempt >= max_retries:
+                    LOG.exception("Retries exhausted for %s", getattr(func, "__name__", str(func)))
+                    raise
+
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, base_delay)
+                LOG.warning("Call failed (attempt %d/%d). Retrying in %.2fs: %s", attempt, max_retries, delay, e)
+                time.sleep(delay)

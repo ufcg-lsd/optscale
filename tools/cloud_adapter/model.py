@@ -546,7 +546,7 @@ class LogGroupResource(CloudResource):
                  'arn', 'kms_key_id', 'metrics')
 
     def __init__(self, name=None, stored_bytes=None, retention_in_days=None,
-                 creation_time=None, arn=None, kms_key_id=None, **kwargs):
+                 creation_time=None, arn=None, kms_key_id=None, metrics=None, **kwargs):
         super().__init__(**kwargs)
         self.name = name
         self.stored_bytes = stored_bytes
@@ -558,6 +558,15 @@ class LogGroupResource(CloudResource):
 
     def __repr__(self):
         return 'Log Group {0} name={1}'.format(self.cloud_resource_id, self.name)
+
+    def _datapoint_value(dp: dict):
+        for k in ('Sum', 'Maximum', 'Average', 'Minimum', 'SampleCount', 'Value'):
+            if k in dp:
+                return dp[k]
+        for k, v in dp.items():
+            if k not in ('Timestamp', 'Unit') and isinstance(v, (int, float)):
+                return v
+        return None
 
     @property
     def meta(self):
@@ -571,7 +580,7 @@ class LogGroupResource(CloudResource):
                 metrics_meta[metric_name] = [
                     {
                         'timestamp': dp['Timestamp'].isoformat() if isinstance(dp['Timestamp'], datetime) else dp['Timestamp'],
-                        'value': dp[list(dp.keys())[2]]
+                        'value': _datapoint_value(dp)
                     }
                     for dp in data_points
                 ]
