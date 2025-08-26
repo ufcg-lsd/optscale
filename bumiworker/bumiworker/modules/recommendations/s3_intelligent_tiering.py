@@ -112,7 +112,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         total_count = 0
 
         for ca in self.get_cloud_accounts():
-            ca_id = ca["id"]
+            ca_id = ca[id]
             if ca_id in skip_accounts:
                 continue
             docs = self._aggregate_resources(ca_id)
