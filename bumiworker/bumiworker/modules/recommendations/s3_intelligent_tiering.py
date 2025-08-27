@@ -127,6 +127,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             }},
             {"$project": {
                 "_id": 0,
+                "resource_id": "$_id",
                 "cloud_account_id": 1,
                 "bucket_name": {"$ifNull": ["$name", "$cloud_resource_id"]},
                 "it_status_bucket": "$meta.it_status_bucket",
@@ -217,11 +218,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 eval_res = self._candidate_and_saving(d)
                 if not eval_res["is_candidate"]:
                     continue
-                bucket_name = d.get("bucket_name")
                 items.append({
-                    "resource_id": bucket_name,
-                    "resource_name": bucket_name,
-                    "cloud_resource_id": bucket_name,
+                    "resource_id": d.get("resource_id"),
+                    "resource_name":  d.get("bucket_name"),
+                    "cloud_resource_id":  d.get("bucket_name"),
                     "region": d.get("region"),
                     "cloud_account_id": d.get("cloud_account_id"),
                     "cloud_type": "aws_cnr",
