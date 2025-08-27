@@ -22,18 +22,14 @@ IT_MONITOR_FEE_PER_1000 = 0.0025
 DEFAULT_COLD30 = 0.60
 DEFAULT_COLD90 = 0.40
 RETURN_LIMIT = 3
+BYTES_PER_GIB = 1024 ** 3
+TWO_MEBI = 2 * 1024 * 1024
 
 
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
-    """
-    Accepts either:
-      - [['Standard', 123.4], ['Glacier', 5.0], ...]
-      - [{'name': 'Standard', 'gb': 123.4}, ...]
-    """
     out: List[Dict[str, float]] = []
     if not tiers:
         return out
-
     for t in tiers:
         if isinstance(t, list) and len(t) >= 2:
             name = str(t[0])
@@ -50,7 +46,6 @@ def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
             except Exception:
                 continue
             out.append({"name": name, "gb": gb})
-
     return out
 
 
@@ -65,7 +60,6 @@ def _current_monthly_cost(total_gb: float, tiers_gb: List[Dict[str, float]]) -> 
 
 
 def _parse_date_loose(s: Any) -> Optional[date]:
-    """Accepts 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS', and ISO-like variants with 'Z'."""
     if not isinstance(s, str):
         return None
     try:
@@ -80,27 +74,16 @@ def _parse_date_loose(s: Any) -> Optional[date]:
 
 
 def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> str:
-    """
-    Use the MOST RECENT date:
-      <=30d -> 'frequent'
-      <=60d -> 'infrequent'
-      <=90d -> 'archive'
-      >90d or no valid dates -> 'archive'
-    Returns just the tier string.
-    """
     dates: List[date] = []
     if isinstance(last_checked, list):
         for item in last_checked:
             d = _parse_date_loose(item)
             if d:
                 dates.append(d)
-
     if not dates:
         return "archive"
-
     most_recent = max(dates)
     delta = (today - most_recent).days
-
     if delta <= 30:
         return "frequent"
     elif delta <= 60:
@@ -110,13 +93,6 @@ def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> s
 
 
 def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
-    """
-    Map access_tier to the corresponding Intelligent-Tiering storage price per GB.
-      frequent   -> IT_FA
-      infrequent -> IT_IA
-      archive    -> IT_AIA
-    Fallback to IT_FA if something unexpected arrives.
-    """
     tier = (access_tier or "").lower()
     if tier == "infrequent":
         return PRICES["IT_IA"]
@@ -125,16 +101,10 @@ def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
     return PRICES["IT_FA"]
 
 
-def _intelligent_tiering_cost_by_access(total_gb: float,
-                                        eligible_objects: int,
-                                        access_tier: str) -> float:
-    """
-    New IT cost model:
-        IT cost = monitoring + (price_per_gb(access_tier) * total_gb)
-    """
+def _intelligent_tiering_cost_by_access(total_gb: float, eligible_objects: int, access_tier: str) -> float:
     price_per_gb = _it_price_per_gb_for_access_tier(access_tier)
     storage = total_gb * price_per_gb
-    monitor = (float(eligible_objects) // 1000.0) * IT_MONITOR_FEE_PER_1000
+    monitor = (float(eligible_objects) / 1000.0) * IT_MONITOR_FEE_PER_1000
     return storage + monitor
 
 
@@ -164,7 +134,9 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "object_count": "$meta.object_count",
                 "pool_id": 1,
                 "region": 1,
-                "last_checked": "$meta.last_checked"
+                "last_checked": "$meta.last_checked",
+                "has_lifecycle": "$meta.has_lifecycle",
+                "lifecycle_rules": "$meta.lifecycle_rules"
             }}
         ]
         return list(self.mongo_client.restapi.resources.aggregate(pipeline))
@@ -174,30 +146,34 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         it_on = it_status in {"enabled", "active", "on", "true"}
         if it_on:
             return {"is_candidate": False, "saving": 0.0, "is_with_it": True}
-
         tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
         total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
         if total_gb <= 0.0:
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
-
         today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
         access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
-
         if access_tier == "frequent":
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
-
+        has_lifecycle_flag = bool(doc.get("has_lifecycle"))
+        lifecycle_rules = doc.get("lifecycle_rules")
+        if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
+            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+        object_count = int(doc.get("object_count") or 0)
+        if object_count <= 0:
+            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+        avg_object_bytes = (total_gb * BYTES_PER_GIB) / float(object_count)
+        if avg_object_bytes < TWO_MEBI:
+            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
         has_standard_positive = any(
             (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
             for x in tiers_gb
         )
         if not has_standard_positive:
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
-
-        eligible_objects = int(doc.get("object_count") or 0)
+        eligible_objects = object_count
         cost_now = _current_monthly_cost(total_gb, tiers_gb)
         cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
         saving = max(0.0, cost_now - cost_it)
-
         return {"is_candidate": True, "saving": saving, "is_with_it": False}
 
     def _cloud_account_names(self) -> Dict[str, str]:
@@ -215,7 +191,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             return {}
 
     def _extract_cloud_account_id(self, ca: Union[str, Dict[str, Any]]) -> str:
-        """Support both string IDs and dicts with an 'id' field."""
         if isinstance(ca, str):
             return ca
         if isinstance(ca, dict):
@@ -227,9 +202,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         excluded_pools = set((options.get("excluded_pools") or {}).keys())
         skip_accounts = set(options.get("skip_cloud_accounts") or [])
         ca_names = self._cloud_account_names()
-
         items: List[Dict[str, Any]] = []
-
         for ca in self.get_cloud_accounts():
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
@@ -237,16 +210,13 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 continue
             if ca_id in skip_accounts:
                 continue
-
             docs = self._aggregate_resources(ca_id)
             for d in docs:
                 if excluded_pools and d.get("pool_id") in excluded_pools:
                     continue
-
                 eval_res = self._candidate_and_saving(d)
                 if not eval_res["is_candidate"]:
                     continue
-
                 bucket_name = d.get("bucket_name")
                 items.append({
                     "resource_id": bucket_name,
@@ -263,7 +233,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "cloud_account_name": ca_names.get(d.get("cloud_account_id")),
                     "saving": round(eval_res["saving"], 2),
                 })
-
         return items
 
 
