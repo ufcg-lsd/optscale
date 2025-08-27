@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
+from datetime import datetime, date
 
 from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
 
@@ -7,9 +8,9 @@ LOG = logging.getLogger(__name__)
 
 PRICES = {
     "Standard": 0.023,
-    "IT_FA": 0.023,                 # Intelligent-Tiering Frequent Access
-    "IT_IA": 0.0125,                # Intelligent-Tiering Infrequent Access
-    "IT_AIA": 0.0040,               # Intelligent-Tiering Archive Instant Access
+    "IT_FA": 0.023,
+    "IT_IA": 0.0125,
+    "IT_AIA": 0.0040,
     "Glacier": 0.0036,
     "Glacier Flexible Retrieval": 0.0036,
     "Glacier Instant Retrieval": 0.0040,
@@ -20,7 +21,7 @@ PRICES = {
 IT_MONITOR_FEE_PER_1000 = 0.0025
 DEFAULT_COLD30 = 0.60
 DEFAULT_COLD90 = 0.40
-RETURN_LIMIT = 3  # (not used here but preserved if the framework expects it)
+RETURN_LIMIT = 3
 
 
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
@@ -67,10 +68,8 @@ def _intelligent_tiering_cost(total_gb: float,
                               eligible_objects: int,
                               cold30: float,
                               cold90: float) -> float:
-    # Clamp inputs
     cold30 = max(0.0, min(1.0, cold30))
     cold90 = max(0.0, min(cold30, cold90))
-    # Fractions across IT storage classes
     f_fa = 1.0 - cold30
     f_ia = cold30 - cold90
     f_aia = cold90
@@ -81,6 +80,48 @@ def _intelligent_tiering_cost(total_gb: float,
     monitor = (float(eligible_objects) / 1000.0) * IT_MONITOR_FEE_PER_1000
     return storage + monitor
 
+def _parse_date_loose(s: Any) -> Optional[date]:
+    """Accepts 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS', and ISO-like variants with 'Z'."""
+    if not isinstance(s, str):
+        return None
+    try:
+        return datetime.strptime(s[:10], "%Y-%m-%d").date()
+    except Exception:
+        pass
+    try:
+        cleaned = s.replace("Z", "+00:00")
+        return datetime.fromisoformat(cleaned).date()
+    except Exception:
+        return None
+
+def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> str:
+    """
+    Use the MOST RECENT date:
+      <=30d -> 'frequent'
+      <=60d -> 'infrequent'
+      <=90d -> 'archive'
+      >90d or no valid dates -> 'archive'
+    Returns just the tier string.
+    """
+    dates: List[date] = []
+    if isinstance(last_checked, list):
+        for item in last_checked:
+            d = _parse_date_loose(item)
+            if d:
+                dates.append(d)
+
+    if not dates:
+        return "archive"
+
+    most_recent = max(dates)
+    delta = (today - most_recent).days
+
+    if delta <= 30:
+        return "frequent"
+    elif delta <= 60:
+        return "infrequent"
+    else:
+        return "archive"
 
 class S3IntelligentTiering(S3AbandonedBucketsBase):
     SUPPORTED_CLOUD_TYPES = ["aws_cnr"]
@@ -105,7 +146,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "bucket_name": {"$ifNull": ["$name", "$cloud_resource_id"]},
                 "it_status_bucket": "$meta.it_status_bucket",
                 "tiers": "$meta.tiers",
-                "object_count": "$meta.object_count",  # for IT monitoring fee
+                "object_count": "$meta.object_count",
                 "pool_id": 1,
                 "region": 1,
                 "last_checked": "$meta.last_checked"
@@ -121,9 +162,20 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
         total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
-
-        # If we can't see any size, skip as non-candidate
         if total_gb <= 0.0:
+            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+
+        today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
+        access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
+
+        if access_tier == "frequent":
+            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+
+        has_standard_positive = any(
+            (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
+            for x in tiers_gb
+        )
+        if not has_standard_positive:
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
 
         eligible_objects = int(doc.get("object_count") or 0)
@@ -134,12 +186,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         return {"is_candidate": True, "saving": saving, "is_with_it": False}
 
     def _cloud_account_names(self) -> Dict[str, str]:
-        # get_cloud_accounts may return either dicts or just IDs; be defensive
         try:
             out: Dict[str, str] = {}
             for a in self.get_cloud_accounts():
                 if isinstance(a, str):
-                    # No name info available; keep mapping empty
                     continue
                 if isinstance(a, dict):
                     aid = a.get("id") or a.get("_id")
@@ -164,11 +214,9 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         ca_names = self._cloud_account_names()
 
         items: List[Dict[str, Any]] = []
-        total_saving = 0.0
-        total_count = 0
 
         for ca in self.get_cloud_accounts():
-            ca_id = self._extract_cloud_account_id(ca)  # <-- FIX: support str or dict
+            ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
                 LOG.warning("Skipping cloud account with unknown structure: %r", ca)
                 continue
@@ -183,9 +231,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 eval_res = self._candidate_and_saving(d)
                 if not eval_res["is_candidate"]:
                     continue
-
-                total_count += 1
-                total_saving += eval_res["saving"]
 
                 bucket_name = d.get("bucket_name")
                 items.append({
@@ -204,8 +249,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "saving": round(eval_res["saving"], 2),
                 })
 
-        # If your framework expects a pure list, keep returning `items`.
-        # If a summary wrapper is needed, adapt here.
         return items
 
 
