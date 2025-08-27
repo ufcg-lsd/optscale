@@ -801,7 +801,7 @@ class Aws(S3CloudMixin):
                         {'Name': 'BucketName', 'Value': bucket_name},
                         {'Name': 'FilterId', 'Value': 'EntireBucket'}
                     ],
-                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
+                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=90),
                     EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
                     Period=24 * 60 * 60,
                     Statistics=['Sum']
@@ -821,7 +821,7 @@ class Aws(S3CloudMixin):
                     LOG.info(f"[IT] Bucket {bucket_name} had object GETs on dates: {metadata['last_checked']}")
                 else:
                     metadata['last_checked'] = []
-                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 30 days")
+                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 90 days")
                     
             except Exception as exc:
                 LOG.warning(f"[IT] Failed to get {get_requests_metric} metrics for bucket {bucket_name}: {str(exc)}")
