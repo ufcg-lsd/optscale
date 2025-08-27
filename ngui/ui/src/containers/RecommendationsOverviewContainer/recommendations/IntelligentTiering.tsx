@@ -15,10 +15,6 @@ const columns = [
     headerDataTestId: "intelligent_tiering_location",
     typeAccessor: "cloud_type"
   }),
-  poolOwner({
-    headerDataTestId: "intelligent_tiering_pool_owner",
-    id: "pool/owner"
-  }),
   {
     header: (
       <TextWithDataTestId dataTestId="intelligent_tiering_is_with_intelligent_tiering">
