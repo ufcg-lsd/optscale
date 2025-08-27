@@ -3,7 +3,7 @@ import RecommendationListItemResourceLabel from "components/RecommendationListIt
 import TextWithDataTestId from "components/TextWithDataTestId";
 import FormattedMoney from "components/FormattedMoney";
 import { AWS_S3 } from "hooks/useRecommendationServices";
-import { detectedAt, poolOwner, resource, resourceLocation } from "utils/columns";
+import { detectedAt, poolOwner, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
@@ -32,7 +32,11 @@ const columns = [
       return <FormattedMessage id={value ? "yes" : "no"} />;
     }
   },
-  detectedAt({ headerDataTestId: "intelligent_tiering_detected_at" })
+  detectedAt({ headerDataTestId: "intelligent_tiering_detected_at" }),
+  possibleMonthlySavings({
+    headerDataTestId: "intelligent_tiering_savings",
+    defaultSort: "desc"
+  })
 ];
 
 class IntelligentTiering extends BaseRecommendation {
