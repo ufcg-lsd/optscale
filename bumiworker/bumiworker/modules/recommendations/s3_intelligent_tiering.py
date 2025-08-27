@@ -287,7 +287,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     continue
 
                 items.append({
-                    "resource_id": d.get("_id"),
+                    "resource_id": d.get("resource_id"),
                     "resource_name":  d.get("bucket_name"),
                     "cloud_resource_id":  d.get("bucket_name"),
                     "region": d.get("region"),
