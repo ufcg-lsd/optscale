@@ -64,22 +64,6 @@ def _current_monthly_cost(total_gb: float, tiers_gb: List[Dict[str, float]]) -> 
     return total_gb * PRICES["Standard"]
 
 
-def _intelligent_tiering_cost(total_gb: float,
-                              eligible_objects: int,
-                              cold30: float,
-                              cold90: float) -> float:
-    cold30 = max(0.0, min(1.0, cold30))
-    cold90 = max(0.0, min(cold30, cold90))
-    f_fa = 1.0 - cold30
-    f_ia = cold30 - cold90
-    f_aia = cold90
-
-    storage = total_gb * (
-        f_fa * PRICES["IT_FA"] + f_ia * PRICES["IT_IA"] + f_aia * PRICES["IT_AIA"]
-    )
-    monitor = (float(eligible_objects) / 1000.0) * IT_MONITOR_FEE_PER_1000
-    return storage + monitor
-
 def _parse_date_loose(s: Any) -> Optional[date]:
     """Accepts 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS', and ISO-like variants with 'Z'."""
     if not isinstance(s, str):
@@ -93,6 +77,7 @@ def _parse_date_loose(s: Any) -> Optional[date]:
         return datetime.fromisoformat(cleaned).date()
     except Exception:
         return None
+
 
 def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> str:
     """
@@ -122,6 +107,36 @@ def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> s
         return "infrequent"
     else:
         return "archive"
+
+
+def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
+    """
+    Map access_tier to the corresponding Intelligent-Tiering storage price per GB.
+      frequent   -> IT_FA
+      infrequent -> IT_IA
+      archive    -> IT_AIA
+    Fallback to IT_FA if something unexpected arrives.
+    """
+    tier = (access_tier or "").lower()
+    if tier == "infrequent":
+        return PRICES["IT_IA"]
+    if tier == "archive":
+        return PRICES["IT_AIA"]
+    return PRICES["IT_FA"]
+
+
+def _intelligent_tiering_cost_by_access(total_gb: float,
+                                        eligible_objects: int,
+                                        access_tier: str) -> float:
+    """
+    New IT cost model:
+        IT cost = monitoring + (price_per_gb(access_tier) * total_gb)
+    """
+    price_per_gb = _it_price_per_gb_for_access_tier(access_tier)
+    storage = total_gb * price_per_gb
+    monitor = (float(eligible_objects) // 1000.0) * IT_MONITOR_FEE_PER_1000
+    return storage + monitor
+
 
 class S3IntelligentTiering(S3AbandonedBucketsBase):
     SUPPORTED_CLOUD_TYPES = ["aws_cnr"]
@@ -180,7 +195,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         eligible_objects = int(doc.get("object_count") or 0)
         cost_now = _current_monthly_cost(total_gb, tiers_gb)
-        cost_it = _intelligent_tiering_cost(total_gb, eligible_objects, DEFAULT_COLD30, DEFAULT_COLD90)
+        cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
         saving = max(0.0, cost_now - cost_it)
 
         return {"is_candidate": True, "saving": saving, "is_with_it": False}
