@@ -23,7 +23,6 @@ DEFAULT_COLD30 = 0.60
 DEFAULT_COLD90 = 0.40
 RETURN_LIMIT = 3
 BYTES_PER_GIB = 1024 ** 3
-TWO_MEBI = 2 * 1024 * 1024
 
 
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
@@ -161,9 +160,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
         object_count = int(doc.get("object_count") or 0)
         if object_count <= 0:
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
-        avg_object_bytes = (total_gb * BYTES_PER_GIB) / float(object_count)
-        if avg_object_bytes < TWO_MEBI:
             return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
         has_standard_positive = any(
             (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
