@@ -2131,7 +2131,7 @@ class Aws(S3CloudMixin):
             LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
             return {}
 
-    def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
+    def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
 
         if not log_group_names:
             return {}
