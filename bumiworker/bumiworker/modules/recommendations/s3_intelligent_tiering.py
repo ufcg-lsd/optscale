@@ -3,29 +3,18 @@ from typing import Any, Dict, List, Union, Optional
 from datetime import datetime, date
 
 from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
+from .constants import (
+    PRICES,
+    IT_MONITOR_FEE_PER_1000,
+    RETURN_LIMIT,
+    BYTES_PER_GIB,
+    ACCESS_PATTERNS,
+    IT_POSITIVE_STATUS,
+    FREQUENT_TIER_THRESHOLD_DAYS,
+    INFREQUENT_TIER_THRESHOLD_DAYS,
+)
 
 LOG = logging.getLogger(__name__)
-
-PRICES = {
-    "Standard": 0.023,
-    "IT_FA": 0.023,                 # Intelligent-Tiering Frequent Access
-    "IT_IA": 0.0125,                # Intelligent-Tiering Infrequent Access
-    "IT_AIA": 0.0040,               # Intelligent-Tiering Archive Instant Access
-    "Glacier": 0.0036,
-    "Glacier Flexible Retrieval": 0.0036,
-    "Glacier Instant Retrieval": 0.0040,
-    "Glacier Deep Archive": 0.00099,
-    "Deep Archive": 0.00099,
-}
-
-IT_MONITOR_FEE_PER_1000 = 0.0000025
-
-RETURN_LIMIT = 3
-BYTES_PER_GIB = 1024 ** 3
-ACCESS_PATTERNS = ["frequent", "infrequent", "archive"]
-IT_POSITIVE_STATUS = {"enabled", "active", "on", "true"}
-FREQUENT_TIER_THRESHOLD_DAYS = 30
-INFREQUENT_TIER_THRESHOLD_DAYS = 60
 
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
     """
