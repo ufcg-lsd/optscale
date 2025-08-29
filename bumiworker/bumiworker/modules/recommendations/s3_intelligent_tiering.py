@@ -6,7 +6,6 @@ from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
 
 LOG = logging.getLogger(__name__)
 
-# --- Pricing references (USD per GiB-month) used to estimate current and IT costs ---
 PRICES = {
     "Standard": 0.023,
     "IT_FA": 0.023,                 # Intelligent-Tiering Frequent Access
@@ -19,13 +18,14 @@ PRICES = {
     "Deep Archive": 0.00099,
 }
 
-IT_MONITOR_FEE_PER_1000 = 0.0025
+IT_MONITOR_FEE_PER_1000 = 0.0000025
 
-DEFAULT_COLD30 = 0.60
-DEFAULT_COLD90 = 0.40
 RETURN_LIMIT = 3
 BYTES_PER_GIB = 1024 ** 3
-
+ACCESS_PATTERNS = ["frequent", "infrequent", "archive"]
+IT_POSITIVE_STATUS = {"enabled", "active", "on", "true"}
+FREQUENT_TIER_THRESHOLD_DAYS = 30
+INFREQUENT_TIER_THRESHOLD_DAYS = 60
 
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
     """
@@ -100,15 +100,15 @@ def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> s
             if d:
                 dates.append(d)
     if not dates:
-        return "archive"
+        return ACCESS_PATTERNS[2]
     most_recent = max(dates)
     delta = (today - most_recent).days
-    if delta <= 30:
-        return "frequent"
-    elif delta <= 60:
-        return "infrequent"
+    if delta <= FREQUENT_TIER_THRESHOLD_DAYS:
+        return ACCESS_PATTERNS[0]
+    elif delta <= INFREQUENT_TIER_THRESHOLD_DAYS:
+        return ACCESS_PATTERNS[1]
     else:
-        return "archive"
+        return ACCESS_PATTERNS[2]
 
 
 def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
@@ -116,9 +116,9 @@ def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
     Map inferred access class to the corresponding IT storage price.
     """
     tier = (access_tier or "").lower()
-    if tier == "infrequent":
+    if tier == ACCESS_PATTERNS[1]:
         return PRICES["IT_IA"]
-    if tier == "archive":
+    if tier == ACCESS_PATTERNS[2]:
         return PRICES["IT_AIA"]
     return PRICES["IT_FA"]
 
@@ -132,7 +132,7 @@ def _intelligent_tiering_cost_by_access(total_gb: float, eligible_objects: int, 
     """
     price_per_gb = _it_price_per_gb_for_access_tier(access_tier)
     storage = total_gb * price_per_gb
-    monitor = (float(eligible_objects) / 1000.0) * IT_MONITOR_FEE_PER_1000
+    monitor = float(eligible_objects) * IT_MONITOR_FEE_PER_1000
     return storage + monitor
 
 
@@ -145,9 +145,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
     def __init__(self, organization_id, config_client, created_at):
         super().__init__(organization_id, config_client, created_at)
-        # Options:
-        #   - excluded_pools: dict-like of pool_ids to skip
-        #   - skip_cloud_accounts: list of account ids to skip
         self.option_ordered_map = {
             "excluded_pools": {"default": {}, "clean_func": self.clean_excluded_pools},
             "skip_cloud_accounts": {"default": []},
@@ -193,38 +190,40 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
           5) Require some 'Standard' GB present (typical migration target).
           6) Saving = max(0, current_cost - projected_IT_cost).
         """
+        false_candidate = {"is_candidate": False, "saving": 0.0, "is_with_it": True}
+
         it_status = str(doc.get("it_status_bucket", "")).lower()
-        it_on = it_status in {"enabled", "active", "on", "true"}
+        it_on = it_status in IT_POSITIVE_STATUS
         if it_on:
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": True}
+            return false_candidate
 
         tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
         total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
-        if total_gb <= 0.0:  # 2) require positive size
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+        if total_gb <= 0.0:
+            return false_candidate
 
         today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
         access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
-        if access_tier == "frequent":  # 3) do not recommend IT for hot buckets
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+        if access_tier == "frequent":
+            return false_candidate
 
         has_lifecycle_flag = bool(doc.get("has_lifecycle"))
         lifecycle_rules = doc.get("lifecycle_rules")
         if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+            return false_candidate
 
         object_count = int(doc.get("object_count") or 0)
         if object_count <= 0:
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+            return false_candidate
 
         has_standard_positive = any(
             (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
             for x in tiers_gb
         )
         if not has_standard_positive:
-            return {"is_candidate": False, "saving": 0.0, "is_with_it": False}
+            return false_candidate
 
-        eligible_objects = object_count  # used for IT monitoring fee
+        eligible_objects = object_count
         cost_now = _current_monthly_cost(total_gb, tiers_gb)
         cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
 
@@ -277,19 +276,15 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             if ca_id in skip_accounts:
                 continue
 
-            # Pull only needed fields from Mongo to evaluate each bucket
             docs = self._aggregate_resources(ca_id)
             for d in docs:
-                # Honor pool exclusions (policy knob)
                 if excluded_pools and d.get("pool_id") in excluded_pools:
                     continue
 
-                # Decide candidate + compute saving
                 eval_res = self._candidate_and_saving(d)
                 if not eval_res["is_candidate"]:
                     continue
 
-                # Assemble final item; saving rounded at presentation layer
                 items.append({
                     "resource_id": d.get("resource_id"),
                     "resource_name":  d.get("bucket_name"),
