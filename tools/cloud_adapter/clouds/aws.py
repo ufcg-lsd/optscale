@@ -2139,7 +2139,7 @@ class Aws(S3CloudMixin):
         metrics_to_fetch = {
             'ingestion': {
                 'MetricName': 'IncomingBytes',
-                'Period': 3600,
+                'Period': 86400,
                 'Stat': 'Sum',
                 'Unit': 'Bytes'
             },
@@ -2151,9 +2151,15 @@ class Aws(S3CloudMixin):
             },
             'incoming_events': {
                 'MetricName': 'IncomingLogEvents',
-                'Period': 3600,
+                'Period': 86400,
                 'Stat': 'Sum',
                 'Unit': 'Count'
+            },
+            'query': {
+                'MetricName': 'QueryBytes',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
             }
         }
         
