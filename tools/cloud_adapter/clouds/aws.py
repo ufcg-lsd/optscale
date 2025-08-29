@@ -2342,6 +2342,12 @@ class Aws(S3CloudMixin):
                 'Period': 86400,
                 'Stat': 'Sum',
                 'Unit': 'Count'
+            },
+            'query': {
+                'MetricName': 'QueryBytes',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
             }
         }
         
