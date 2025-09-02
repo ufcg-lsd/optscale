@@ -23,10 +23,12 @@ class ResourceTypes(Enum):
 
     @classmethod
     def has_value(cls, value):
+        """Return True if value is a valid enum value for ResourceTypes."""
         return value in cls._value2member_map_
 
     @classmethod
     def objects(cls):
+        """Yield enum members (iterator) for ResourceTypes."""
         return (cls._member_map_[name] for name in cls._member_names_)
 
 
@@ -40,6 +42,7 @@ class CloudResource:
     def __init__(self, cloud_resource_id=None, cloud_account_id=None,
                  region=None, organization_id=None,
                  pool_id=None, owner_id=None, tags=None, cloud_console_link=None):
+        """Initialize common fields for cloud resources."""
         self.cloud_resource_id = cloud_resource_id
         self.cloud_account_id = cloud_account_id
         self.region = region
@@ -60,6 +63,7 @@ class CloudResource:
         self.cloud_type = None  # placeholder
 
     def _is_field(self, attribute):
+        """Return True if attribute is a user-visible non-callable field."""
         if attribute.startswith('_'):
             return False
         if callable(getattr(self, attribute)):
@@ -67,11 +71,16 @@ class CloudResource:
         return True
 
     def fields(self, meta_fields_incl=True):
+        """Return set of field names for the resource.
+
+        If meta_fields_incl is False the fields from meta() are excluded.
+        """
         exclusions = {} if meta_fields_incl else self.meta
         return {attr for attr in dir(self)
                 if self._is_field(attr) and attr not in exclusions}
 
     def to_dict(self):
+        """Serialize resource fields (excluding meta fields) to a dict."""
         result = {}
         for attr in self.fields(meta_fields_incl=False):
             result[attr] = getattr(self, attr)
@@ -79,12 +88,13 @@ class CloudResource:
 
     @property
     def meta(self):
+        """Return meta dictionary for this resource (cloud console link by default)."""
         return {
             'cloud_console_link': self.cloud_console_link,
         }
 
     def post_discover(self):
-        # Method that will be called after resource has been discovered
+        """Hook called after resource discovery (no-op by default)."""
         pass
 
 
@@ -102,6 +112,7 @@ class InstanceResource(CloudResource):
                  preinstalled=None, vpc_id=None, vpc_name=None, folder_id=None,
                  zone_id=None, cpu_fraction=None, ram=None, platform_id=None,
                  platform_name=None, architecture=None, **kwargs):
+        """Initialize instance-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.flavor = flavor
@@ -125,11 +136,13 @@ class InstanceResource(CloudResource):
         self.platform_name = platform_name
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Instance {0} name={1} flavor={2} stopped_allocated={3}'.format(
             self.cloud_resource_id, self.name, self.flavor, self.stopped_allocated)
 
     @property
     def meta(self):
+        """Return meta information for instance resources."""
         meta = super().meta
         meta.update({
             'stopped_allocated': self.stopped_allocated,
@@ -161,6 +174,7 @@ class VolumeResource(CloudResource):
     def __init__(self, name=None, size=None, volume_type=None, attached=False,
                  last_attached=0, snapshot_id=None, folder_id=None,
                  zone_id=None, image_id=None, **kwargs):
+        """Initialize volume-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.size = size
@@ -173,12 +187,14 @@ class VolumeResource(CloudResource):
         self.image_id = image_id if image_id != '' else None
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Volume {0} size={1} type={2} attached={3} snapshot_id={4}'.format(
             self.cloud_resource_id, self.size, self.volume_type,
             self.attached, self.snapshot_id)
 
     @property
     def meta(self):
+        """Return meta information for volume resources."""
         meta = super().meta
         meta.update({
             'attached': self.attached,
@@ -199,6 +215,7 @@ class SnapshotResource(CloudResource):
 
     def __init__(self, name=None, size=None, description=None, state=None,
                  volume_id=None, last_used=0, folder_id=None, **kwargs):
+        """Initialize snapshot-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.size = size
@@ -210,6 +227,7 @@ class SnapshotResource(CloudResource):
 
     @property
     def meta(self):
+        """Return meta information for snapshot resources."""
         meta = super().meta
         meta.update({
             'size': self.size,
@@ -222,6 +240,7 @@ class SnapshotResource(CloudResource):
         return meta
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Snapshot {0} name={1} size={2} state={3} volume_id={4} info={5}'.format(
             self.cloud_resource_id, self.name, self.size, self.state,
             self.volume_id, self.description)
@@ -232,6 +251,7 @@ class BucketResource(CloudResource):
 
     def __init__(self, name=None, is_public_policy=False, is_public_acls=False,
                  folder_id=None, **kwargs):
+        """Initialize bucket-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.is_public_policy = is_public_policy
@@ -239,12 +259,14 @@ class BucketResource(CloudResource):
         self.folder_id = folder_id
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Bucket {0} name={1} is_public_policy={2} is_public_acls={3}'.format(
             self.cloud_resource_id, self.name, self.is_public_policy,
             self.is_public_acls)
 
     @property
     def meta(self):
+        """Return meta information for bucket resources."""
         meta = super().meta
         meta.update({
             'is_public_policy': self.is_public_policy,
@@ -263,6 +285,7 @@ class PodResource(CloudResource):
                  host_ip=None, instance_address=None, k8s_node=None,
                  k8s_namespace=None, pod_ip=None, k8s_service=None,
                  k8s_cluster=None, **kwargs):
+        """Initialize Kubernetes pod-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.created_by_kind = created_by_kind
@@ -276,10 +299,12 @@ class PodResource(CloudResource):
         self.k8s_cluster = k8s_cluster
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Pod {0} name {1} node={2}'.format(self.cloud_resource_id, self.name, self.k8s_node)
 
     @property
     def meta(self):
+        """Return meta information for pod resources."""
         return {
             'pod_ip': self.pod_ip,
             'instance_address': self.instance_address,
@@ -287,6 +312,7 @@ class PodResource(CloudResource):
         }
 
     def to_dict(self):
+        """Serialize pod resource to dict and remove cloud_console_link."""
         result = super().to_dict()
         result.pop('cloud_console_link')
         return result
@@ -297,6 +323,7 @@ class SnapshotChainResource(CloudResource):
 
     def __init__(self, size=None, volume_id=None, snapshots=None, last_used=0,
                  **kwargs):
+        """Initialize snapshot chain-specific fields."""
         super().__init__(**kwargs)
         self.size = size
         self.volume_id = volume_id
@@ -304,12 +331,14 @@ class SnapshotChainResource(CloudResource):
         self.last_used = last_used
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'SnapshotChain {0} size={1} volume_id={2} snap_ids={3}'.format(
             self.cloud_resource_id, self.size, self.volume_id,
             [x['cloud_resource_id'] for x in self.snapshots])
 
     @property
     def meta(self):
+        """Return meta information for snapshot chain resources."""
         meta = super().meta
         meta.update({
             'volume_id': self.volume_id,
@@ -331,6 +360,7 @@ class RdsInstanceResource(CloudResource):
                  cloud_created_at=0, cpu_count=None, vpc_id=None,
                  vpc_name=None, folder_id=None, source_cluster_id=None,
                  ram=None, platform_name=None, **kwargs):
+        """Initialize RDS instance-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.flavor = flavor
@@ -349,11 +379,13 @@ class RdsInstanceResource(CloudResource):
         self.platform_name = platform_name
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'RDS Instance {0} name={1} flavor={2}'.format(
             self.cloud_resource_id, self.name, self.flavor)
 
     @property
     def meta(self):
+        """Return meta information for RDS instance resources."""
         meta = super().meta
         meta.update({
             'zone_id': self.zone_id,
@@ -379,6 +411,7 @@ class IpAddressResource(CloudResource):
 
     def __init__(self, name=None, instance_id=None, available=False,
                  last_used=0, folder_id=None, zone_id=None, **kwargs):
+        """Initialize IP address-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.instance_id = instance_id
@@ -388,11 +421,13 @@ class IpAddressResource(CloudResource):
         self.zone_id = zone_id
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'IP Address {0} name={1} instance_id={2} available={3} last_used={4}'.format(
             self.cloud_resource_id, self.name, self.instance_id, self.available, self.last_used)
 
     @property
     def meta(self):
+        """Return meta information for IP address resources."""
         meta = super().meta
         meta.update({
             'available': self.available,
@@ -411,6 +446,7 @@ class ImageResource(CloudResource):
     def __init__(self, name=None, block_device_mappings=None,
                  cloud_created_at=None, folder_id=None, snapshot_id=None,
                  disk_size=None, **kwargs):
+        """Initialize image-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.block_device_mappings = block_device_mappings or []
@@ -420,6 +456,7 @@ class ImageResource(CloudResource):
         self.disk_size = disk_size
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return (
             'Image {0} name={1} block_device_mappings={2} '
             'cloud_created_at={3} snapshot_id={4} disk_size={5}'.format(
@@ -428,6 +465,7 @@ class ImageResource(CloudResource):
 
     @property
     def meta(self):
+        """Return meta information for image resources."""
         meta = super().meta
         meta.update({
             'block_device_mappings': self.block_device_mappings,
@@ -445,6 +483,7 @@ class SavingsPlanResource(CloudResource):
     def __init__(self, payment_option=None, offering_type=None,
                  purchase_term=None, applied_region=None, start=None, end=None,
                  **kwargs):
+        """Initialize savings plan-specific fields."""
         super().__init__(**kwargs)
         self.payment_option = payment_option
         self.offering_type = offering_type
@@ -454,6 +493,7 @@ class SavingsPlanResource(CloudResource):
         self.end = end
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return (
             'Savings Plan {0} payment_option={1} offering_type={2} '
             'purchase_term={3} applied_region={4} start={5} end={6}'.format(
@@ -462,6 +502,7 @@ class SavingsPlanResource(CloudResource):
 
     @property
     def meta(self):
+        """Return meta information for savings plan resources."""
         meta = super().meta
         meta.update({
             'payment_option': self.payment_option,
@@ -481,6 +522,7 @@ class ReservedInstancesResource(CloudResource):
     def __init__(self, payment_option=None, offering_type=None,
                  purchase_term=None, start=None, end=None, platform=None,
                  instance_type=None, zone=None, **kwargs):
+        """Initialize reserved instances-specific fields."""
         super().__init__(**kwargs)
         self.payment_option = payment_option
         self.offering_type = offering_type
@@ -492,6 +534,7 @@ class ReservedInstancesResource(CloudResource):
         self.zone = zone
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return (
             'Reserved Instances {0} payment_option={1} offering_type={2} '
             'purchase_term={3} start={4} end={5}'.format(
@@ -500,6 +543,7 @@ class ReservedInstancesResource(CloudResource):
 
     @property
     def meta(self):
+        """Return meta information for reserved instance resources."""
         meta = super().meta
         meta.update({
             'payment_option': self.payment_option,
@@ -519,6 +563,7 @@ class LoadBalancerResource(CloudResource):
 
     def __init__(self, name=None, vpc_id=None, security_groups=None,
                  category=None, **kwargs):
+        """Initialize load balancer-specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.vpc_id = vpc_id
@@ -526,11 +571,13 @@ class LoadBalancerResource(CloudResource):
         self.category = category
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Load Balancer {0} name={1}'.format(
             self.cloud_resource_id, self.name)
 
     @property
     def meta(self):
+        """Return meta information for load balancer resources."""
         meta = super().meta
         meta.update({
             'vpc_id': self.vpc_id,
@@ -547,6 +594,7 @@ class LogGroupResource(CloudResource):
 
     def __init__(self, name=None, stored_bytes=None, retention_in_days=None,
                  creation_time=None, arn=None, kms_key_id=None, metrics=None, **kwargs):
+        """Initialize CloudWatch Log Group specific fields."""
         super().__init__(**kwargs)
         self.name = name
         self.stored_bytes = stored_bytes
@@ -557,9 +605,15 @@ class LogGroupResource(CloudResource):
         self.metrics = metrics or {}
 
     def __repr__(self):
+        """Return short textual representation for debugging."""
         return 'Log Group {0} name={1}'.format(self.cloud_resource_id, self.name)
 
     def _datapoint_value(dp: dict):
+        """Return the numeric value found in a CloudWatch datapoint dict.
+
+        Checks common keys first then scans for numeric values excluding
+        Timestamp/Unit.
+        """
         for k in ('Sum', 'Maximum', 'Average', 'Minimum', 'SampleCount', 'Value'):
             if k in dp:
                 return dp[k]
@@ -570,6 +624,7 @@ class LogGroupResource(CloudResource):
 
     @property
     def meta(self):
+        """Return meta information for log group resources, including metrics."""
         meta = super().meta
         creation_iso = None
         if isinstance(self.creation_time, datetime):
