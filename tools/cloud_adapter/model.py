@@ -1,5 +1,32 @@
 from enum import Enum
 
+"""
+Domain models for discovered cloud resources.
+
+This module defines lightweight dataclasses (via __slots__) representing
+cloud resources discovered by the cloud adapter (instances, volumes,
+snapshots, buckets, etc.). Each resource exposes:
+- attributes used during discovery and post-processing,
+- a `meta` property returning fields excluded from general serialization,
+- a `to_dict()` method for converting instance state to a dict.
+
+Bucket-related fields include intelligent-tiering and storage-metric
+attributes populated by AWS-specific discovery code:
+- intelligent_tiering_enabled (bool): whether any Intelligent-Tiering
+  configuration exists for the bucket.
+- intelligent_tiering_configs (list): raw IntelligentTieringConfigurationList.
+- lifecycle_rules (list): lifecycle configuration rules (if present).
+- storage_class_analysis (list): analytics configs for storage-class analysis.
+- metrics_configurations (list): metrics configs attached to the bucket.
+- total_size_bytes (int|None): aggregated bucket size in bytes (if available).
+- object_count (int|None): estimated/exact number of objects in the bucket.
+- it_status_bucket (str|None): 'enabled' if IT applies to entire bucket.
+- tiers (list): per-storage-tier sizes (e.g. Standard, Glacier).
+- last_checked (list): dates (YYYY-MM-DD) when GET activity was observed.
+
+Note: the model layer is cloud-agnostic; AWS-specific discovery populates the
+bucket intelligent-tiering and CloudWatch-derived metrics.
+"""
 
 NONEXISTENT_VOLUME_ID = 'vol-ffffffff'
 
@@ -259,23 +286,45 @@ class BucketResource(CloudResource):
                 last_checked=None,
                 **kwargs
             ):
-        
-                super().__init__(**kwargs)
-                self.name = name
-                self.is_public_policy = is_public_policy
-                self.is_public_acls = is_public_acls
-                self.folder_id = folder_id
+        """
+        Representation of an object storage bucket (S3 / compatible).
 
-                self.intelligent_tiering_enabled = intelligent_tiering_enabled
-                self.intelligent_tiering_configs = intelligent_tiering_configs or []
-                self.lifecycle_rules = lifecycle_rules or []
-                self.storage_class_analysis = storage_class_analysis or []
-                self.metrics_configurations = metrics_configurations or []
-                self.total_size_bytes = total_size_bytes
-                self.object_count = object_count
-                self.it_status_bucket = it_status_bucket
-                self.tiers = tiers or []
-                self.last_checked = last_checked or []
+        This model stores both generic bucket metadata (name, public flags)
+        and intelligent-tiering / storage-analysis attributes that are
+        populated by cloud-specific discovery routines (for example,
+        AWS provider populates these using S3 and CloudWatch metrics).
+
+        Parameters
+        - name (str): bucket name
+        - is_public_policy (bool): True if bucket policy exposes public access
+        - is_public_acls (bool): True if bucket ACLs expose public access
+        - intelligent_tiering_enabled (bool): presence of any IT configuration
+        - intelligent_tiering_configs (list): raw IT configuration entries
+        - lifecycle_rules (list): lifecycle rules for the bucket
+        - storage_class_analysis (list): analytics configuration entries
+        - metrics_configurations (list): metrics configuration entries
+        - total_size_bytes (int|None): aggregated size in bytes (CloudWatch)
+        - object_count (int|None): number of objects (estimate or exact)
+        - it_status_bucket (str|None): 'enabled' if IT applies to whole bucket
+        - tiers (list): list of [display_name, size_gb] per storage tier
+        - last_checked (list): dates strings when object GETs were observed
+        """
+         super().__init__(**kwargs)
+         self.name = name
+         self.is_public_policy = is_public_policy
+         self.is_public_acls = is_public_acls
+         self.folder_id = folder_id
+
+         self.intelligent_tiering_enabled = intelligent_tiering_enabled
+         self.intelligent_tiering_configs = intelligent_tiering_configs or []
+         self.lifecycle_rules = lifecycle_rules or []
+         self.storage_class_analysis = storage_class_analysis or []
+         self.metrics_configurations = metrics_configurations or []
+         self.total_size_bytes = total_size_bytes
+         self.object_count = object_count
+         self.it_status_bucket = it_status_bucket
+         self.tiers = tiers or []
+         self.last_checked = last_checked or []
 
     def __repr__(self):
         return (

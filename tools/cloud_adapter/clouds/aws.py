@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 from datetime import timedelta
+import time
+from concurrent.futures import as_completed
+from datetime import timedelta
 import enum
+import urllib.parse
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
 from functools import wraps
@@ -183,7 +187,8 @@ class Aws(S3CloudMixin):
             SnapshotResource: self.snapshot_discovery_calls,
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
-            LoadBalancerResource: self.load_balancer_discovery_calls
+            LoadBalancerResource: self.load_balancer_discovery_calls,
+            LogGroupResource: self.log_group_discovery_calls
         }
 
     @property
@@ -201,6 +206,10 @@ class Aws(S3CloudMixin):
     @property
     def s3_resource(self):
         return self.session.resource('s3')
+    
+    @property
+    def logs(self):
+        return self.session.client('logs')
 
     @property
     def cf(self):
@@ -462,6 +471,13 @@ class Aws(S3CloudMixin):
         """
         return [(self.discover_region_snapshots, (r,))
                 for r in self.list_regions()]
+    
+    def log_group_discovery_calls(self):
+        """
+        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+        """
+        return [(self.discover_region_log_groups, (r,))
+                for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
@@ -471,6 +487,23 @@ class Aws(S3CloudMixin):
             raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
+        """
+        Inspect S3 bucket public settings.
+
+        This helper inspects a bucket's public configuration in three places:
+        - PublicAccessBlock (BlockPublicPolicy / BlockPublicAcls)
+        - Bucket policy public status (get_bucket_policy_status)
+        - Bucket ACLs (get_bucket_acl)
+
+        It returns a dict with:
+        - is_public_policy: True if bucket policy makes the bucket public
+        - is_public_acls: True if any ACL grant makes the bucket public
+        - public_access_block: raw result from get_public_access_block (may be empty)
+
+        Note: method tolerates missing configurations and maps known ClientError
+        codes (e.g. NoSuchPublicAccessBlockConfiguration, NoSuchBucketPolicy)
+        to non-fatal behavior.
+        """
         
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
@@ -534,7 +567,49 @@ class Aws(S3CloudMixin):
         return result
     
     def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
+        """
+        Gather Intelligent-Tiering and related storage metadata for a bucket.
 
+        The returned metadata is a dictionary with the following keys:
+        - intelligent_tiering_enabled (bool): whether any Intelligent-Tiering
+          configuration exists for the bucket.
+        - intelligent_tiering_configs (list): raw IntelligentTieringConfigurationList.
+        - lifecycle_rules (list): bucket lifecycle configuration rules (if any).
+        - has_lifecycle (bool): True when lifecycle configuration exists.
+        - storage_class_analysis (list): analytics configuration list (if any).
+        - metrics_configurations (list): metrics configuration list (if any).
+        - total_size_bytes (int|None): aggregated bucket size in bytes (CloudWatch),
+          if available.
+        - object_count (int|None): estimated or exact number of objects in bucket.
+        - access_pattern (deprecated|placeholder): reserved for future use.
+        - it_status_bucket (str): 'enabled' when intelligent-tiering applies to
+          the full bucket, otherwise 'disabled'.
+        - tiers (list): list of [display_name, size_gb] pairs for detected storage tiers.
+        - last_checked (list): ISO dates (YYYY-MM-DD) where GET object activity was detected.
+
+        Behavior summary:
+        - Attempts to read Intelligent-Tiering configurations (list_bucket_intelligent_tiering_configurations)
+          and determines whether IT applies to the entire bucket (no filter or empty prefix).
+        - Reads lifecycle, analytics and metrics configs where available, ignoring
+          known "no such configuration" errors.
+        - Tries to obtain object count by sampling list_objects_v2 (MaxKeys=1000).
+          If sample returns 1000 items (potentially large bucket), falls back to CloudWatch
+          NumberOfObjects metric (7-day window). For smaller buckets it paginates to compute
+          an accurate object count.
+        - Uses CloudWatch BucketSizeBytes metric (7-day window) per storage type to
+          compute total_size_bytes and per-tier sizes.
+        - Collects last access dates using CloudWatch GetRequests (sum per day)
+          for the last 30 days and returns dates where Sum > 0 in last_checked.
+        - All network/cloud errors are caught and logged; missing data remains None
+          or empty lists as appropriate.
+
+        Parameters:
+        - s3_client: boto3 S3 client already configured for the bucket's region.
+        - bucket_name: name of the bucket to inspect.
+
+        Returns:
+        - dict described above containing metadata about intelligent-tiering and storage metrics.
+        """
         metadata = {
         'intelligent_tiering_enabled': False,
         'intelligent_tiering_configs': [],
@@ -801,7 +876,7 @@ class Aws(S3CloudMixin):
                         {'Name': 'BucketName', 'Value': bucket_name},
                         {'Name': 'FilterId', 'Value': 'EntireBucket'}
                     ],
-                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=90),
+                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
                     EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
                     Period=24 * 60 * 60,
                     Statistics=['Sum']
@@ -821,7 +896,7 @@ class Aws(S3CloudMixin):
                     LOG.info(f"[IT] Bucket {bucket_name} had object GETs on dates: {metadata['last_checked']}")
                 else:
                     metadata['last_checked'] = []
-                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 90 days")
+                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 30 days")
                     
             except Exception as exc:
                 LOG.warning(f"[IT] Failed to get {get_requests_metric} metrics for bucket {bucket_name}: {str(exc)}")
