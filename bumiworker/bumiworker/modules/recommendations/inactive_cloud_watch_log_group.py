@@ -15,7 +15,15 @@ SUPPORTED_CLOUD_TYPES = [
 DEFAULT_DAYS_THRESHOLD = 7
 DEFAULT_DEAD_RESOURCE_DAYS = 30
 DEFAULT_MIN_STORAGE_BYTES = 1024 * 1024  # 1 MB
+BYTE_TO_GB = 1024 ** 3
 
+# Pricing and computation constants for CloudWatch Logs
+# See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
+CWL_COMPRESSION_RATIO = 0.15  # Estimated compression ratio for ingested logs (~15% of original size)
+CWL_STORAGE_PRICE_PER_GB_MONTH = 0.03  # USD per GB-month (compressed)
+CWL_INGESTION_PRICE_PER_GB_30D = 0.50  # USD per GB for ingestion (last 30 days window)
+CWL_QUERY_PRICE_PER_GB_30D = 0.005  # USD per GB for query (last 30 days window)
+RECENT_WINDOW_DAYS = 30  # Days window for ingestion/query cost aggregation
 
 class InactiveCloudWatchLogGroup(ModuleBase):
     """
@@ -52,11 +60,12 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return metrics
         return (resource.get('meta', {}) or {}).get('metrics', {}) or {}
 
-    def _sum_metrics_30d(self, series: List[Dict]) -> float:
+    def _sum_metrics_recent_window(self, series: List[Dict]) -> float:
         """
-        Sum the metrics for the last 30 days.
+        Sum metric values within the recent window (RECENT_WINDOW_DAYS).
+        Values are assumed to be in bytes for ingestion/query metrics.
         """
-        cutoff_30d = datetime.utcnow() - timedelta(days=30)
+        cutoff_recent_window = datetime.utcnow() - timedelta(days=RECENT_WINDOW_DAYS)
         total = 0
         for m in series or []:
             ts = m.get('timestamp')
@@ -66,7 +75,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 t = datetime.fromisoformat(str(ts).replace('Z', '+00:00'))
             except Exception:
                 continue
-            if t >= cutoff_30d:
+            if t >= cutoff_recent_window:
                 total += m.get('value', 0) or 0
         return total
 
@@ -76,8 +85,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         Check if the log group is inactive.
 
         Log group is inactive if:
-            - No lifecycle rules AND no recent ingestion, OR
-            - High storage with no recent ingestion, OR
+            - No lifecycle rules AND 
+            - No recent ingestion, OR
             - Dead resource detected
         """
         try:
@@ -103,34 +112,18 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             metrics = self._get_metrics(resource)
             ingestion_metrics = metrics.get('IngestionBytes', []) or []
             incoming_events = metrics.get('IncomingLogEvents', []) or []
-            cutoff_date = datetime.utcnow() - timedelta(days=days_threshold)
 
-            def recent_sum(series):
-                """
-                Sum the metrics for the last 30 days.
-                """
-                total = 0   
-                for m in series:
-                    ts = m.get('timestamp')
-                    if not ts:
-                        continue
-                    try:
-                        t = datetime.fromisoformat(str(ts).replace('Z', '+00:00'))
-                    except Exception:
-                        continue
-                    if t >= cutoff_date:
-                        total += m.get('value', 0) or 0
-                return total
-
-            recent_ingestion = recent_sum(ingestion_metrics)
-            recent_events = recent_sum(incoming_events)
+            recent_ingestion = self._sum_metrics_recent_window(ingestion_metrics)
+            recent_events = self._sum_metrics_recent_window(incoming_events)
             no_recent_ingestion = (recent_ingestion == 0 and recent_events == 0)
 
-            high_storage_no_ingestion = stored_bytes > min_storage_bytes and no_recent_ingestion
+            #high_storage_no_ingestion = stored_bytes > min_storage_bytes and no_recent_ingestion
 
-            return ((not has_lifecycle_rules and no_recent_ingestion) or
-                    high_storage_no_ingestion or
-                    is_dead_resource)
+            #return ((not has_lifecycle_rules and no_recent_ingestion) or
+                    #high_storage_no_ingestion or
+                    #is_dead_resource)
+            return (not has_lifecycle_rules and (no_recent_ingestion or is_dead_resource))
+
         except Exception:
             return False
 
@@ -149,39 +142,24 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         try:
             stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
 
-            uncompressed_gb = stored_bytes / (1024 ** 3)
-            compressed_gb = uncompressed_gb * 0.15
-            storage_monthly_cost = compressed_gb * 0.03
+            uncompressed_gb = stored_bytes / BYTE_TO_GB
+            compressed_gb = uncompressed_gb * CWL_COMPRESSION_RATIO
+            storage_monthly_cost = compressed_gb * CWL_STORAGE_PRICE_PER_GB_MONTH
 
             metrics = self._get_metrics(resource)
             ingestion_metrics = metrics.get('IngestionBytes', []) or []
-            query_metrics = metrics.get('QueryBytes', []) or metrics.get('Query', []) or []
-            cutoff_30d = datetime.utcnow() - timedelta(days=30)
+            query_metrics = metrics.get('QueryBytes', []) or []
 
-            def sum_recent(series):
-                total = 0
-                for m in series:
-                    ts = m.get('timestamp')
-                    if not ts:
-                        continue
-                    try:
-                        t = datetime.fromisoformat(str(ts).replace('Z', '+00:00'))
-                    except Exception:
-                        continue
-                    if t >= cutoff_30d:
-                        total += m.get('value', 0) or 0
-                return total
+            ingestion_bytes = self._sum_metrics_recent_window(ingestion_metrics)
+            query_bytes = self._sum_metrics_recent_window(query_metrics)
 
-            ingestion_bytes_30d = sum_recent(ingestion_metrics)
-            query_bytes_30d = sum_recent(query_metrics)
+            ingestion_gb = ingestion_bytes / BYTE_TO_GB
+            query_gb = query_bytes / BYTE_TO_GB
 
-            ingestion_gb_30d = ingestion_bytes_30d / (1024 ** 3)
-            query_gb_30d = query_bytes_30d / (1024 ** 3)
+            ingestion_cost = ingestion_gb * CWL_INGESTION_PRICE_PER_GB_30D
+            query_cost = query_gb * CWL_QUERY_PRICE_PER_GB_30D
 
-            ingestion_cost_30d = ingestion_gb_30d * 0.50
-            query_cost_30d = query_gb_30d * 0.005
-
-            total = storage_monthly_cost + ingestion_cost_30d + query_cost_30d
+            total = storage_monthly_cost + ingestion_cost + query_cost
             return round(total, 2)
         except Exception:
             return 0.0
@@ -219,8 +197,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             ca_info = ca_map.get(r['cloud_account_id'], {})
 
             metrics = self._get_metrics(r)
-            ingestion_bytes_30d = self._sum_metrics_30d(metrics.get('IngestionBytes', []))
-            query_bytes_30d = self._sum_metrics_30d(metrics.get('QueryBytes', []) or metrics.get('Query', []))
+            ingestion_bytes_30d = self._sum_metrics_recent_window(metrics.get('IngestionBytes', []))
+            query_bytes_30d = self._sum_metrics_recent_window(metrics.get('QueryBytes', []))
 
             result.append({
                 'cloud_resource_id': r.get('cloud_resource_id'),
