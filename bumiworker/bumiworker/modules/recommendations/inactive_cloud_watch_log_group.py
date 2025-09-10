@@ -21,6 +21,13 @@ class MetricKey(str, Enum):
     EVENTS = "IncomingLogEvents"
     QUERY = "QueryBytes"
 
+# Pricing and computation constants for CloudWatch Logs
+# See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
+CWL_COMPRESSION_RATIO = 0.15  # Estimated compression ratio for ingested logs (~15% of original size)
+CWL_STORAGE_PRICE_PER_GB_MONTH = 0.03  # USD per GB-month (compressed)
+CWL_INGESTION_PRICE_PER_GB_30D = 0.50  # USD per GB for ingestion (last 30 days window)
+CWL_QUERY_PRICE_PER_GB_30D = 0.005  # USD per GB for query (last 30 days window)
+RECENT_WINDOW_DAYS = 30  # Days window for ingestion/query cost aggregation
 
 class InactiveCloudWatchLogGroup(ModuleBase):
     """
