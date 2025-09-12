@@ -2,28 +2,25 @@ import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-
+from enum import Enum
 from bumiworker.bumiworker.modules.base import ModuleBase
+from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import CloudWatchLogsPricing
+
+SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
 LOG = logging.getLogger(__name__)
 
+BYTES_PER_GIB = 1024 ** 3  
+RECENT_WINDOW_DAYS_DEFAULT = 30
+DAYS_THRESHOLD_DEFAULT = 7
+DEAD_RESOURCE_DAYS_DEFAULT = 30
+MIN_STORAGE_BYTES_DEFAULT = 1 * 1024 * 1024 
 
-SUPPORTED_CLOUD_TYPES = [
-    'aws_cnr'
-]
+class MetricKey(str, Enum):
+    INGESTION = "IngestionBytes"
+    EVENTS = "IncomingLogEvents"
+    QUERY = "QueryBytes"
 
-DEFAULT_DAYS_THRESHOLD = 7
-DEFAULT_DEAD_RESOURCE_DAYS = 30
-DEFAULT_MIN_STORAGE_BYTES = 1024 * 1024  # 1 MB
-BYTE_TO_GB = 1024 ** 3
-
-# Pricing and computation constants for CloudWatch Logs
-# See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
-CWL_COMPRESSION_RATIO = 0.15  # Estimated compression ratio for ingested logs (~15% of original size)
-CWL_STORAGE_PRICE_PER_GB_MONTH = 0.03  # USD per GB-month (compressed)
-CWL_INGESTION_PRICE_PER_GB_30D = 0.50  # USD per GB for ingestion (last 30 days window)
-CWL_QUERY_PRICE_PER_GB_30D = 0.005  # USD per GB for query (last 30 days window)
-RECENT_WINDOW_DAYS = 30  # Days window for ingestion/query cost aggregation
 
 class InactiveCloudWatchLogGroup(ModuleBase):
     """
@@ -142,9 +139,9 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         try:
             stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
 
-            uncompressed_gb = stored_bytes / BYTE_TO_GB
-            compressed_gb = uncompressed_gb * CWL_COMPRESSION_RATIO
-            storage_monthly_cost = compressed_gb * CWL_STORAGE_PRICE_PER_GB_MONTH
+            uncompressed_gb = stored_bytes / BYTES_PER_GIB
+            compressed_gb = uncompressed_gb * CloudWatchLogsPricing.compression_factor
+            storage_monthly_cost = compressed_gb * CloudWatchLogsPricing.storage_usd_per_gb_month
 
             metrics = self._get_metrics(resource)
             ingestion_metrics = metrics.get('IngestionBytes', []) or []
@@ -153,11 +150,11 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             ingestion_bytes = self._sum_metrics_recent_window(ingestion_metrics)
             query_bytes = self._sum_metrics_recent_window(query_metrics)
 
-            ingestion_gb = ingestion_bytes / BYTE_TO_GB
-            query_gb = query_bytes / BYTE_TO_GB
+            ingestion_gb = ingestion_bytes / BYTES_PER_GIB
+            query_gb = query_bytes / BYTES_PER_GIB
 
-            ingestion_cost = ingestion_gb * CWL_INGESTION_PRICE_PER_GB_30D
-            query_cost = query_gb * CWL_QUERY_PRICE_PER_GB_30D
+            ingestion_cost = ingestion_gb * CloudWatchLogsPricing.ingestion_usd_per_gb
+            query_cost = query_gb * CloudWatchLogsPricing.query_usd_per_gb
 
             total = storage_monthly_cost + ingestion_cost + query_cost
             return round(total, 2)
