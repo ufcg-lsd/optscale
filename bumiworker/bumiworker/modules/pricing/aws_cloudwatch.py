@@ -21,7 +21,3 @@ DEFAULT = CloudWatchLogsPricing(
     compression_factor=0.15,
 )
 
-# if you want granularity by region later:
-BY_REGION: Mapping[str, CloudWatchLogsPricing] = {
-    # "us-east-1": CloudWatchLogsPricing(...),
-}

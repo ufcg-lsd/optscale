@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from enum import Enum
 from bumiworker.bumiworker.modules.base import ModuleBase
-from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import CloudWatchLogsPricing
+from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import CloudWatchLogsPricing, DEFAULT as CWL_PRICING
 
 SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
@@ -12,7 +12,6 @@ LOG = logging.getLogger(__name__)
 
 BYTES_PER_GIB = 1024 ** 3  
 RECENT_WINDOW_DAYS_DEFAULT = 30
-DAYS_THRESHOLD_DEFAULT = 7
 DEAD_RESOURCE_DAYS_DEFAULT = 30
 MIN_STORAGE_BYTES_DEFAULT = 1 * 1024 * 1024 
 
@@ -29,9 +28,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
     def __init__(self, organization_id, config_client, created_at):
         super().__init__(organization_id, config_client, created_at)
         self.option_ordered_map = OrderedDict({
-            'days_threshold': {'default': DEFAULT_DAYS_THRESHOLD},
-            'dead_resource_days': {'default': DEFAULT_DEAD_RESOURCE_DAYS},
-            'min_storage_bytes': {'default': DEFAULT_MIN_STORAGE_BYTES},
+            'dead_resource_days': {'default': DEAD_RESOURCE_DAYS_DEFAULT},
+            'min_storage_bytes': {'default': MIN_STORAGE_BYTES_DEFAULT},
             'excluded_pools': {
                 'default': {},
                 'clean_func': self.clean_excluded_pools,
@@ -62,7 +60,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         Sum metric values within the recent window (RECENT_WINDOW_DAYS).
         Values are assumed to be in bytes for ingestion/query metrics.
         """
-        cutoff_recent_window = datetime.utcnow() - timedelta(days=RECENT_WINDOW_DAYS)
+        cutoff_recent_window = datetime.utcnow() - timedelta(days=RECENT_WINDOW_DAYS_DEFAULT)
         total = 0
         for m in series or []:
             ts = m.get('timestamp')
@@ -76,8 +74,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 total += m.get('value', 0) or 0
         return total
 
-    def _is_inactive(self, resource: Dict, days_threshold: int,
-                      dead_resource_days: int, min_storage_bytes: int) -> bool:
+    def _is_inactive(self, resource: Dict, dead_resource_days: int) -> bool:
         """
         Check if the log group is inactive.
 
@@ -90,7 +87,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             retention_days = self._get_from_resource(resource, 'retention_in_days')
             has_lifecycle_rules = retention_days is not None
 
-            stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
             last_collected_at = self._get_from_resource(resource, 'last_collected_at')
 
             is_dead_resource = False
@@ -114,17 +110,12 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             recent_events = self._sum_metrics_recent_window(incoming_events)
             no_recent_ingestion = (recent_ingestion == 0 and recent_events == 0)
 
-            #high_storage_no_ingestion = stored_bytes > min_storage_bytes and no_recent_ingestion
-
-            #return ((not has_lifecycle_rules and no_recent_ingestion) or
-                    #high_storage_no_ingestion or
-                    #is_dead_resource)
             return (not has_lifecycle_rules and (no_recent_ingestion or is_dead_resource))
 
         except Exception:
             return False
 
-    def _estimate_saving(self, resource: Dict, min_storage_bytes: int) -> float:
+    def _estimate_saving(self, resource: Dict) -> float:
 
         """
         Calculate potential monthly savings for an inactive log group based on AWS pricing,
@@ -140,8 +131,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
 
             uncompressed_gb = stored_bytes / BYTES_PER_GIB
-            compressed_gb = uncompressed_gb * CloudWatchLogsPricing.compression_factor
-            storage_monthly_cost = compressed_gb * CloudWatchLogsPricing.storage_usd_per_gb_month
+            compressed_gb = uncompressed_gb * CWL_PRICING.compression_factor
+            storage_monthly_cost = compressed_gb * CWL_PRICING.storage_usd_per_gb_month
 
             metrics = self._get_metrics(resource)
             ingestion_metrics = metrics.get('IngestionBytes', []) or []
@@ -153,8 +144,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             ingestion_gb = ingestion_bytes / BYTES_PER_GIB
             query_gb = query_bytes / BYTES_PER_GIB
 
-            ingestion_cost = ingestion_gb * CloudWatchLogsPricing.ingestion_usd_per_gb
-            query_cost = query_gb * CloudWatchLogsPricing.query_usd_per_gb
+            ingestion_cost = ingestion_gb * CWL_PRICING.ingestion_usd_per_gb
+            query_cost = query_gb * CWL_PRICING.query_usd_per_gb
 
             total = storage_monthly_cost + ingestion_cost + query_cost
             return round(total, 2)
@@ -167,7 +158,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         """
         Get the inactive log groups.
         """
-        (days_threshold, dead_resource_days, min_storage_bytes,
+        (dead_resource_days, min_storage_bytes,
          excluded_pools, skip_cloud_accounts) = self.get_options_values()
 
         ca_map = self.get_cloud_accounts(SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
@@ -187,7 +178,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             else:
                 is_excluded = False
 
-            if not self._is_inactive(r, days_threshold, dead_resource_days, min_storage_bytes):
+            if not self._is_inactive(r, dead_resource_days):
                 continue
 
             saving = self._estimate_saving(r, min_storage_bytes)
