@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from datetime import timedelta
 import time
 from concurrent.futures import as_completed
-from datetime import timedelta
 import enum
 import urllib.parse
 from collections import defaultdict
@@ -487,24 +486,6 @@ class Aws(S3CloudMixin):
             raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
-      
-        """
-        Inspect S3 bucket public settings.
-
-        This helper inspects a bucket's public configuration in three places:
-        - PublicAccessBlock (BlockPublicPolicy / BlockPublicAcls)
-        - Bucket policy public status (get_bucket_policy_status)
-        - Bucket ACLs (get_bucket_acl)
-
-        It returns a dict with:
-        - is_public_policy: True if bucket policy makes the bucket public
-        - is_public_acls: True if any ACL grant makes the bucket public
-        - public_access_block: raw result from get_public_access_block (may be empty)
-
-        Note: method tolerates missing configurations and maps known ClientError
-        codes (e.g. NoSuchPublicAccessBlockConfiguration, NoSuchBucketPolicy)
-        to non-fatal behavior.
-        """
         
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
@@ -568,50 +549,6 @@ class Aws(S3CloudMixin):
         return result
     
     def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
-
-        """
-        Gather Intelligent-Tiering and related storage metadata for a bucket.
-
-        The returned metadata is a dictionary with the following keys:
-        - intelligent_tiering_enabled (bool): whether any Intelligent-Tiering
-          configuration exists for the bucket.
-        - intelligent_tiering_configs (list): raw IntelligentTieringConfigurationList.
-        - lifecycle_rules (list): bucket lifecycle configuration rules (if any).
-        - has_lifecycle (bool): True when lifecycle configuration exists.
-        - storage_class_analysis (list): analytics configuration list (if any).
-        - metrics_configurations (list): metrics configuration list (if any).
-        - total_size_bytes (int|None): aggregated bucket size in bytes (CloudWatch),
-          if available.
-        - object_count (int|None): estimated or exact number of objects in bucket.
-        - access_pattern (deprecated|placeholder): reserved for future use.
-        - it_status_bucket (str): 'enabled' when intelligent-tiering applies to
-          the full bucket, otherwise 'disabled'.
-        - tiers (list): list of [display_name, size_gb] pairs for detected storage tiers.
-        - last_checked (list): ISO dates (YYYY-MM-DD) where GET object activity was detected.
-
-        Behavior summary:
-        - Attempts to read Intelligent-Tiering configurations (list_bucket_intelligent_tiering_configurations)
-          and determines whether IT applies to the entire bucket (no filter or empty prefix).
-        - Reads lifecycle, analytics and metrics configs where available, ignoring
-          known "no such configuration" errors.
-        - Tries to obtain object count by sampling list_objects_v2 (MaxKeys=1000).
-          If sample returns 1000 items (potentially large bucket), falls back to CloudWatch
-          NumberOfObjects metric (7-day window). For smaller buckets it paginates to compute
-          an accurate object count.
-        - Uses CloudWatch BucketSizeBytes metric (7-day window) per storage type to
-          compute total_size_bytes and per-tier sizes.
-        - Collects last access dates using CloudWatch GetRequests (sum per day)
-          for the last 30 days and returns dates where Sum > 0 in last_checked.
-        - All network/cloud errors are caught and logged; missing data remains None
-          or empty lists as appropriate.
-
-        Parameters:
-        - s3_client: boto3 S3 client already configured for the bucket's region.
-        - bucket_name: name of the bucket to inspect.
-
-        Returns:
-        - dict described above containing metadata about intelligent-tiering and storage metrics.
-        """
 
         metadata = {
         'intelligent_tiering_enabled': False,
@@ -2069,13 +2006,6 @@ class Aws(S3CloudMixin):
                 raise
 
     def list_all_log_groups(self, region):
-        """
-        List all CloudWatch Logs group names in the given region.
-
-        :param region: AWS region name (string)
-        :return: list of log group name strings
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
-        """
         try:
             session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
             if session is None:
@@ -2095,16 +2025,6 @@ class Aws(S3CloudMixin):
             raise
 
     def get_log_groups_details(self, log_group_names, region):
-        """
-        Retrieve details for the provided CloudWatch Log Group names.
-
-        :param log_group_names: iterable of log group names (strings)
-        :param region: AWS region name (string)
-        :return: dict mapping log_group_name -> dict with keys:
-                 'name', 'stored_bytes', 'retention_in_days', 'creation_time', 'arn', 'kms_key_id'
-                 If a group's details cannot be obtained, the value will be None.
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
-        """
         try:
             session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
             logs_client = session.client('logs', region_name=region)
@@ -2145,20 +2065,6 @@ class Aws(S3CloudMixin):
         
 
     def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
-        """
-        Build LogGroupResource objects for all CloudWatch Log Groups in a region.
-
-        This fetches available log group names, details and metrics, then
-        constructs LogGroupResource instances. If cloud_resource_id_generator
-        is provided it is used to produce cloud_resource_id values; otherwise
-        the log group name is used.
-
-        :param region: AWS region name (string)
-        :param cloud_resource_id_generator: optional callable returning a unique id
-        :param pasted_days: number of days to fetch metrics for (int)
-        :return: list of LogGroupResource objects
-        :raises: propagates exceptions for unexpected failures
-        """
         try:
             log_group_names = self.list_all_log_groups(region)
             
@@ -2205,13 +2111,7 @@ class Aws(S3CloudMixin):
 
     def discover_region_log_groups(self, region):
         """
-        Generator that yields LogGroupResource objects for the specified region.
-
-        Delegates to create_log_group_resources to build resources and yields
-        them one by one. Errors are logged and discovery for the region is
-        aborted gracefully.
-        :param region: AWS region name (string)
-        :yield: LogGroupResource instances
+        Discover LogGroupResource objects for region (delegates to create_log_group_resources).
         """
         try:
             for resource in self.create_log_group_resources(region):
@@ -2222,13 +2122,6 @@ class Aws(S3CloudMixin):
 
 
     def get_log_group_tags(self, logs_client, log_group_name):
-        """
-        Retrieve tags for a specific CloudWatch Log Group.
-
-        :param logs_client: boto3 logs client
-        :param log_group_name: CloudWatch log group name (string)
-        :return: dict of tags (may be empty)
-        """
         try:
             response = logs_client.list_tags_log_group(logGroupName=log_group_name)
             return response.get('tags', {})
@@ -2238,23 +2131,15 @@ class Aws(S3CloudMixin):
             LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
             return {}
 
-    def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
-        """
-        Collect CloudWatch metrics for multiple log groups in parallel.
+    def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
 
-        :param log_group_names: iterable of log group names (strings)
-        :param region: AWS region name (string)
-        :param days_ago: integer days range to collect metrics for (int)
-        :param max_workers: maximum parallel workers for fetching metrics (int)
-        :return: dict mapping log_group_name -> dict(metric_key -> list of datapoints)
-        """
         if not log_group_names:
             return {}
     
         metrics_to_fetch = {
             'ingestion': {
                 'MetricName': 'IncomingBytes',
-                'Period': 86400,
+                'Period': 3600,
                 'Stat': 'Sum',
                 'Unit': 'Bytes'
             },
@@ -2266,15 +2151,9 @@ class Aws(S3CloudMixin):
             },
             'incoming_events': {
                 'MetricName': 'IncomingLogEvents',
-                'Period': 86400,
+                'Period': 3600,
                 'Stat': 'Sum',
                 'Unit': 'Count'
-            },
-            'query': {
-                'MetricName': 'QueryBytes',
-                'Period': 86400,
-                'Stat': 'Sum',
-                'Unit': 'Bytes'
             }
         }
         
@@ -2322,13 +2201,6 @@ class Aws(S3CloudMixin):
         return results
     
     def _generate_log_group_cloud_link(self, region, log_group_name):
-        """
-        Generate a console URL that links to the log group in CloudWatch logs v2.
-
-        :param region: AWS region name (string)
-        :param log_group_name: CloudWatch log group name (string)
-        :return: fully formed console URL string
-        """
         encoded_name = urllib.parse.quote(log_group_name, safe='')
         return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
 
