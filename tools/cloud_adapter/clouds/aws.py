@@ -487,6 +487,7 @@ class Aws(S3CloudMixin):
             raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
+      
         """
         Inspect S3 bucket public settings.
 
@@ -567,6 +568,7 @@ class Aws(S3CloudMixin):
         return result
     
     def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
+
         """
         Gather Intelligent-Tiering and related storage metadata for a bucket.
 
@@ -610,6 +612,7 @@ class Aws(S3CloudMixin):
         Returns:
         - dict described above containing metadata about intelligent-tiering and storage metrics.
         """
+
         metadata = {
         'intelligent_tiering_enabled': False,
         'intelligent_tiering_configs': [],
@@ -2064,3 +2067,283 @@ class Aws(S3CloudMixin):
                 raise InvalidResourceStateException(str(exc))
             else:
                 raise
+
+    def list_all_log_groups(self, region):
+        """
+        List all CloudWatch Logs group names in the given region.
+
+        :param region: AWS region name (string)
+        :return: list of log group name strings
+        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
+        """
+        try:
+            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+            if session is None:
+                raise RuntimeError("No AWS session available")
+            logs_client = session.client('logs', region_name=region)
+            paginator = logs_client.get_paginator('describe_log_groups')
+            result = []
+            for page in paginator.paginate():
+                for g in page.get('logGroups', []):
+                    if 'logGroupName' in g:
+                        result.append(g['logGroupName'])
+            return result
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code')
+            if code == 'InvalidParameterException':
+                raise ValueError(str(e))
+            raise
+
+    def get_log_groups_details(self, log_group_names, region):
+        """
+        Retrieve details for the provided CloudWatch Log Group names.
+
+        :param log_group_names: iterable of log group names (strings)
+        :param region: AWS region name (string)
+        :return: dict mapping log_group_name -> dict with keys:
+                 'name', 'stored_bytes', 'retention_in_days', 'creation_time', 'arn', 'kms_key_id'
+                 If a group's details cannot be obtained, the value will be None.
+        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
+        """
+        try:
+            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+            logs_client = session.client('logs', region_name=region)
+            result = {}
+            for lg_name in log_group_names:
+                try:
+                    resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
+                    chosen = None
+                    for g in resp.get('logGroups', []):
+                        if g.get('logGroupName') == lg_name:
+                            chosen = g
+                            break
+                    if not chosen:
+                        result[lg_name] = None
+                        continue
+
+                    ct = None
+                    if 'creationTime' in chosen and chosen['creationTime'] is not None:
+                        ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
+
+                    result[lg_name] = {
+                        'name': chosen.get('logGroupName'),
+                        'stored_bytes': chosen.get('storedBytes', 0),
+                        'retention_in_days': chosen.get('retentionInDays'),
+                        'creation_time': ct,
+                        'arn': chosen.get('arn'),
+                        'kms_key_id': chosen.get('kmsKeyId')
+                    }
+                except Exception as e:
+                    LOG.exception("Error getting details for %s: %s", lg_name, e)
+                    result[lg_name] = None
+            return result
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code')
+            if code == 'InvalidParameterException':
+                raise ValueError(str(e))
+            raise
+        
+
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+        """
+        Build LogGroupResource objects for all CloudWatch Log Groups in a region.
+
+        This fetches available log group names, details and metrics, then
+        constructs LogGroupResource instances. If cloud_resource_id_generator
+        is provided it is used to produce cloud_resource_id values; otherwise
+        the log group name is used.
+
+        :param region: AWS region name (string)
+        :param cloud_resource_id_generator: optional callable returning a unique id
+        :param pasted_days: number of days to fetch metrics for (int)
+        :return: list of LogGroupResource objects
+        :raises: propagates exceptions for unexpected failures
+        """
+        try:
+            log_group_names = self.list_all_log_groups(region)
+            
+            if not log_group_names:
+                return []
+            
+            details = self.get_log_groups_details(log_group_names, region)
+            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+            resources = []
+            
+            for lg_name in log_group_names:
+                try:
+                    lg_details = details.get(lg_name)
+                    if lg_details is None:
+                        continue
+                    cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
+                    
+                    resource = LogGroupResource(
+                        name=lg_details['name'],
+                        stored_bytes=lg_details['stored_bytes'],
+                        retention_in_days=lg_details['retention_in_days'],
+                        creation_time=lg_details['creation_time'],
+                        arn=lg_details['arn'],
+                        kms_key_id=lg_details['kms_key_id'],
+                        
+                        cloud_resource_id=cloud_resource_id,
+                        cloud_account_id=getattr(self, 'cloud_account_id', None),
+                        region=region,
+                        organization_id=getattr(self, 'organization_id', None),
+                        tags={}
+                    )
+                    
+                    setattr(resource, 'metrics', metrics.get(lg_name, {}))
+                    resources.append(resource)
+                    
+                except Exception as e:
+                    LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
+                    continue
+            
+            return resources      
+        except Exception as e:
+            LOG.exception(f"Error creating log group resources for region {region}: {e}")
+            raise
+
+    def discover_region_log_groups(self, region):
+        """
+        Generator that yields LogGroupResource objects for the specified region.
+
+        Delegates to create_log_group_resources to build resources and yields
+        them one by one. Errors are logged and discovery for the region is
+        aborted gracefully.
+        :param region: AWS region name (string)
+        :yield: LogGroupResource instances
+        """
+        try:
+            for resource in self.create_log_group_resources(region):
+                yield resource
+        except Exception as e:
+            LOG.error("Error discovering log groups in %s: %s", region, e)
+            return
+
+
+    def get_log_group_tags(self, logs_client, log_group_name):
+        """
+        Retrieve tags for a specific CloudWatch Log Group.
+
+        :param logs_client: boto3 logs client
+        :param log_group_name: CloudWatch log group name (string)
+        :return: dict of tags (may be empty)
+        """
+        try:
+            response = logs_client.list_tags_log_group(logGroupName=log_group_name)
+            return response.get('tags', {})
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+                return {}
+            LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
+            return {}
+
+    def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
+        """
+        Collect CloudWatch metrics for multiple log groups in parallel.
+
+        :param log_group_names: iterable of log group names (strings)
+        :param region: AWS region name (string)
+        :param days_ago: integer days range to collect metrics for (int)
+        :param max_workers: maximum parallel workers for fetching metrics (int)
+        :return: dict mapping log_group_name -> dict(metric_key -> list of datapoints)
+        """
+        if not log_group_names:
+            return {}
+    
+        metrics_to_fetch = {
+            'ingestion': {
+                'MetricName': 'IncomingBytes',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
+            },
+            'storage': {
+                'MetricName': 'StoredBytes',
+                'Period': 86400,
+                'Stat': 'Maximum',
+                'Unit': 'Bytes'
+            },
+            'incoming_events': {
+                'MetricName': 'IncomingLogEvents',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Count'
+            },
+            'query': {
+                'MetricName': 'QueryBytes',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Bytes'
+            }
+        }
+        
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=days_ago)
+        
+        session = self.get_session()
+        cw = session.client('cloudwatch', region_name=region)
+        
+        results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_key = {}
+            
+            for lg_name in log_group_names:
+                for metric_key, metric_config in metrics_to_fetch.items():
+                    params = {
+                        'Namespace': 'AWS/Logs',
+                        'MetricName': metric_config['MetricName'],
+                        'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
+                        'StartTime': start_time,
+                        'EndTime': end_time,
+                        'Period': _ensure_period(metric_config['Period']),
+                        'Statistics': [metric_config['Stat']],
+                        'Unit': metric_config['Unit']
+                    }
+                    
+                    future = executor.submit(
+                        self._exp_backoff_retry, 
+                        cw.get_metric_statistics, 
+                        **params
+                    )
+                    future_to_key[future] = (lg_name, metric_key)
+            
+            for future in as_completed(future_to_key):
+                lg_name, metric_key = future_to_key[future]
+                try:
+                    response = future.result(timeout=60)
+                    results[lg_name][metric_key] = response.get('Datapoints', [])
+                    LOG.debug(f"Collected {len(response.get('Datapoints', []))} datapoints for {metric_key} on {lg_name}")
+                except Exception as e:
+                    LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
+                    results[lg_name][metric_key] = []
+        
+        return results
+    
+    def _generate_log_group_cloud_link(self, region, log_group_name):
+        """
+        Generate a console URL that links to the log group in CloudWatch logs v2.
+
+        :param region: AWS region name (string)
+        :param log_group_name: CloudWatch log group name (string)
+        :return: fully formed console URL string
+        """
+        encoded_name = urllib.parse.quote(log_group_name, safe='')
+        return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
+
+    
+    def _exp_backoff_retry(self, func, max_retries=5, base_delay=1, *args, **kwargs):
+        attempt = 0
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except (ClientError, BotoCoreError) as e:
+                attempt += 1
+                if attempt >= max_retries:
+                    LOG.exception("Retries exhausted for %s", getattr(func, "__name__", str(func)))
+                    raise
+
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, base_delay)
+                LOG.warning("Call failed (attempt %d/%d). Retrying in %.2fs: %s", attempt, max_retries, delay, e)
+                time.sleep(delay)
