@@ -1,10 +1,9 @@
-import { useQuery } from "@apollo/client";
 import ButtonLoader from "components/ButtonLoader";
-import { GET_INSTALLATION_PATH } from "graphql/api/slacker/queries";
+import { useGetInstallationPathQuery } from "graphql/__generated__/hooks/slacker";
 import SlackIcon from "icons/SlackIcon";
 
 const AddToSlackAccountButtonContainer = () => {
-  const { loading, data } = useQuery(GET_INSTALLATION_PATH);
+  const { loading, data } = useGetInstallationPathQuery();
 
   return (
     <ButtonLoader

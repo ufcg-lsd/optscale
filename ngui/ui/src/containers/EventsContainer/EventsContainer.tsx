@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useLazyQuery } from "@apollo/client";
 import { SECOND } from "api/constants";
 import Events from "components/Events";
-import { GET_EVENTS } from "graphql/api/keeper/queries";
+import { useEventsLazyQuery } from "graphql/__generated__/hooks/keeper";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { getLastElement } from "utils/arrays";
 import { EVENT_LEVEL, EVENTS_LIMIT } from "utils/constants";
@@ -109,18 +108,18 @@ const EventsContainer = () => {
 
   const getEventsAbortControllerRef = useRef<AbortController | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [getEvents] = useLazyQuery(GET_EVENTS, {
+  const [getEvents] = useEventsLazyQuery({
     fetchPolicy: "no-cache"
   });
 
   const refetchAbortControllerRef = useRef<AbortController | null>(null);
-  const [refetchEvents] = useLazyQuery(GET_EVENTS, {
+  const [refetchEvents] = useEventsLazyQuery({
     fetchPolicy: "no-cache"
   });
 
   const fetchMoreAbortControllerRef = useRef<AbortController | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [fetchMoreEvents] = useLazyQuery(GET_EVENTS, {
+  const [fetchMoreEvents] = useEventsLazyQuery({
     fetchPolicy: "no-cache"
   });
 

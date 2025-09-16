@@ -25,6 +25,7 @@ import RightsizingInstances from "containers/RecommendationsOverviewContainer/re
 import RightsizingRdsInstances from "containers/RecommendationsOverviewContainer/recommendations/RightsizingRdsInstances";
 import ShortLivingInstances from "containers/RecommendationsOverviewContainer/recommendations/ShortLivingInstances";
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
+import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
 import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 
@@ -54,6 +55,7 @@ export const useOptscaleRecommendations = () => {
       InactiveUsers,
       InactiveConsoleUsers,
       InactiveCloudWatchLogGroup,
+      IntelligentTiering,
       AbandonedS3Buckets,
       AbandonedKinesisStreams,
       AbandonedInstances,

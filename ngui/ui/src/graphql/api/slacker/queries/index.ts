@@ -1,3 +1,0 @@
-import { GET_INSTALLATION_PATH, CONNECT_SLACK_USER } from "./slacker.queries";
-
-export { GET_INSTALLATION_PATH, CONNECT_SLACK_USER };

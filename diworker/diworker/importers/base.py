@@ -791,3 +791,42 @@ class CSVBaseReportImporter(BaseReportImporter):
                 {'last_import_at': ts,
                  'last_import_modified_at': self.last_import_modified_at,
                  'last_import_attempt_at': ts})
+
+    @property
+    def mongo_cloudwatch(self):
+        """
+        Collection for raw CloudWatch metrics persisted by diworker.
+        Uses same database as self.mongo_raw.
+        """
+        return self.mongo_raw.database.get_collection('cloudwatch_raw_metrics')
+
+    def save_cloudwatch_metrics(self, metrics_data, column_names=None):
+        """
+        Persist CloudWatch metrics into ClickHouse.
+
+        metrics_data should be an iterable of rows matching column_names.
+        If column_names is omitted, a default column ordering is used:
+            ['cloud_account_id', 'resource_id', 'metric_name', 'timestamp', 'value']
+
+        :param metrics_data: iterable of metric rows to insert into ClickHouse
+        :param column_names: optional list of column names corresponding to metric rows
+        :raises: re-raises exceptions from the ClickHouse client after logging
+        """
+        if not column_names:
+            column_names = [
+                'cloud_account_id',
+                'resource_id', 
+                'metric_name',
+                'timestamp',
+                'value'
+            ]
+        
+        try:
+            self.clickhouse_cl.insert(
+                'cloudwatch_metrics',
+                metrics_data,
+                column_names=column_names
+            )
+        except Exception as exc:
+            LOG.error('Failed to save CloudWatch metrics: %s', str(exc))
+            raise

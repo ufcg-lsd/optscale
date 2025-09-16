@@ -1,9 +1,8 @@
 import { useMemo } from "react";
-import { useQuery } from "@apollo/client";
 import { Skeleton } from "@mui/material";
 import ExpensesDailyBreakdownBy from "components/ExpensesDailyBreakdownBy";
 import ResourceCountBreakdown from "components/ResourceCountBreakdown";
-import { GET_RESOURCE_COUNT_BREAKDOWN, GET_EXPENSES_DAILY_BREAKDOWN } from "graphql/api/restapi/queries/restapi.queries";
+import { useGetExpensesDailyBreakdownQuery, useGetResourceCountBreakdownQuery } from "graphql/__generated__/hooks/restapi";
 import { useBreakdownBy } from "hooks/useBreakdownBy";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { mapFiltersToApiParams } from "services/AvailableFiltersService";
@@ -35,7 +34,7 @@ const ResourceCountBreakdownContainer = ({ constraint }) => {
     };
   }, [breakdownByValue, constraint]);
 
-  const { data: { resourceCountBreakdown = {} } = {}, loading } = useQuery(GET_RESOURCE_COUNT_BREAKDOWN, {
+  const { data: { resourceCountBreakdown = {} } = {}, loading } = useGetResourceCountBreakdownQuery({
     skip: isEmptyObject(constraint),
     variables: {
       organizationId,
@@ -75,7 +74,7 @@ const ExpensesDailyBreakdownByContainer = ({ constraint }) => {
     };
   }, [breakdownByValue, constraint]);
 
-  const { data: { expensesDailyBreakdown = {} } = {}, loading } = useQuery(GET_EXPENSES_DAILY_BREAKDOWN, {
+  const { data: { expensesDailyBreakdown = {} } = {}, loading } = useGetExpensesDailyBreakdownQuery({
     skip: isEmptyObject(constraint),
     variables: {
       organizationId,

@@ -1,7 +1,6 @@
-import { useMutation } from "@apollo/client";
 import { GET_AVAILABLE_FILTERS } from "api/restapi/actionTypes";
 import UpdateDataSourceCredentialsForm from "components/forms/UpdateDataSourceCredentialsForm";
-import { UPDATE_DATA_SOURCE } from "graphql/api/restapi/queries/restapi.queries";
+import { useUpdateDataSourceMutation } from "graphql/__generated__/hooks/restapi";
 import { useRefetchApis } from "hooks/useRefetchApis";
 import {
   ALIBABA_CNR,
@@ -24,7 +23,7 @@ const UpdateDataSourceCredentialsContainer = ({
 }: UpdateDataSourceCredentialsContainerProps) => {
   const refetch = useRefetchApis();
 
-  const [updateDataSource, { loading }] = useMutation(UPDATE_DATA_SOURCE);
+  const [updateDataSource, { loading }] = useUpdateDataSourceMutation();
 
   const getAwsConfigName = (config: Config) => {
     if (config.linked) {

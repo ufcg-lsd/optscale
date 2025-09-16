@@ -1,11 +1,12 @@
-import { ApolloClient, ApolloProvider, InMemoryCache, split, HttpLink, from, type DefaultContext } from "@apollo/client";
+import { ApolloClient, ApolloProvider, InMemoryCache, split, HttpLink, from } from "@apollo/client";
 import { onError, type ErrorResponse } from "@apollo/client/link/error";
+import { RetryLink } from "@apollo/client/link/retry";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { type GraphQLError } from "graphql";
 import { createClient } from "graphql-ws";
 import { v4 as uuidv4 } from "uuid";
-import { GET_ERROR } from "graphql/api/common";
+import { errorVar } from "graphql/reactiveVars";
 import { useGetToken } from "hooks/useGetToken";
 import { useSignOut } from "hooks/useSignOut";
 import { getEnvironmentVariable } from "utils/env";
@@ -13,19 +14,25 @@ import { getEnvironmentVariable } from "utils/env";
 const httpBase = getEnvironmentVariable("VITE_APOLLO_HTTP_BASE");
 const wsBase = getEnvironmentVariable("VITE_APOLLO_WS_BASE");
 
-const writeErrorToCache = (cache: DefaultContext, graphQLError: GraphQLError) => {
+const prepareGraphQLErrorVar = (graphQLError: GraphQLError) => {
   const { extensions: { response: { url, body: { error } = {} } = {} } = {}, message } = graphQLError;
 
-  cache.writeQuery({
-    query: GET_ERROR,
-    data: { error: { __typename: "Error", id: uuidv4(), ...error, apolloErrorMessage: message, url } }
-  });
+  return {
+    id: uuidv4(),
+    url,
+    errorCode: error?.error_code,
+    errorReason: error?.reason,
+    params: error?.params,
+    apolloErrorMessage: message
+  };
 };
 
 const ApolloClientProvider = ({ children }) => {
   const { token } = useGetToken();
 
   const signOut = useSignOut();
+
+  const cache = new InMemoryCache();
 
   const httpLink = new HttpLink({
     uri: `${httpBase}/api`,
@@ -40,7 +47,12 @@ const ApolloClientProvider = ({ children }) => {
     })
   );
 
-  const errorLink = onError(({ graphQLErrors, networkError, operation }: ErrorResponse) => {
+  const retryLink = new RetryLink({
+    attempts: { max: 3 },
+    delay: { initial: 300, max: 2000, jitter: true }
+  });
+
+  const errorLink = onError(({ graphQLErrors, networkError }: ErrorResponse) => {
     if (graphQLErrors) {
       graphQLErrors.forEach((graphQLError) => {
         const { message, path, extensions } = graphQLError;
@@ -52,8 +64,7 @@ const ApolloClientProvider = ({ children }) => {
         }
       });
 
-      const { cache } = operation.getContext();
-      writeErrorToCache(cache, graphQLErrors[0]);
+      errorVar(prepareGraphQLErrorVar(graphQLErrors[0]));
     }
 
     /* Just log network errors for now. 
@@ -65,7 +76,7 @@ const ApolloClientProvider = ({ children }) => {
     }
   });
 
-  const splitLink = split(
+  const operationTransportLink = split(
     ({ query }) => {
       const definition = getMainDefinition(query);
       return definition.kind === "OperationDefinition" && definition.operation === "subscription";
@@ -74,9 +85,11 @@ const ApolloClientProvider = ({ children }) => {
     httpLink
   );
 
+  const link = from([retryLink, errorLink, operationTransportLink]);
+
   const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: from([errorLink, splitLink])
+    cache,
+    link
   });
 
   return <ApolloProvider client={client}>{children}</ApolloProvider>;

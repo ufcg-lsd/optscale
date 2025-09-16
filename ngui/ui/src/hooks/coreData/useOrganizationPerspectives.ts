@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_ORGANIZATION_PERSPECTIVES } from "graphql/api/restapi/queries";
+import { useOrganizationPerspectivesQuery } from "graphql/__generated__/hooks/restapi";
 import { validatePerspectiveSchema } from "utils/validation";
 import { useOrganizationInfo } from "../useOrganizationInfo";
 
@@ -22,7 +21,7 @@ const validatePerspectives = (perspectives) => {
 export const useOrganizationPerspectives = () => {
   const { organizationId } = useOrganizationInfo();
 
-  const { data: { organizationPerspectives = {} } = {} } = useQuery(GET_ORGANIZATION_PERSPECTIVES, {
+  const { data: { organizationPerspectives = {} } = {} } = useOrganizationPerspectivesQuery({
     variables: {
       organizationId
     },

@@ -48,6 +48,7 @@ import {
   GCP_TENANT
 } from "utils/constants";
 import { readFileAsText } from "utils/files";
+import { SPACING_2 } from "utils/layouts";
 import { CredentialInputs } from "./FormElements";
 import { AWS_POOL_UPDATE_DATA_EXPORT_PARAMETERS as AWS_ROOT_UPDATE_DATA_EXPORT_PARAMETERS } from "./FormElements/CredentialInputs";
 import type { UpdateDataSourceCredentialsFormProps } from "./types";
@@ -77,7 +78,7 @@ const getAwsDescription = (config) => {
 
   if (config.assume_role_account_id && config.assume_role_name) {
     return (
-      <Typography gutterBottom>
+      <Typography sx={{ marginBottom: SPACING_2 }}>
         <FormattedMessage id="createAwsAssumedRoleDescription" values={{ action: intl.formatMessage({ id: "save" }) }} />
       </Typography>
     );

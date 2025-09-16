@@ -1,6 +1,5 @@
-import { useMutation } from "@apollo/client";
 import DataSourceBillingReimportForm from "components/forms/DataSourceBillingReimportForm/DataSourceBillingReimportForm";
-import { GET_DATA_SOURCE, UPDATE_DATA_SOURCE } from "graphql/api/restapi/queries/restapi.queries";
+import { DataSourceDocument, useUpdateDataSourceMutation } from "graphql/__generated__/hooks/restapi";
 import { getStartOfDayInUTCinSeconds } from "utils/datetime";
 
 type DataSourceBillingReimportContainerProps = {
@@ -9,7 +8,7 @@ type DataSourceBillingReimportContainerProps = {
 };
 
 const DataSourceBillingReimportContainer = ({ dataSourceId, onSuccess }: DataSourceBillingReimportContainerProps) => {
-  const [updateDataSource, { loading }] = useMutation(UPDATE_DATA_SOURCE);
+  const [updateDataSource, { loading }] = useUpdateDataSourceMutation();
 
   return (
     <DataSourceBillingReimportForm
@@ -24,7 +23,7 @@ const DataSourceBillingReimportContainer = ({ dataSourceId, onSuccess }: DataSou
               lastImportModifiedAt: importFrom
             }
           },
-          refetchQueries: [GET_DATA_SOURCE]
+          refetchQueries: [DataSourceDocument]
         }).then(onSuccess);
       }}
       isSubmitLoading={loading}

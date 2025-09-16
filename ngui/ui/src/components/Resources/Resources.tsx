@@ -197,8 +197,10 @@ const Resources = ({
       <ActionBar data={actionBarDefinition} />
       <PageContentWrapper>
         <Stack spacing={SPACING_2}>
-          <Box display="flex" justifyContent="space-between">
-            <ExpensesSummaryContainer requestParams={requestParams} />
+          <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={SPACING_2}>
+            <Box>
+              <ExpensesSummaryContainer requestParams={requestParams} />
+            </Box>
             <RangePickerFormContainer
               onApply={(dateRange) => onApply(dateRange)}
               initialStartDateValue={startDateTimestamp}

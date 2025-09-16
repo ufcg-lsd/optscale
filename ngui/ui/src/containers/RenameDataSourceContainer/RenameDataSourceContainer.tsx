@@ -1,12 +1,11 @@
-import { useMutation } from "@apollo/client";
 import { GET_AVAILABLE_FILTERS } from "api/restapi/actionTypes";
 import RenameDataSourceForm from "components/forms/RenameDataSourceForm";
 import { FormValues } from "components/forms/RenameDataSourceForm/types";
-import { UPDATE_DATA_SOURCE } from "graphql/api/restapi/queries/restapi.queries";
+import { useUpdateDataSourceMutation } from "graphql/__generated__/hooks/restapi";
 import { useRefetchApis } from "hooks/useRefetchApis";
 
 const RenameDataSourceContainer = ({ id, name, closeSideModal }) => {
-  const [updateDataSource, { loading }] = useMutation(UPDATE_DATA_SOURCE);
+  const [updateDataSource, { loading }] = useUpdateDataSourceMutation();
 
   const refetch = useRefetchApis();
 

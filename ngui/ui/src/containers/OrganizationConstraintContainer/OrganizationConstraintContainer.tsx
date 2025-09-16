@@ -1,9 +1,8 @@
-import { useQuery } from "@apollo/client";
 import { Link } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import OrganizationConstraint from "components/OrganizationConstraint";
-import { GET_ORGANIZATION_CONSTRAINT, GET_ORGANIZATION_LIMIT_HITS } from "graphql/api/restapi/queries";
+import { useGetOrganizationConstraintQuery, useGetOrganizationLimitHitsQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { ANOMALIES, QUOTAS_AND_BUDGETS, TAGGING_POLICIES } from "urls";
 
@@ -67,26 +66,21 @@ const OrganizationConstraintContainer = () => {
   const { anomalyId, policyId, taggingPolicyId } = useParams();
   const constraintId = anomalyId || policyId || taggingPolicyId;
 
-  const { data: { organizationConstraint = {} } = {}, loading: isGetConstraintLoading } = useQuery(
-    GET_ORGANIZATION_CONSTRAINT,
-    {
-      variables: {
-        constraintId
-      }
+  const { data: { organizationConstraint = {} } = {}, loading: isGetConstraintLoading } = useGetOrganizationConstraintQuery({
+    variables: {
+      constraintId
     }
-  );
+  });
 
   const { organizationId } = useOrganizationInfo();
 
-  const { data: { organizationLimitHits: limitHits = [] } = {}, loading: isGetLimitHitsLoading } = useQuery(
-    GET_ORGANIZATION_LIMIT_HITS,
-    {
+  const { data: { organizationLimitHits: limitHits = [] } = {}, loading: isGetLimitHitsLoading } =
+    useGetOrganizationLimitHitsQuery({
       variables: {
         organizationId,
         constraintId
       }
-    }
-  );
+    });
 
   const { actionBarBreadcrumbsDefinition, actionBarTitleDefinition } = getActionBarProperties({
     anomalyId,

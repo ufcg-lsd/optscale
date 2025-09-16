@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@apollo/client";
+import { useReactiveVar } from "@apollo/client";
 import ApiErrorMessage from "components/ApiErrorMessage";
 import SnackbarAlert from "components/SnackbarAlert";
-import { GET_ERROR } from "graphql/api/common";
+import { errorVar } from "graphql/reactiveVars";
 
-// TODO: implement ERROR_HANDLER_TYPE_ALERT analogy for Apollo queries. https://www.apollographql.com/docs/react/v2/data/error-handling/
 const ApolloApiErrorAlert = () => {
-  const { data = {} } = useQuery(GET_ERROR);
+  const error = useReactiveVar(errorVar);
 
-  const { error: { id, error_code: errorCode, reason: errorReason, url, params, apolloErrorMessage } = {} } = data;
+  const { id, url, errorCode, errorReason, params, apolloErrorMessage } = error ?? {};
 
   const [open, setOpen] = useState(false);
 

@@ -59,6 +59,28 @@ AWS_CUR_PREFIX_MAP = {
 EDP_DISCOUNTS = ['discount/EdpDiscount', 'discount/PrivateRateDiscount']
 
 
+class CloudWatchUtils:
+    """Shared utilities for CloudWatch metric processing"""
+
+    @staticmethod
+    def datapoint_value(dp: dict):
+        """Extract numeric value from CloudWatch datapoint"""
+        for k in ('Sum', 'Maximum', 'Average', 'Minimum', 'SampleCount', 'Value'):
+            if k in dp:
+                return dp[k]
+        for k, v in dp.items():
+            if k not in ('Timestamp', 'Unit') and isinstance(v, (int, float)):
+                return v
+        return None
+
+    @staticmethod
+    def normalize_timestamp(ts):
+        """Normalize timestamp to UTC datetime"""
+        if isinstance(ts, datetime):
+            return ts.astimezone(timezone.utc)
+        return ts
+
+
 class AWSReportImporter(CSVBaseReportImporter):
     ITEM_TYPE_ID_FIELDS = {
         'Tax': ['lineItem/TaxType', 'product/ProductName'],
@@ -967,3 +989,87 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def create_risp_processing_tasks(self):
         self._create_risp_processing_tasks()
+
+    def discover_region_log_groups(self, region):
+        """
+        Yield discovered CloudWatch LogGroupResource objects for the given region.
+
+        The importer delegates to the cloud adapter to create log group resources,
+        processes their metrics (persisting raw docs and summarised points) and
+        yields each resource for further processing. The function is a generator
+        and should not raise on per-resource errors; those are handled inside
+        process_log_group_metrics.
+        :param region: AWS region name (string)
+        :yield: LogGroupResource instances
+        """
+        log_groups = self.cloud_adapter.create_log_group_resources(region)
+        for log_group in log_groups:
+            # Process metrics before yielding the resource
+            self.process_log_group_metrics(log_group)
+            yield log_group
+
+    def _prepare_raw_metric_docs(self, log_group_resource):
+        """Prepare raw metric documents for MongoDB"""
+        raw_docs = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                value = CloudWatchUtils.datapoint_value(dp)
+                if value is None:
+                    continue
+
+                ts = CloudWatchUtils.normalize_timestamp(dp.get('Timestamp'))
+                raw_docs.append({
+                    'cloud_account_id': self.cloud_acc_id,
+                    'region': getattr(log_group_resource, 'region', None),
+                    'log_group_name': log_group_resource.name,
+                    'cloud_resource_id': log_group_resource.cloud_resource_id,
+                    'metric_name': metric_name,
+                    'timestamp': ts,
+                    'value': float(value),
+                    'retention_in_days': getattr(log_group_resource, 'retention_in_days', None),
+                    'stored_bytes': getattr(log_group_resource, 'stored_bytes', None),
+                    'arn': getattr(log_group_resource, 'arn', None),
+                    'collected_at': opttime.utcnow()
+                })
+        return raw_docs
+
+    def _prepare_summary_metrics(self, log_group_resource):
+        """Prepare summary metrics for ClickHouse"""
+        metrics_data = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                value = CloudWatchUtils.datapoint_value(dp)
+                if value is None:
+                    continue
+
+                ts = dp.get('Timestamp')
+                if isinstance(ts, datetime):
+                    ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+
+                metrics_data.append([
+                    self.cloud_acc_id,
+                    log_group_resource.cloud_resource_id,
+                    metric_name,
+                    ts,
+                    float(value)
+                ])
+
+        return metrics_data
+
+    def process_log_group_metrics(self, log_group_resource):
+        """Process and persist CloudWatch metrics for a log group"""
+        if not hasattr(log_group_resource, 'metrics'):
+            return
+
+        # Process raw metrics for MongoDB
+        raw_docs = self._prepare_raw_metric_docs(log_group_resource)
+        if raw_docs:
+            try:
+                self.mongo_cloudwatch.insert_many(raw_docs)
+            except Exception as exc:
+                LOG.warning('Failed to insert raw CloudWatch docs into Mongo: %s', str(exc))
+
+        # Process summary metrics for ClickHouse
+        metrics_data = self._prepare_summary_metrics(log_group_resource)
+        if metrics_data:
+            self.save_cloudwatch_metrics(metrics_data)

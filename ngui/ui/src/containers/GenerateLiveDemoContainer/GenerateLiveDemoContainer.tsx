@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useMutation } from "@apollo/client";
 import { Box, Stack } from "@mui/system";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +7,7 @@ import { GET_LIVE_DEMO, CREATE_LIVE_DEMO } from "api/restapi/actionTypes";
 import GenerateLiveDemo from "components/GenerateLiveDemo/GenerateLiveDemo";
 import Logo from "components/Logo";
 import { initialize } from "containers/InitializeContainer/redux";
-import { CREATE_TOKEN } from "graphql/api/auth/queries";
+import { useCreateTokenMutation } from "graphql/__generated__/hooks/auth";
 import { reset } from "reducers/route";
 import { HOME, NEXT_QUERY_PARAMETER_NAME } from "urls";
 import { isError } from "utils/api";
@@ -29,7 +28,7 @@ const GenerateLiveDemoContainer = ({ email, subscribeToNewsletter }: GenerateLiv
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [createToken, { loading: loginLoading }] = useMutation(CREATE_TOKEN, {
+  const [createToken, { loading: loginLoading }] = useCreateTokenMutation({
     onCompleted: (data) => {
       const caveats = macaroon.processCaveats(macaroon.deserialize(data.token.token).getCaveats());
       dispatch(initialize({ ...data.token, caveats }));
