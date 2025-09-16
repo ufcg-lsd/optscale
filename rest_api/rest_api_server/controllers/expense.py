@@ -810,7 +810,7 @@ class CleanExpenseController(BaseController, MongoMixin, ClickHouseMixin,
     # entity_name: resource_field, entity_map_field, joined fields
     JOINED_ENTITY_MAP = {
         'cloud_account': ('cloud_account_id', 'cloud_account_id',
-                          ['id', 'name', 'type']),
+                          ['id', 'name', 'type', 'account_id']),
         'owner': ('employee_id', 'owner_id', ['id', 'name']),
         'pool': ('pool_id', 'pool_id', ['id', 'name', 'purpose'])
     }

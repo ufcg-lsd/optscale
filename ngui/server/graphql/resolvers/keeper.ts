@@ -1,4 +1,4 @@
-import { Resolvers } from "./keeper.generated.js";
+import { Resolvers } from "../__generated__/types/keeper";
 
 const resolvers: Resolvers = {
   Query: {

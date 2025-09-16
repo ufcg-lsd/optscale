@@ -1,6 +1,32 @@
 const MOCKED_DATA = {
   total_saving: 5806.920251782697,
   optimizations: {
+    s3_intelligent_tiering: {
+      count: 1,
+      saving: 125.50,
+      options: {
+        excluded_pools: {},
+        skip_cloud_accounts: []
+      },
+      items: [
+        {
+          resource_id: "s3-bucket-1",
+          resource_name: "my-data-bucket",
+          cloud_resource_id: "my-data-bucket",
+          region: "us-east-1",
+          cloud_account_id: "1ef6f7ed-4600-4541-a6d7-43fc151feeb9",
+          cloud_type: "aws_cnr",
+          owner: { id: "33e28316-f72f-4592-96c6-4766c963519b", name: "Lincoln Morton" },
+          pool: { id: "6c936baf-5045-4326-9c8e-52337e56a19c", name: "AWS HQ", purpose: "budget" },
+          is_excluded: false,
+          is_with_intelligent_tiering: false,
+          detected_at: 1682054418,
+          cloud_account_name: "AWS HQ",
+          saving: 125.50
+        }
+      ],
+      limit: 3
+    },
     abandoned_instances: {
       count: 32,
       saving: 1909.1631072959997,

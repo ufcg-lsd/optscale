@@ -1,5 +1,5 @@
-import { useQuery, NetworkStatus } from "@apollo/client";
-import { GET_ORGANIZATIONS } from "graphql/api/restapi/queries";
+import { NetworkStatus } from "@apollo/client";
+import { useOrganizationsQuery } from "graphql/__generated__/hooks/restapi";
 import { useGetToken } from "hooks/useGetToken";
 import { isEmpty as isEmptyArray } from "utils/arrays";
 import { Error, Loading } from "../../common";
@@ -14,7 +14,7 @@ const StepContainer = () => {
     networkStatus: getOrganizationsNetworkStatus,
     error: getOrganizationsError,
     refetch: refetchOrganizations
-  } = useQuery(GET_ORGANIZATIONS, {
+  } = useOrganizationsQuery({
     fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true
   });

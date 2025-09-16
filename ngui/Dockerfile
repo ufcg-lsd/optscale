@@ -38,7 +38,6 @@ WORKDIR /usr/src/app
 
 # server
 COPY --from=builder /usr/src/app/prod/server/dist ./server/dist
-COPY --from=builder /usr/src/app/prod/server/graphql/schemas/*.graphql ./server/dist/graphql/schemas/
 COPY --from=builder /usr/src/app/prod/server/node_modules ./server/node_modules
 
 # ui

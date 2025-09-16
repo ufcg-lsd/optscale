@@ -1,9 +1,8 @@
 import { useCallback } from "react";
-import { useMutation } from "@apollo/client";
 import { useDispatch } from "react-redux";
 import { verifyEmail } from "api";
 import { VERIFY_EMAIL } from "api/restapi/actionTypes";
-import { CREATE_TOKEN } from "graphql/api/auth/queries";
+import { useCreateTokenMutation } from "graphql/__generated__/hooks/auth";
 import { useApiState } from "hooks/useApiState";
 import { isError } from "utils/api";
 
@@ -31,7 +30,7 @@ const useSendEmailVerificationCode = () => {
 };
 
 const useGetEmailVerificationCodeToken = () => {
-  const [createToken, { loading: loginLoading }] = useMutation(CREATE_TOKEN);
+  const [createToken, { loading: loginLoading }] = useCreateTokenMutation();
 
   const onGet = (email: string, code: string) =>
     createToken({ variables: { email, code } }).then(({ data: { token } }) => Promise.resolve(token));

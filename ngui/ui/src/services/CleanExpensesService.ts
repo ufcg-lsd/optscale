@@ -1,9 +1,8 @@
 import { useCallback } from "react";
-import { useQuery } from "@apollo/client";
 import { useDispatch } from "react-redux";
 import { RESTAPI, getCleanExpenses } from "api";
 import { GET_CLEAN_EXPENSES as GET_CLEAN_EXPENSES_REDUX } from "api/restapi/actionTypes";
-import { GET_CLEAN_EXPENSES as GET_CLEAN_EXPENSES_GRAPHQL } from "graphql/api/restapi/queries/restapi.queries";
+import { useCleanExpensesQuery } from "graphql/__generated__/hooks/restapi";
 import { useApiData } from "hooks/useApiData";
 import { useApiState } from "hooks/useApiState";
 import { useInScopeOfPageMockup } from "hooks/useInScopeOfPageMockup";
@@ -229,7 +228,7 @@ export const useGet = ({ params = {} } = {}) => {
 
   const { organizationId } = useOrganizationInfo();
 
-  const { data, loading } = useQuery(GET_CLEAN_EXPENSES_GRAPHQL, {
+  const { data, loading } = useCleanExpensesQuery({
     variables: {
       organizationId: organizationId,
       params: mapCleanExpensesRequestParamsToApiParams(params)

@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useMutation } from "@apollo/client";
 import Typography from "@mui/material/Typography";
 import { FormattedMessage } from "react-intl";
 import DeleteEntity from "components/DeleteEntity";
 import Input from "components/Input";
 import OrganizationLabel from "components/OrganizationLabel";
-import { DELETE_ORGANIZATION } from "graphql/api/restapi/queries/restapi.queries";
+import { useDeleteOrganizationMutation } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { useSignOut } from "hooks/useSignOut";
@@ -21,7 +20,7 @@ const DeleteOrganizationContainer = ({ onCancel }) => {
 
   const signOut = useSignOut();
 
-  const [deleteOrganization, { loading }] = useMutation(DELETE_ORGANIZATION);
+  const [deleteOrganization, { loading }] = useDeleteOrganizationMutation();
 
   const onDelete = () => {
     deleteOrganization({

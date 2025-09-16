@@ -117,23 +117,23 @@ class TestResourcesCountApi(TestApiBase):
                 self.cloud_acc1['id']: {
                     'count': 5, 'created': 0, 'deleted_day_before': 0,
                     **self.extract_fields(
-                        self.cloud_acc1, ['id', 'name', 'type'])
+                        self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
                 },
                 self.cloud_acc2['id']: {
                     'count': 5, 'created': 0, 'deleted_day_before': 0,
                     **self.extract_fields(
-                        self.cloud_acc2, ['id', 'name', 'type'])
+                        self.cloud_acc2, ['id', 'name', 'type', 'account_id'])
                 }},
             str(self.day2): {
                 self.cloud_acc1['id']: {
                     'count': 5, 'created': 5, 'deleted_day_before': 5,
                     **self.extract_fields(
-                        self.cloud_acc1, ['id', 'name', 'type'])
+                        self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
                 },
                 self.cloud_acc2['id']: {
                     'count': 5, 'created': 0, 'deleted_day_before': 0,
                     **self.extract_fields(
-                        self.cloud_acc2, ['id', 'name', 'type'])
+                        self.cloud_acc2, ['id', 'name', 'type', 'account_id'])
                 }}
         }
         self.assertEqual(res['count'], 15)
@@ -141,11 +141,11 @@ class TestResourcesCountApi(TestApiBase):
         counts = {
             self.cloud_acc1['id']: {
                 'total': 10, 'average': 5, **self.extract_fields(
-                    self.cloud_acc1, ['id', 'name', 'type'])
+                    self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
             },
             self.cloud_acc2['id']: {
                 'total': 5, 'average': 5, **self.extract_fields(
-                    self.cloud_acc2, ['id', 'name', 'type'])
+                    self.cloud_acc2, ['id', 'name', 'type', 'account_id'])
             }}
         self.assertEqual(res['counts'], counts)
 
@@ -621,17 +621,17 @@ class TestResourcesCountApi(TestApiBase):
             str(self.day1): {self.cloud_acc1['id']: {
                 'count': 2, 'created': 0, 'deleted_day_before': 0,
                 **self.extract_fields(
-                    self.cloud_acc1, ['id', 'name', 'type'])
+                    self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
             }},
             str(self.day2): {self.cloud_acc1['id']: {
                 'count': 9, 'created': 7, 'deleted_day_before': 0,
                 **self.extract_fields(
-                    self.cloud_acc1, ['id', 'name', 'type'])
+                    self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
             }},
             str(self.day3): {self.cloud_acc1['id']: {
                 'count': 4, 'created': 0, 'deleted_day_before': 5,
                 **self.extract_fields(
-                    self.cloud_acc1, ['id', 'name', 'type'])
+                    self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
             }}
         }
         self.assertEqual(res['count'], 9)
@@ -639,7 +639,7 @@ class TestResourcesCountApi(TestApiBase):
         counts = {
             self.cloud_acc1['id']: {
                 'total': 9, 'average': 5,
-                **self.extract_fields(self.cloud_acc1, ['id', 'name', 'type'])
+                **self.extract_fields(self.cloud_acc1, ['id', 'name', 'type', 'account_id'])
             }
         }
         self.assertEqual(res['counts'], counts)
@@ -751,6 +751,7 @@ class TestResourcesCountApi(TestApiBase):
                     'id': self.cloud_acc1['id'],
                     'name': self.cloud_acc1['name'],
                     'type': self.cloud_acc1['type'],
+                    'account_id': self.cloud_acc1['account_id'],
                     'average': 1.0
                 }
             })
@@ -770,6 +771,7 @@ class TestResourcesCountApi(TestApiBase):
                     'id': self.cloud_acc1['id'],
                     'name': self.cloud_acc1['name'],
                     'type': self.cloud_acc1['type'],
+                    'account_id': self.cloud_acc1['account_id'],
                     'average': 0.5
                 }
             })

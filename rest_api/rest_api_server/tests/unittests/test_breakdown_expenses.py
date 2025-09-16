@@ -320,27 +320,35 @@ class TestBreakdownExpensesApi(TestApiBase):
                     'cost': 20,
                     'id': self.cloud_acc2['id'],
                     'name': self.cloud_acc2['name'],
-                    'type': self.cloud_acc2['type']
+                    'type': self.cloud_acc2['type'],
+                    'account_id': self.cloud_acc2['account_id'],
                 },
                 self.cloud_acc1['id']: {
                     'cost': 10,
                     'id': self.cloud_acc1['id'],
                     'name': self.cloud_acc1['name'],
-                    'type': self.cloud_acc1['type']
+                    'type': self.cloud_acc1['type'],
+                    'account_id': self.cloud_acc1['account_id'],
                 }
             }
         }
         self.assertEqual(resp['breakdown'], expected_breakdown)
         expected_counts = {
             self.cloud_acc1['id']: {
-                'total': 10, 'previous_total': 0, 'id': self.cloud_acc1['id'],
+                'total': 10,
+                'previous_total': 0,
+                'id': self.cloud_acc1['id'],
                 'name': self.cloud_acc1['name'],
-                'type': self.cloud_acc1['type']
+                'type': self.cloud_acc1['type'],
+                'account_id': self.cloud_acc1['account_id'],
             },
             self.cloud_acc2['id']: {
-                'total': 20, 'previous_total': 25, 'id': self.cloud_acc2['id'],
+                'total': 20,
+                'previous_total': 25,
+                'id': self.cloud_acc2['id'],
                 'name': self.cloud_acc2['name'],
-                'type': self.cloud_acc2['type']
+                'type': self.cloud_acc2['type'],
+                'account_id': self.cloud_acc2['account_id'],
             }
         }
         self.assertEqual(resp['counts'], expected_counts)

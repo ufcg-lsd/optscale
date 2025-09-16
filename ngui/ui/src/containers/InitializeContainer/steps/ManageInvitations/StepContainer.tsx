@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_INVITATIONS } from "graphql/api/restapi/queries";
+import { useInvitationsQuery } from "graphql/__generated__/hooks/restapi";
 import { isEmpty as isEmptyArray } from "utils/arrays";
 import { Error, Loading } from "../../common";
 import SetupOrganization from "../SetupOrganization/StepContainer";
@@ -14,7 +13,7 @@ const StepContainer = () => {
     loading: getInvitationsLoading,
     error: getInvitationsError,
     refetch: refetchInvitations
-  } = useQuery(GET_INVITATIONS, {
+  } = useInvitationsQuery({
     fetchPolicy: "network-only"
   });
 

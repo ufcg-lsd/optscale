@@ -1,4 +1,4 @@
-import { Resolvers } from "./auth.generated.js";
+import { Resolvers } from "../__generated__/types/auth";
 
 const resolvers: Resolvers = {
   Query: {

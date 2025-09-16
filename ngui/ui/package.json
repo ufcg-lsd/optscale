@@ -2,6 +2,10 @@
   "name": "ui",
   "version": "0.3.0",
   "private": true,
+  "engines": {
+    "node": "=22.16.0",
+    "pnpm": "=10.12.1"
+  },
   "dependencies": {
     "@analytics/google-analytics": "1.0.5",
     "@apollo/client": "3.12.6",

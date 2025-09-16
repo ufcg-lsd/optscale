@@ -3,7 +3,7 @@ import {
   MutationTokenArgs,
   MutationUpdateUserArgs,
   OrganizationAllowedActionsRequestParams,
-} from "../../graphql/resolvers/auth.generated.js";
+} from "../../graphql/__generated__/types/auth";
 import { getParams } from "../../utils/getParams.js";
 
 class AuthClient extends BaseClient {

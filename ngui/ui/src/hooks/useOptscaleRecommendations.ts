@@ -25,6 +25,7 @@ import RightsizingInstances from "containers/RecommendationsOverviewContainer/re
 import RightsizingRdsInstances from "containers/RecommendationsOverviewContainer/recommendations/RightsizingRdsInstances";
 import ShortLivingInstances from "containers/RecommendationsOverviewContainer/recommendations/ShortLivingInstances";
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
+import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
 
 const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buckets, NebiusMigration];
@@ -52,6 +53,7 @@ export const useOptscaleRecommendations = () => {
       InsecureSecurityGroups,
       InactiveUsers,
       InactiveConsoleUsers,
+      IntelligentTiering,
       AbandonedS3Buckets,
       AbandonedKinesisStreams,
       AbandonedInstances,

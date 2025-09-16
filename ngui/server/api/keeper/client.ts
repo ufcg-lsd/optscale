@@ -1,5 +1,5 @@
 import BaseClient from "../baseClient.js";
-import { EventsRequestParams } from "../../graphql/resolvers/keeper.generated.js";
+import { EventsRequestParams } from "../../graphql/__generated__/types/keeper";
 import { getParams } from "../../utils/getParams.js";
 
 class KeeperClient extends BaseClient {

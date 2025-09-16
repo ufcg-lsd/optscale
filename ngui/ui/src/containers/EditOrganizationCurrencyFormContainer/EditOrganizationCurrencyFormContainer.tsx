@@ -1,7 +1,6 @@
-import { useMutation } from "@apollo/client";
 import EditOrganizationCurrencyForm from "components/forms/EditOrganizationCurrencyForm";
 import { FormValues } from "components/forms/EditOrganizationCurrencyForm/types";
-import { UPDATE_ORGANIZATION } from "graphql/api/restapi/queries/restapi.queries";
+import { useUpdateOrganizationMutation } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 
 type EditOrganizationCurrencyFormContainerProps = {
@@ -12,7 +11,7 @@ type EditOrganizationCurrencyFormContainerProps = {
 const EditOrganizationCurrencyFormContainer = ({ onCancel, onSuccess }: EditOrganizationCurrencyFormContainerProps) => {
   const { currency, organizationId } = useOrganizationInfo();
 
-  const [updateOrganization, { loading }] = useMutation(UPDATE_ORGANIZATION);
+  const [updateOrganization, { loading }] = useUpdateOrganizationMutation();
 
   const onSubmit = (formData: FormValues) => {
     updateOrganization({

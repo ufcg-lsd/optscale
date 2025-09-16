@@ -1,8 +1,7 @@
-import { useMutation } from "@apollo/client";
 import { useDispatch } from "react-redux";
 import { restorePassword } from "api";
 import { RESTORE_PASSWORD } from "api/restapi/actionTypes";
-import { CREATE_TOKEN, UPDATE_USER } from "graphql/api/auth/queries";
+import { useCreateTokenMutation, useUpdateUserMutation } from "graphql/__generated__/hooks/auth";
 import { useApiState } from "hooks/useApiState";
 import { isError } from "utils/api";
 
@@ -27,7 +26,7 @@ const useSendVerificationCode = () => {
 };
 
 const useGetVerificationCodeToken = () => {
-  const [createToken, { loading: loginLoading }] = useMutation(CREATE_TOKEN);
+  const [createToken, { loading: loginLoading }] = useCreateTokenMutation();
 
   const onGet = (email: string, code: string) =>
     createToken({ variables: { email, code } }).then(({ data: { token } }) => Promise.resolve(token));
@@ -36,7 +35,7 @@ const useGetVerificationCodeToken = () => {
 };
 
 const useUpdateUserPassword = () => {
-  const [updateUser, { loading: updateUserLoading }] = useMutation(UPDATE_USER);
+  const [updateUser, { loading: updateUserLoading }] = useUpdateUserMutation();
 
   const onUpdate = (
     token: {
@@ -62,7 +61,7 @@ const useUpdateUserPassword = () => {
 };
 
 const useGetNewToken = () => {
-  const [createToken, { loading: loginLoading }] = useMutation(CREATE_TOKEN);
+  const [createToken, { loading: loginLoading }] = useCreateTokenMutation();
 
   const onGet = (email: string, password: string) =>
     createToken({ variables: { email, password } }).then(({ data: { token } }) => Promise.resolve(token));
