@@ -27,6 +27,7 @@ import ShortLivingInstances from "containers/RecommendationsOverviewContainer/re
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
 import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
+import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 
 const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buckets, NebiusMigration];
 
@@ -53,6 +54,7 @@ export const useOptscaleRecommendations = () => {
       InsecureSecurityGroups,
       InactiveUsers,
       InactiveConsoleUsers,
+      InactiveCloudWatchLogGroup,
       IntelligentTiering,
       AbandonedS3Buckets,
       AbandonedKinesisStreams,
