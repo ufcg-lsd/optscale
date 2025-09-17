@@ -210,6 +210,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 'is_excluded': is_excluded,
                 'retention_in_days': self._get_from_resource(r, 'retention_in_days'),
                 'stored_bytes': int(self._get_from_resource(r, 'stored_bytes', 0) or 0),
+                'detected_at': self.created_at,
                 'storage': int(self._get_from_resource(r, 'stored_bytes', 0) or 0),
                 'ingestion': int(ingestion_bytes_30d),
                 'query': int(query_bytes_30d),
