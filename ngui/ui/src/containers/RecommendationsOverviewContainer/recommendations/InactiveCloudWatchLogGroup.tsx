@@ -71,7 +71,7 @@ const columns = [
 ];
 
 class InactiveCloudWatchLogGroup extends BaseRecommendation {
-    type = "inactive_cloudwatch_log_group";
+    type = "inactive_cloud_watch_log_group";
 
     name = "inactiveCloudWatchLogGroup";
 
