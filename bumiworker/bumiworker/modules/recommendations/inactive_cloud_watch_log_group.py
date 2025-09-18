@@ -1,8 +1,9 @@
 import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from enum import Enum
+
 from bumiworker.bumiworker.modules.base import ModuleBase
 from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import CloudWatchLogsPricing, DEFAULT as CWL_PRICING
 
@@ -129,7 +130,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         without considering lifecycle policy changes.
         
         Uses three components:
-        - Ingestion (IncomingBytes): USD 0.50 per GB (last 30 days)
+        - Ingestion (IngestionBytes): USD 0.50 per GB (last 30 days)
         - Storage (stored_bytes): USD 0.03 per GB-month compressed (apply 0.15 compression factor)
         - Query (QueryBytes): USD 0.005 per GB scanned (last 30 days)
         """
@@ -159,7 +160,43 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         except Exception:
             return 0.0
     
+    def _aggregate_resources(self, cloud_account_id: str) -> List[Dict[str, Any]]:
+        """
+        Pull log group docs for the given cloud account with only the fields we need
+        for candidate selection and saving computation.
+        """
+        pipeline = [
+            {"$match": {
+                "resource_type": "Log Group",
+                "cloud_account_id": cloud_account_id,
+                "deleted_at": 0
+            }},
+            {"$project": {
+                "_id": 0,
+                "resource_id": "$_id",
+                "cloud_account_id": 1,
+                "name": "$name",
+                "log_group_name": "$name",
+                "stored_bytes": "$meta.stored_bytes",
+                "metrics": "$meta.metrics",
+                "last_collected_at": "$meta.last_collected_at",
+                "retention_in_days": "$meta.retention_in_days",
+                "region": 1,
+                "owner_id": 1,
+                "pool_id": 1
+            }}
+        ]
+        return list(self.mongo_client.restapi.resources.aggregate(pipeline))
 
+    def _extract_cloud_account_id(self, ca: Union[str, Dict[str, Any]]) -> str:
+        """
+        Normalize cloud account input into its id string.
+        """
+        if isinstance(ca, str):
+            return ca
+        if isinstance(ca, dict):
+            return ca.get("id") or ca.get("_id")
+        return ""
 
     def _get(self):
         """
@@ -170,52 +207,54 @@ class InactiveCloudWatchLogGroup(ModuleBase):
          skip_cloud_accounts) = self.get_options_values()
 
         ca_map = self.get_cloud_accounts(SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
-        _, response = self.rest_client.cloud_resources_discover(
-            self.organization_id, 'log_group')
 
-        employees = self.get_employees()
-        pools = self.get_pools()
+        result: List[Dict[str, Any]] = []
 
-        result = []
-        for r in response.get('data', []):
-            if r.get('cloud_account_id') not in ca_map:
+        for ca in ca_map:
+            ca_id = self._extract_cloud_account_id(ca)
+            if not ca_id:
+                LOG.warning("Skipping cloud account with unknown structure: %r", ca)
+                continue
+            if ca_id in skip_cloud_accounts:
                 continue
 
-            if r.get('pool_id') in excluded_pools:
-                is_excluded = True
-            else:
-                is_excluded = False
+            response = self._aggregate_resources(ca_id)
+            for r in response:
+                if r.get('pool_id') in excluded_pools:
+                    is_excluded = True
+                else:
+                    is_excluded = False
+                if not self._is_inactive(r, dead_resource_days):
+                    continue
 
-            if not self._is_inactive(r, dead_resource_days):
-                continue
+                saving = self._estimate_saving(r)
+                ca_info = ca_map.get(r['cloud_account_id'], {})
 
-            saving = self._estimate_saving(r)
-            ca_info = ca_map.get(r['cloud_account_id'], {})
+                metrics = self._get_metrics(r)
+                ingestion_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.INGESTION.value, []))
+                query_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.QUERY.value, []))
 
-            metrics = self._get_metrics(r)
-            ingestion_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.INGESTION.value, []))
-            query_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.QUERY.value, []))
 
-            result.append({
-                'cloud_resource_id': r.get('cloud_resource_id'),    
-                'resource_name': r.get('name'),
-                'log_group_name': r.get('name'),
-                'resource_id': r.get('resource_id'),
-                'cloud_account_id': r.get('cloud_account_id'),
-                'cloud_type': ca_info.get('type'),
-                'cloud_account_name': ca_info.get('name'),
-                'region': r.get('region') or self._get_from_resource(r, 'region'),
-                'owner': self._extract_owner(r.get('owner_id'), employees),
-                'pool': self._extract_pool(r.get('pool_id'), pools),
-                'is_excluded': is_excluded,
-                'retention_in_days': self._get_from_resource(r, 'retention_in_days'),
-                'stored_bytes': int(self._get_from_resource(r, 'stored_bytes', 0) or 0),
-                'detected_at': self.created_at,
-                'storage': int(self._get_from_resource(r, 'stored_bytes', 0) or 0),
-                'ingestion': int(ingestion_bytes_30d),
-                'query': int(query_bytes_30d),
-                'saving': saving,
-            })
+                result.append({
+                    'cloud_resource_id': r.get('resource_id'),
+                    'resource_id': r.get('resource_id'),    
+                    'resource_name': r.get('name'),
+                    'log_group_name': r.get('log_group_name'),
+                    'cloud_account_id': r.get('cloud_account_id'),
+                    'cloud_type': ca_info.get('type'),
+                    'cloud_account_name': ca_info.get('name'),
+                    'region': r.get('region'),
+                    'owner': {"id": None, "name": None},
+                    'pool': {"id": r.get("pool_id"), "name": None, "purpose": None},
+                    'is_excluded': is_excluded,
+                    'retention_in_days': r.get('retention_in_days'),
+                    'stored_bytes': int(r.get('stored_bytes', 0) or 0),
+                    'detected_at': self.created_at,
+                    'storage': int(r.get('stored_bytes', 0) or 0),
+                    'ingestion': int(ingestion_bytes_30d),
+                    'query': int(query_bytes_30d),
+                    'saving': saving,
+                })
 
         return result
 
