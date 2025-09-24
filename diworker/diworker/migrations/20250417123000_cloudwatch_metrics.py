@@ -13,7 +13,6 @@ class Migration(BaseMigration):
         return clickhouse_connect.get_client(
                 host=host, password=password, database=db_name, user=user,
                 port=port, secure=secure)
-
     def upgrade(self):
         clickhouse_cl = self.get_clickhouse_client()
         clickhouse_cl.command("""
@@ -26,7 +25,6 @@ class Migration(BaseMigration):
             ) ENGINE = MergeTree()
             ORDER BY (cloud_account_id, resource_id, metric_name, timestamp)
         """)
-
     def downgrade(self):
         clickhouse_cl = self.get_clickhouse_client()
         clickhouse_cl.command(
