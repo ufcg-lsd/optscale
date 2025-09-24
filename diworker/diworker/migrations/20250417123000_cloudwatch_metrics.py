@@ -1,12 +1,24 @@
 import logging
 from diworker.diworker.migrations.base import BaseMigration
+import clickhouse_connect
+from optscale_client.rest_api_client.client_v2 import Client as RestClient
 
 LOG = logging.getLogger(__name__)
 
 
 class Migration(BaseMigration):
+
+    def get_clickhouse_client(self):
+        user, password, host, db_name, port, secure = (
+            self.config_cl.clickhouse_params())
+        return clickhouse_connect.get_client(
+                host=host, password=password, database=db_name, user=user,
+                port=port, secure=secure)
+
+
     def upgrade(self):
-        self.clickhouse_cl.command("""
+        clickhouse_cl = self.get_clickhouse_client()
+        clickhouse_cl.command("""
             CREATE TABLE IF NOT EXISTS cloudwatch_metrics (
                 cloud_account_id String,
                 resource_id String,
@@ -18,6 +30,7 @@ class Migration(BaseMigration):
         """)
 
     def downgrade(self):
-        self.clickhouse_cl.command(
+        clickhouse_cl = self.get_clickhouse_client()
+        clickhouse_cl.command(
             "DROP TABLE IF EXISTS cloudwatch_metrics"
         )
