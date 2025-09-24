@@ -5,7 +5,6 @@ import clickhouse_connect
 
 LOG = logging.getLogger(__name__)
 
-
 class Migration(BaseMigration):
 
     def get_clickhouse_client(self):
