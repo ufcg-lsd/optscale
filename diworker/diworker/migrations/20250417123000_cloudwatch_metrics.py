@@ -27,6 +27,7 @@ class Migration(BaseMigration):
             ) ENGINE = MergeTree()
             ORDER BY (cloud_account_id, resource_id, metric_name, timestamp)
         """)
+
     def downgrade(self):
         clickhouse_cl = self.get_clickhouse_client()
         clickhouse_cl.command(
