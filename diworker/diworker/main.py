@@ -183,7 +183,7 @@ class DIWorker(ConsumerMixin):
         except Exception as exc:
             if hasattr(exc, 'details'):
                 # pylint: disable=E1101
-                LOG.error('Mongo exception details: %s', exc.details)
+                LOG.error('Monga exception details: %s', exc.details)
             reason = str(exc)
             self.rest_cl.report_import_update(
                 self.report_import_id,
