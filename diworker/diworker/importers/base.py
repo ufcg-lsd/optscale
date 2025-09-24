@@ -815,12 +815,12 @@ class CSVBaseReportImporter(BaseReportImporter):
         if not column_names:
             column_names = [
                 'cloud_account_id',
-                'resource_id', 
+                'resource_id',
                 'metric_name',
                 'timestamp',
                 'value'
             ]
-        
+
         try:
             self.clickhouse_cl.insert(
                 'cloudwatch_metrics',
