@@ -100,7 +100,7 @@ spec:
 {{ include "wait_for_elk" . | indent 6 }}
 {{- end }}
       - name: copy-config
-        image: "busybox:1.30.0"
+        image: {{ $config.statefulSet.spec.initContainers.image | quote}}
         imagePullPolicy: "IfNotPresent"
         command:
           - "sh"

@@ -1,0 +1,5682 @@
+---
+# Source: optscale/templates/mongodb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "mongo"
+  labels:
+    app: "mongo"
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: "mongo"
+      release: "optscale"
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "rabbitmq"
+  labels:
+    app: "rabbitmq"
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: "rabbitmq"
+      release: "optscale"
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: rabbitmq
+    release: optscale
+  name: rabbitmq
+automountServiceAccountToken: true
+---
+# Source: optscale/templates/mariadb.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mariadb-secret
+type: Opaque
+data:
+  password: bXktcGFzc3dvcmQtMDE=
+---
+# Source: optscale/templates/minio.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "minio-secret"
+type: Opaque
+data:
+  access: "b3B0c2NhbGUtbWluaW8="
+  secret: "c2VjcmV0X3Bhc3N3b3Jk"
+---
+# Source: optscale/templates/mongodb.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "mongo-secret"
+  labels:
+    app: mongo
+type: Opaque
+data:
+  username: cm9vdA==
+  password: U2VjdXJlUGFzc3dvcmQtMDEtMDI=
+  key.txt: c2VjdXJlU2hhcmRpbmdLZXlGRkZERGExMjk=
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbit-secret
+  labels:
+    app: rabbitmq
+    release: "optscale"
+type: Opaque
+data:
+  username: "b3B0c2NhbGU="
+  password: "c2VjdXJlLXBhc3N3b3JkLWhlcmU="
+  management-username: "b3B0c2NhbGU="
+  management-password: "c2VjdXJlLXBhc3N3b3JkLWhlcmU="
+  erlang-cookie: "ZFdraFhlaE9BcEgxT0hzaHZCeWZwZlRmM0NkOHd3a0FEZWk3bVdkNUpG"
+  definitions.json: "ewogICJwb2xpY2llcyI6IFt7CiAgICAibmFtZSI6ICJoYS1hbGwiLAogICAgInBhdHRlcm4iOiAiLioiLAogICAgInZob3N0IjogIi8iLAogICAgImRlZmluaXRpb24iOiB7CiAgICAgICJoYS1tb2RlIjogImFsbCIsCiAgICAgICJoYS1zeW5jLW1vZGUiOiAiYXV0b21hdGljIiwKICAgICAgImhhLXN5bmMtYmF0Y2gtc2l6ZSI6IDEKICAgIH0KICB9XQp9"
+---
+# Source: optscale/templates/report_import_scheduler.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-secret
+  labels:
+    app: report-import-scheduler
+    release: "optscale"
+type: Opaque
+data:
+  cluster_secret: "ZmM4M2QzMS00NjFkLTQ0YzUtYjRkNS00MWEzMmQ2YzM2YTE="
+---
+# Source: optscale/templates/thanos_receive.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thanos-secret
+  labels:
+    app: thanos-receive
+    release: optscale
+type: Opaque
+stringData:
+  thanos_conf.yaml: |
+    type: S3
+    config:
+      bucket: thanos
+      endpoint: "minio:80"
+      access_key: "optscale-minio"
+      secret_key: "secret_password"
+      insecure: true
+    prefix: "data"
+---
+# Source: optscale/templates/clickhouse/configmap.yaml
+kind: ConfigMap
+apiVersion: v1
+data:
+  config.xml: |-
+    <?xml version="1.0"?>
+    <yandex>
+        <logger>
+            <level>warning</level>
+            <console>1</console>
+            <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+            <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        </logger>
+        <user_directories>
+            <users_xml>
+                <path>/etc/clickhouse-server/users.xml</path>
+            </users_xml>
+        </user_directories>
+            <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
+        <format_schema_path>/var/lib/clickhouse/format_schemas/</format_schema_path>
+        <http_port>8123</http_port>
+        <tcp_port>9000</tcp_port>
+        <listen_host>0.0.0.0</listen_host>
+        <max_connections>4096</max_connections>
+        <keep_alive_timeout>3</keep_alive_timeout>
+        <max_concurrent_queries>100</max_concurrent_queries>
+        <uncompressed_cache_size>8589934592</uncompressed_cache_size>
+        <mark_cache_size>5368709120</mark_cache_size>
+        <path>/var/lib/clickhouse/</path>
+        <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+        <default_profile>default</default_profile>
+        <default_database>default</default_database>
+        <zookeeper incl="zookeeper-servers" optional="true" />
+        <macros incl="macros" optional="true" />
+        <builtin_dictionaries_reload_interval>3600</builtin_dictionaries_reload_interval>
+        <max_session_timeout>3600</max_session_timeout>
+        <default_session_timeout>60</default_session_timeout>
+        <query_log replace="1">
+            <database>system</database>
+            <table>query_log</table>
+            <engine>Engine = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + interval 5 day</engine>
+            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        </query_log>
+        <dictionaries_config>*_dictionary.xml</dictionaries_config>
+        <resharding>
+            <task_queue_path>/clickhouse/task_queue</task_queue_path>
+        </resharding>
+        <distributed_ddl>
+            <path>/clickhouse/task_queue/ddl</path>
+        </distributed_ddl>
+    </yandex>
+  users.xml: |-
+    <?xml version="1.0"?>
+    <yandex>
+        <profiles>
+            <default>
+                <max_memory_usage>10000000000</max_memory_usage>
+                <use_uncompressed_cache>0</use_uncompressed_cache>
+                <load_balancing>random</load_balancing>
+            </default>
+            <readonly>
+                <readonly>1</readonly>
+            </readonly>
+        </profiles>
+        <users>
+            <default>
+                <password>secure-password-1-clk</password>
+                <networks incl="networks" replace="replace">
+                    <ip>::/0</ip>
+                </networks>
+                <profile>default</profile>
+                <quota>default</quota>
+            </default>
+        </users>
+        <quotas>
+            <default>
+                <interval>
+                    <duration>3600</duration>
+                    <queries>0</queries>
+                    <errors>0</errors>
+                    <result_rows>0</result_rows>
+                    <read_rows>0</read_rows>
+                    <execution_time>0</execution_time>
+                </interval>
+            </default>
+        </quotas>
+    </yandex>
+metadata:
+  name: clickhouse-config
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    heritage: Helm
+    release: optscale
+    app: clickhouse
+---
+# Source: optscale/templates/etcd.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: optscale-etcd
+data:
+  config: "skip_config_update: false\ndrop_tasks_db: \ndatabases:\n  - \"auth-db\"\n  - \"my-db\"\n  - \"tasks\"\n  - \"herald\"\n  - \"katara\"\n  - \"slacker\"\n  - \"jira-bus\"\n# initial key-value pairs for etcd\n# structure\n#\n#   branch:\n#     key: value\n#\n# became /branch/key = value in etcd\n# lists are handled with append=true, so\n#\n# list:\n#   - value\n#\n# will look like\n# /list/0000000022 = value\netcd:\n  public_ip: \n  company_name: Hystax\n  product_name: OptScale\n  encryption_key: fffffxdddeadb33f\n  release: \n  katara_scheduler_timeout: 3600\n  bumi_scheduler_timeout: 300\n  bumi_worker:\n    max_retries: 5\n    wait_timeout: 7200\n    task_timeout: 3600\n    run_period: 10800\n  optscale_service_emails:\n    recipient: \n    enabled: false\n  optscale_error_emails:\n    recipient: \n    enabled: false\n  google_calendar_service:\n    enabled: false\n    access_key:\n        auth_provider_x509_cert_url: \"https://www.googleapis.com/oauth2/v1/certs\"\n        auth_uri: \"https://accounts.google.com/o/oauth2/auth\"\n        client_email: \"calendar-service@optscale.iam.gserviceaccount.com\"\n        client_id: \"\"\n        client_x509_cert_url: \"https://www.googleapis.com/robot/v1/metadata/x509/calendar-service@optscale.iam.gserviceaccount.com\"\n        private_key: \"-----BEGIN PRIVATE KEY-----\\n-----END PRIVATE KEY-----\\n\"\n        private_key_id: \"eeee000\"\n        project_id: \"optscale\"\n        token_uri: \"https://oauth2.googleapis.com/token\"\n        type: \"service_account\"\n  domains_blacklists:\n    new_employee_email:\n    registration:\n    failed_import_email:\n  domains_whitelists:\n    new_employee_email:\n    registration:\n    failed_import_email:\n  secret:\n    cluster: fc83d31-461d-44c5-b4d5-41a32d6c36a1\n    agent: \n  images_source:\n    host: \n    tag: \n  restapi:\n    invite_expiration_days: 30\n    host: restapi\n    port: 80\n    demo:\n      multiplier: 2\n  auth:\n    host: auth\n    port: 80\n  katara:\n    host: katara\n    port: 80\n  herald:\n    host: herald\n    port: 80\n  keeper:\n    host: keeper\n    port: 80\n  insider:\n    host: insider-api\n    port: 80\n  slacker:\n    host: slacker\n    port: 80\n  jirabus:\n    host: jira-bus\n    port: 80\n  metroculus:\n    host: metroculusapi\n    port: 80\n  thanos_query:\n    host: thanos-query\n    port: 10902\n  thanos_receive:\n    host: thanos-receive\n    port: 19291\n    path: api/v1/receive\n  authdb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: auth-db\n  heralddb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: herald\n  restdb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: my-db\n    port: 3306\n  kataradb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: katara\n  slackerdb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: slacker\n    port: 3306\n  jirabusdb:\n    host: mariadb\n    user: root\n    password: my-password-01\n    db: jira-bus\n    port: 3306\n  mongo:\n  \n    url: mongodb://root:SecurePassword-01-02@mongo:80\n  \n    database: keeper\n  influxdb:\n    host: influxdb\n    port: 80\n    user:\n    pass:\n    database: metrics\n  rabbit:\n    user: optscale\n    pass: secure-password-here\n    host: rabbitmq\n    port: 5672\n  minio:\n    host: minio\n    port: 80\n    access: optscale-minio\n    secret: secret_password\n  clickhouse:\n    host: clickhouse\n    port: 8123\n    user: default\n    password: secure-password-1-clk\n    db: default\n  cleanmongodb:\n    chunk_size: 500\n    rows_limit: 10000\n    archive_enable: \n    file_max_rows: 10000\n  disable_email_verification: true\n  force_aws_edp_strip: \n  encryption_salt: my~encypt10n~s@lt\n  encryption_salt_auth: \n\n  certificates:\n    optscale: \"-----BEGIN CERTIFICATE-----\\nMIIFajCCA1KgAwIBAgIURgoBdKsTrEy7h9qt6bxU8Ui4iqIwDQYJKoZIhvcNAQEL\\nBQAwSTESMBAGA1UECAwJQW1zdGVyZGFtMQswCQYDVQQGEwJOTDESMBAGA1UECgwJ\\nSHlzdGF4IEJWMRIwEAYDVQQHDAlBbXN0ZXJkYW0wIBcNMjUwOTEwMTc1NjA0WhgP\\nMjA1MDA1MDMxNzU2MDRaMEkxEjAQBgNVBAgMCUFtc3RlcmRhbTELMAkGA1UEBhMC\\nTkwxEjAQBgNVBAoMCUh5c3RheCBCVjESMBAGA1UEBwwJQW1zdGVyZGFtMIICIjAN\\nBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA3zckEacg30dkRGDv4I/krAhsBTo9\\n3dtxur6Lijg6PVv5/8AaVKQuF9+DwlBDxA+DRkJhJSqzPk84Z4k+PRhGj4QmJqf+\\nhDniLXsjifUwP/tWMrfGRlmQSAqi6gbW103SuLK4yDcIgnM49FEV7oBg3W3uIHww\\nFblYfi2v5IGRNj+7KYUO3EGoBtWMPCilgNHGpjqcIp0UHpbcKIAht5CHxcLzy89e\\nrchiYiHvtIw2sHL2cyz/XdXzNL7vwQ6ij+5LbBCjSDkOssqaQ/pTLWcsYoHNqdng\\nvnO5WKa9KDhRxhqnTAK9uWDBRUL3LkD9DdhB+pj4PskDJwXh8lVrCFixa35n6LSo\\nF5zEyQBZyGS0pzl41sFraUFAjFGReUNsFdE27k/k+qWMsCe2zF+mx/Bw9upjAzsv\\n/UT2yy4uqR/WxzIjld2Nw2pt7pgbPhWWJxX5dwNfPZe1nGq+jJR+wsG/N1SpUIau\\nuG9Q1Zl/MVr9Bfy98xhZajfGxfU2mW6gGYB0P1+XnvwCKgazYdkdGgec+d8ZQUu6\\nJghh/6S+M1rUNs10qP8PesRXDZ1yhMzkpPVjZqsHS3cugyyl0+rUMwwAg/PGAgc8\\nhyEdjJEX5QmzFyl7xTyNiZ51luRcoFLvX54WuM81IQkxGCO43XLgalKZgSXeJ70D\\nng2iHblFv5soBQMCAwEAAaNIMEYwCQYDVR0TBAIwADAaBgNVHREEEzARgglsb2Nh\\nbGhvc3SHBKwfJqswHQYDVR0OBBYEFG+DO8t9KMDNrgtUPHyuknpllr7IMA0GCSqG\\nSIb3DQEBCwUAA4ICAQBmXr3zcu1m+jQZTdxcTfV73HcUexJyZZRU/NZHHaa76GMg\\n3hSYt4gT0WZZ3Kl+grqkrVV7oq5xfBBQVe4MjzQJqqJtToN06WWRflsNinKF2EfF\\nczxEIYl60PTHbPtDD+Xy7BIlCPT2CNPgC2jZmtN9pYest7P6bwihEZKzHGMBq+2y\\n0HoF6cwuJCsajwXKtu8QxnHpX3mFQk4+p0f7h4dbAOwuG4VgYhJdBZep277kELHR\\nRFVepMjFvLIXcrjPXMpqJAC5CzwYPTpMlyXAkxLQxVnk+GsNXA0kNjOZQVBJlEuh\\nPnMkgP68wsvFnslPoOYW9smmwyRLij9pCEqj5dA3R6UnsqZyZMvdjTYdxtUoI0ji\\n1MytEbt5iib4Kz/g5eaxPzRKZBsgCDgdw+2NHc21B0wdGftTXS/JQ/we1IWrbB/Z\\n1FhQ+qwrxApc1VXLasN1mrja+Bf2c0yT5WMTR/mrIT+/PyJzuhENHPfPVmueWgsj\\nbn0SnqMy928xMIagU2voA98aPNlSPIPP3fzivpSJJyCqZjYUVmSeJpaexBsj/E4s\\nzm9VL+TtKQ71dc/6ZrZnpyw9LuAtZ8Lme4GNPjIaYfKuOcu9XqHqBSmITPFHH/+T\\nve5x0AzrYoPdo0B1q2wCYt4PJiAT98xV9XvUTlqtl0ghA06lRc17xT8D1CCoYQ==\\n-----END CERTIFICATE-----\\n\"\n\n  logstash_port: \n  events_queue: events_queue\n  resources_discovery_cache_time: \n  overlay_list: \n  token_expiration: 168\n  users_dataset_generator:\n    enable: false\n    bucket: \n    s3_path: \n    filename: \n    aws_access_key_id: \n    aws_secret_access_key: \n  service_credentials:\n    alibaba:\n      access_key_id: accesskeyid\n      secret_access_key: secretaccesskey\n    aws:\n      access_key_id: accesskeyid\n      secret_access_key: secretaccesskey\n    azure:\n      client_id: clientid\n      secret: secret\n      subscription_id: subscriptionid\n      tenant: tenant\n    gcp:\n      credentials:\n        auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs\n        auth_uri: https://accounts.google.com/o/oauth2/auth\n        client_email: optscale-service-credentials@yourproject.iam.gserviceaccount.com\n        client_id: \"111111111\"\n        client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/optscale-service-credentials%40yourproject.iam.gserviceaccount.com\n        private_key: |\n          -----BEGIN PRIVATE KEY-----\n          -----END PRIVATE KEY-----\n        private_key_id: yourprivatekeyid\n        project_id: yourprojectid\n        token_uri: https://oauth2.googleapis.com/token\n        type: service_account\n      pricing_data:\n        dataset_name: pricing_dataset\n        table_name: cloud_pricing_export\n      project_id: yourprojectid\n\n  smtp:\n    server: \n    email: \n    login: \n    port: \n    password: \n    protocol: \n  resource_discovery_settings:\n    discover_size: 10000\n    timeout: \n    writing_timeout: 60\n    observe_timeout: 7200\n    debug: \n  bi_settings:\n    exporter_run_period: 86400\n    encryption_key: 5t3X3PkQqF5edqW9_c8znow7k7GraZOpBLHhF1kFFvE=\n    task_wait_timeout: 259200\n  failed_imports_dataset_generator:\n    enable: false\n    bucket: \n    s3_path: \n    filename: \n    aws_access_key_id: \n    aws_secret_access_key: \n  deactivatorg:\n    enable: true\n    days_limit: 30\n  password_strength_settings:\n    min_length: \n    min_lowercase: \n    min_uppercase: \n    min_digits: \n    min_special_chars: \n  demo_org_cleanup:\n    demo_org_lifetime_hrs: "
+---
+# Source: optscale/templates/filebeat.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: default
+  labels:
+    k8s-app: filebeat
+data:
+  filebeat.yml: |-
+    filebeat.inputs:
+    - type: log
+      enabled: true
+      symlinks: true
+      exclude_files: ['filebeat.*',
+                      'logstash.*',
+                      'azure.*',
+                      'kube.*',
+                      'ignite.*',
+                      'influx.*',
+                      'prometheus.*',
+                      'rkubelog.*',
+                      'node-exporter.*']
+      paths:
+        - /var/log/containers/*.log
+    processors:
+      - drop_fields:
+          fields: ["host"]
+          ignore_missing: true
+      - dissect:
+          tokenizer: "/var/log/containers/%{name}_%{host}_%{uuid}.log"
+          field: "log.file.path"
+          target_prefix: ""
+          overwrite_keys: true
+      - dissect:
+          tokenizer: "%{header} F %{parsed}"
+          field: "message"
+          target_prefix: ""
+          overwrite_keys: true
+      - drop_fields:
+          fields: ["message"]
+          ignore_missing: true
+      - rename:
+          fields:
+            - from: "parsed"
+              to: "message"
+          ignore_missing: true
+          fail_on_error: false
+
+    output.logstash:
+      hosts: ["${LOGSTASH_HOST}:${LOGSTASH_PORT}"]
+---
+# Source: optscale/templates/mariadb.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config-vol
+data:
+  mariadb.cnf: |
+    [mysqld]
+    innodb_file_format = BARRACUDA
+    innodb_large_prefix	= 1
+    innodb_file_per_table = 1
+    wait_timeout = 28800
+    explicit_defaults_for_timestamp = 1
+---
+# Source: optscale/templates/mongodb.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "mongo-config"
+  labels:
+    app: "mongo"
+data:
+  mongod.conf: ""
+---
+# Source: optscale/templates/myadmin.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: php-config-vol
+data:
+  php.ini: |
+    [opcache]
+    zend_extension=opcache.so
+    opcache.enable=0
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  labels:
+    app: rabbitmq
+    release: optscale
+data:
+  enabled_plugins: |
+    [
+      rabbitmq_shovel,
+      rabbitmq_shovel_management,
+      rabbitmq_federation,
+      rabbitmq_federation_management,
+      rabbitmq_consistent_hash_exchange,
+      rabbitmq_management,
+      rabbitmq_peer_discovery_k8s
+    ].
+  rabbitmq.conf: |
+    ## RabbitMQ configuration
+    ## Ref: https://github.com/rabbitmq/rabbitmq-server/blob/master/docs/rabbitmq.conf.example
+    
+    ## Clustering
+    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.k8s.address_type = hostname
+    cluster_formation.node_cleanup.interval = 10
+    # Set to false if automatic cleanup of absent nodes is desired.
+    # This can be dangerous, see http://www.rabbitmq.com/cluster-formation.html#node-health-checks-and-cleanup.
+    cluster_formation.node_cleanup.only_log_warning = true
+    cluster_partition_handling = autoheal
+    
+    management.load_definitions = /etc/definitions/definitions.json
+    
+    ## Memory-based Flow Control threshold
+    vm_memory_high_watermark.absolute = 512MB
+---
+# Source: optscale/templates/thanos_receive.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thanos-receive-limits-config
+  labels:
+    app: thanos-receive
+    release: optscale
+data:
+  thanos_limits.yaml: |
+    write:
+      global:
+        max_concurrency: 20
+---
+# Source: optscale/templates/version.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: optscale-version
+data:
+  component_versions.yaml: "optscale: local\nimages:\n  auth: local\n  bi_exporter: local\n  bi_scheduler: local\n  booking_observer: local\n  bumischeduler: local\n  bumiworker: local\n  calendar_observer: local\n  cleanelkdb: local\n  cleaninfluxdb: local\n  cleanmongodb: local\n  configurator: local\n  demo_org_cleanup: local\n  diproxy: local\n  diworker: local\n  elk: local\n  error_pages: local\n  etcd: local\n  failed_imports_dataset_generator: local\n  filebeat: local\n  gemini_scheduler: local\n  gemini_worker: local\n  grafana: local\n  grafana_nginx: local\n  herald: local\n  herald_executor: local\n  influxdb: local\n  insider_api: local\n  insider_scheduler: local\n  insider_worker: local\n  jira_bus: local\n  jira_ui: local\n  katara_service: local\n  katara_worker: local\n  keeper: local\n  keeper_executor: local\n  layout_cleaner: local\n  live_demo_generator: local\n  mariadb: local\n  metroculus_api: local\n  metroculus_scheduler: local\n  metroculus_worker: local\n  mongo: local\n  ngui: local\n  organization_violations: local\n  power_schedule: local\n  redis: local\n  resource_discovery: local\n  resource_observer: local\n  resource_violations: local\n  rest_api: local\n  risp_scheduler: local\n  risp_worker: local\n  slacker: local\n  slacker_executor: local\n  trapper_scheduler: local\n  trapper_worker: local\n  users_dataset_generator: local\n  webhook_executor: local\n  deactivatorg: local\n"
+---
+# Source: optscale/templates/rabbitmq.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: rabbitmq-claim
+spec:
+  storageClassName: gp2
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: optscale/templates/thanos_compactor.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: thanos-compactor-claim
+spec:
+  storageClassName: gp2
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: optscale/templates/thanos_receive.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: thanos-receive-claim
+spec:
+  storageClassName: gp2
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: optscale/templates/thanos_storegateway.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: thanos-storegateway-claim
+spec:
+  storageClassName: gp2
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: rabbitmq
+    release: optscale
+  name: rabbitmq
+rules:
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get"]
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: rabbitmq
+    release: optscale
+  name: rabbitmq
+subjects:
+- kind: ServiceAccount
+  name: rabbitmq
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rabbitmq
+---
+# Source: optscale/templates/auth.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  labels:
+    app: auth
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8905
+      protocol: TCP
+      name: auth
+  selector:
+    app: auth
+    release: optscale
+---
+# Source: optscale/templates/clickhouse/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  labels:
+    heritage: Helm
+    release: optscale
+    app: clickhouse
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8123
+      targetPort: 8123
+      protocol: TCP
+
+    - name: native
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    app: clickhouse
+    release: optscale
+---
+# Source: optscale/templates/diproxy.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: diproxy
+  labels:
+    app: diproxy
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8935
+      protocol: TCP
+      name: diproxy
+  selector:
+    app: diproxy
+    release: optscale
+---
+# Source: optscale/templates/error_pages.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: error-pages
+  labels:
+    app: error-pages
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: error-pages
+  selector:
+    app: error-pages
+    release: optscale
+---
+# Source: optscale/templates/etcd.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd-client
+  labels:
+    app: etcd
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2379
+      targetPort: 2379
+      protocol: TCP
+      name: etcd-client
+  selector:
+    app: etcd
+    release: optscale
+---
+# Source: optscale/templates/grafana.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: NodePort
+  ports:
+    - nodePort: 30082
+      port: 80
+      targetPort: 80
+      protocol: TCP
+      name: grafana
+  selector:
+    app: grafana
+    release: optscale
+---
+# Source: optscale/templates/herald.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: herald
+  labels:
+    app: herald
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8906
+      protocol: TCP
+      name: herald
+  selector:
+    app: heraldapi
+    release: optscale
+---
+# Source: optscale/templates/influxdb.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8086
+      protocol: TCP
+      name: influxdb
+  selector:
+    app: influxdb
+    release: optscale
+---
+# Source: optscale/templates/insider_api.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: insider-api
+  labels:
+    app: insider-api
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8945
+      protocol: TCP
+      name: insider-api
+  selector:
+    app: insider-api
+    release: optscale
+---
+# Source: optscale/templates/jira_bus.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jira-bus
+  labels:
+    app: jira-bus
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8977
+      protocol: TCP
+      name: jira-bus
+  selector:
+    app: jira-bus
+    release: optscale
+---
+# Source: optscale/templates/jira_ui.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jira-ui
+  labels:
+    app: jira-ui
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 4000
+      protocol: TCP
+      name: jira-ui
+  selector:
+    app: jira-ui
+    release: optscale
+---
+# Source: optscale/templates/katara.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: katara
+  labels:
+    app: kataraapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8935
+      protocol: TCP
+      name: katara
+  selector:
+    app: kataraapi
+    release: optscale
+---
+# Source: optscale/templates/keeper.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keeper
+  labels:
+    app: keeper
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8973
+      protocol: TCP
+      name: keeper
+  selector:
+    app: keeper
+    release: optscale
+---
+# Source: optscale/templates/mariadb.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  labels:
+    app: mariadb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mariadb
+  selector:
+    app: mariadb
+    release: optscale
+---
+# Source: optscale/templates/metroculus_api.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: metroculusapi
+  labels:
+    app: metroculusapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8969
+      protocol: TCP
+      name: metroculusapi
+  selector:
+    app: metroculusapi
+    release: optscale
+---
+# Source: optscale/templates/minio.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    app: minio
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 9000
+      protocol: TCP
+      name: minio
+  selector:
+    app: minio
+    release: optscale
+---
+# Source: optscale/templates/mongodb.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 27017
+    protocol: TCP
+    name: mongo
+  selector:
+    app: mongo
+    release: optscale
+---
+# Source: optscale/templates/mongodb.yaml
+# A headless service to create DNS records for discovery purposes
+apiVersion: v1
+kind: Service
+metadata:
+  name: "mongo-discovery"
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  labels:
+    app: mongo
+    release: optscale
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: mongodb
+    port: 27017
+  publishNotReadyAddresses: true
+  selector:
+    app: mongo
+    release: optscale
+---
+# Source: optscale/templates/myadmin.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myadmin
+  labels:
+    app: myadmin
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: NodePort
+  ports:
+    - nodePort: 30080
+      port: 80
+      targetPort: 80
+      protocol: TCP
+      name: myadmin
+  selector:
+    app: myadmin
+    release: optscale
+---
+# Source: optscale/templates/ngui.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngui
+  labels:
+    app: ngui
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 4000
+      protocol: TCP
+      name: ngui
+  selector:
+    app: ngui
+    release: optscale
+---
+# Source: optscale/templates/rabbitmq.yaml
+# discovery service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-discovery
+  labels:
+    app: rabbitmq
+    release: "optscale"
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      protocol: TCP
+      port: 15672
+      targetPort: http
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: amqp
+    - name: epmd
+      protocol: TCP
+      port: 4369
+      targetPort: epmd
+  publishNotReadyAddresses: true
+  selector:
+    app: rabbitmq
+    release: optscale
+  type: ClusterIP
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  labels:
+    app: rabbitmq
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5672
+      targetPort: 5672
+      protocol: TCP
+      name: rabbitmq
+    - name: http
+      protocol: TCP
+      port: 15672
+      targetPort: http
+    - name: epmd
+      protocol: TCP
+      port: 4369
+      targetPort: epmd
+  selector:
+    app: rabbitmq
+    release: optscale
+---
+# Source: optscale/templates/redis.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: redis
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    app: redis
+    release: optscale
+---
+# Source: optscale/templates/restapi.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: restapi
+  labels:
+    app: restapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8999
+      protocol: TCP
+      name: restapi
+  selector:
+    app: restapi
+    release: optscale
+---
+# Source: optscale/templates/slacker.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: slacker
+  labels:
+    app: slacker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: slacker
+  selector:
+    app: slacker
+    release: optscale
+---
+# Source: optscale/templates/thanos_compactor.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-compactor
+  labels:
+    app: thanos-compactor
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10902
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: thanos-compactor
+    release: optscale
+---
+# Source: optscale/templates/thanos_query.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-query
+  labels:
+    app: thanos-query
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10902
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: thanos-query
+    release: optscale
+---
+# Source: optscale/templates/thanos_query.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-query-grpc
+  labels:
+    app: thanos-query
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10901
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    app: thanos-query
+    release: optscale
+---
+# Source: optscale/templates/thanos_receive.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-receive
+  labels:
+    app: thanos-receive
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10902
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 10901
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+    - port: 19291
+      targetPort: remote
+      protocol: TCP
+      name: remote
+  selector:
+    app: thanos-receive
+    release: optscale
+---
+# Source: optscale/templates/thanos_storegateway.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-storegateway
+  labels:
+    app: thanos-storegateway
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10902
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 10901
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    app: thanos-storegateway
+    release: optscale
+---
+# Source: optscale/templates/thanos_web.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-web
+  labels:
+    app: thanos-web
+    release: optscale
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10902
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: thanos-web
+    release: optscale
+---
+# Source: optscale/templates/filebeat.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: default
+  labels:
+    k8s-app: filebeat
+spec:
+  selector:
+    matchLabels:
+      k8s-app: filebeat
+  template:
+    metadata:
+      labels:
+        k8s-app: filebeat
+    spec:
+      terminationGracePeriodSeconds: 30
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+      containers:
+      - name: filebeat
+        image: "filebeat:local"
+        imagePullPolicy: Never
+        args: [
+          "-c", "/etc/filebeat.yml",
+          "-e",
+        ]
+        env:
+        - name: LOGSTASH_HOST
+          value: "127.0.0.1"
+        - name: LOGSTASH_PORT
+          value: "12201"
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/filebeat.yml
+          readOnly: true
+          subPath: filebeat.yml
+        - name: data
+          mountPath: /usr/share/filebeat/data
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 0600
+          name: filebeat-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: data
+        hostPath:
+          path: /optscale/filebeat-data
+          type: DirectoryOrCreate
+      tolerations:
+      - key: purpose
+        operator: Equal
+        value: cpu
+        effect: NoSchedule
+---
+# Source: optscale/templates/auth.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    app: auth
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: auth
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: wait-mariadb
+        image: "mariadb:local"
+        imagePullPolicy: Never
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: password
+        command: ['sh', '-c', 'until mysql --connect-timeout=2 -h mariadb.default.svc.cluster.local -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 2; done']
+      containers:
+      - name: auth
+        image: "auth:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8905
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: GOOGLE_OAUTH_CLIENT_ID
+          value: ""
+        - name: GOOGLE_OAUTH_CLIENT_SECRET
+          value: ""
+        - name: MICROSOFT_OAUTH_CLIENT_ID
+          value: ""
+        readinessProbe:
+          tcpSocket:
+            port: 8905
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/bi_exporter.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bi-exporter
+  labels:
+    app: bi-exporter
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bi-exporter
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: bi-exporter
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      containers:
+      - name: bi-exporter
+        image: "bi_exporter:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        volumeMounts:
+          - name: bi-exporter-data-volume
+            mountPath: /usr/src/app/bi_exporter/bi
+      volumes:
+        - name: bi-exporter-data-volume
+          hostPath:
+            path: /optscale/bi
+            type: DirectoryOrCreate
+---
+# Source: optscale/templates/booking_observer.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-observer-worker
+  labels:
+    app: booking-observer-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: booking-observer-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: booking-observer-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+
+      containers:
+      - name: booking-observer-worker
+        image: "booking_observer:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/bumi_scheduler.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bumischeduler
+  labels:
+    app: bumischeduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bumischeduler
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: bumischeduler
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: bumischeduler
+        image: "bumischeduler:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/bumi_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bumiworker
+  labels:
+    app: bumiworker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bumiworker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: bumiworker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: bumiworker
+        image: "bumiworker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: FAKE_CAD_ENABLED
+          value: "0"
+---
+# Source: optscale/templates/calendar_observer.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-observer-worker
+  labels:
+    app: calendar-observer-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calendar-observer-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: calendar-observer-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: calendar-observer-worker
+        image: "calendar_observer:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/diproxy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diproxy
+  labels:
+    app: diproxy
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diproxy
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: diproxy
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-thanos-receive"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z thanos-receive.default.svc.cluster.local 10902 -w 2; do sleep 2; done']
+      containers:
+      - name: diproxy
+        image: "diproxy:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8935
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        readinessProbe:
+          tcpSocket:
+            port: 8935
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/diworker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diworker
+  labels:
+    app: diworker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diworker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: diworker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: diworker
+        image: "diworker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: FAKE_CAD_ENABLED
+          value: "0"
+---
+# Source: optscale/templates/error_pages.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: error-pages
+  labels:
+    app: error-pages
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: error-pages
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: error-pages
+        release: optscale
+    spec:
+      containers:
+      - name: error-pages
+        image: "error_pages:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+---
+# Source: optscale/templates/gemini_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gemini-worker
+  labels:
+    app: gemini-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gemini-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: gemini-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: gemini-worker
+        image: "gemini_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        volumeMounts:
+          - name: gemini-worker-data-volume
+            mountPath: /usr/src/app/gemini_worker/cache
+      volumes:
+        - name: gemini-worker-data-volume
+          hostPath:
+            path: /optscale/gemini_worker
+            type: DirectoryOrCreate
+---
+# Source: optscale/templates/grafana.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: grafana
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-influxdb"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z influxdb.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: grafana
+        image: "grafana:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_USERS_AUTO_ASSIGN_ORG
+          value: "true"
+        - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
+          value: "Editor"
+        - name: GF_AUTH_PROXY_ENABLED
+          value: "true"
+        - name: GF_AUTH_PROXY_HEADER_NAME
+          value: "X-WEBAUTH-USER"
+        - name: GF_AUTH_PROXY_HEADER_PROPERTY
+          value: "username"
+        - name: GF_AUTH_PROXY_AUTO_SIGN_UP
+          value: "true"
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
+          value: "true"
+        - name: GF_AUTH_DISABLE_SIGNOUT_MENU
+          value: "true"
+        - name: GF_AUTH_BASIC_ENABLED
+          value: "false"
+      - name: "grafana-nginx"
+        image: "grafana_nginx:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+        env:
+          - name: HTPASSWD_USER
+            value: userforgrafana
+          - name: HTPASSWD_PASS
+            value: passwordforgrafana
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: shared
+        emptyDir: {}
+---
+# Source: optscale/templates/herald.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heraldapi
+  labels:
+    app: heraldapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: heraldapi
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: heraldapi
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: heraldapi
+        image: "herald:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8906
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: HERALD_SERVICE
+          value: api
+        readinessProbe:
+          tcpSocket:
+            port: 8906
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/herald.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heraldengine
+  labels:
+    app: heraldengine
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: heraldengine
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: heraldengine
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: heraldengine
+        image: "herald:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: HERALD_SERVICE
+          value: engine
+        volumeMounts:
+          - name: herald-email-templates-volume
+            mountPath: /usr/src/app/herald/modules/email_generator/custom_templates
+          - name: herald-custom-template-filters-volume
+            mountPath: /usr/src/app/herald/modules/email_generator/customer_filters
+      volumes:
+        - name: herald-email-templates-volume
+          hostPath:
+            path: /optscale/email_templates
+            type: DirectoryOrCreate
+        - name: herald-custom-template-filters-volume
+          hostPath:
+            path: /optscale/template_filters
+            type: DirectoryOrCreate
+---
+# Source: optscale/templates/herald_executor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: herald-executor
+  labels:
+    app: herald-executor
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: herald-executor
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: herald-executor
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: herald-executor
+        image: "herald_executor:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/insider_api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insider-api
+  labels:
+    app: insider-api
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insider-api
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: insider-api
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: insider-api
+        image: "insider_api:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8945
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/insider_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insider-worker
+  labels:
+    app: insider-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insider-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: insider-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: insider-worker
+        image: "insider_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/jira_bus.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jira-bus
+  labels:
+    app: jira-bus
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      app: jira-bus
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: jira-bus
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-mariadb"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+      - name: "wait-auth"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z auth.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: jira-bus
+        image: "jira_bus:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8977
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        readinessProbe:
+          tcpSocket:
+            port: 8977
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/jira_ui.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jira-ui
+  labels:
+    app: jira-ui
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      app: jira-ui
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: jira-ui
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-jira-bus"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z jira-bus.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: jira-ui
+        image: "jira_ui:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 4000
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: UI_BUILD_PATH
+          value: /usr/src/app/ui
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        readinessProbe:
+          tcpSocket:
+            port: 4000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/katara.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: katarascheduler
+  labels:
+    app: katarascheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: katarascheduler
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: katarascheduler
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-katara"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z katara.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: katarascheduler
+        image: "katara_service:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: HX_KATARA_ROLE
+          value: scheduler
+---
+# Source: optscale/templates/katara.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kataraapi
+  labels:
+    app: kataraapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kataraapi
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: kataraapi
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: kataraapi
+        image: "katara_service:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8935
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: HX_KATARA_ROLE
+          value: api
+---
+# Source: optscale/templates/kataraworker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kataraworker
+  labels:
+    app: kataraworker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kataraworker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: kataraworker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-katara"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z katara.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: kataraworker
+        image: "katara_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/keeper.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keeper
+  labels:
+    app: keeper
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keeper
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: keeper
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: keeper
+        image: "keeper:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8973
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        readinessProbe:
+          tcpSocket:
+            port: 8973
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/keeper_executor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keeper-executor
+  labels:
+    app: keeper-executor
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keeper-executor
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: keeper-executor
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: keeper-executor
+        image: "keeper_executor:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/live_demo_generator.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live-demo-generator-worker
+  labels:
+    app: live-demo-generator-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: live-demo-generator-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: live-demo-generator-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: live-demo-generator-worker
+        image: "live_demo_generator:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/metroculus_api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metroculusapi
+  labels:
+    app: metroculusapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metroculusapi
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: metroculusapi
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      containers:
+      - name: metroculusapi
+        image: "metroculus_api:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8969
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/metroculus_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metroculusworker
+  labels:
+    app: metroculusworker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metroculusworker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: metroculusworker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      containers:
+      - name: metroculusworker
+        image: "metroculus_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/myadmin.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myadmin
+  labels:
+    app: myadmin
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myadmin
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: myadmin
+        release: optscale
+    spec:
+      initContainers:
+      - name: wait-mariadb
+        image: "mariadb:local"
+        imagePullPolicy: Never
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: password
+        command: ['sh', '-c', 'until mysql --connect-timeout=2 -h mariadb.default.svc.cluster.local -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 2; done']
+      containers:
+      - name: myadmin
+        image: "phpmyadmin/phpmyadmin:4.7"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: PMA_HOST
+          value: mariadb
+        volumeMounts:
+        - mountPath: /etc/php.ini
+          name: configmap
+          subPath: php.ini
+      volumes:
+      - name: configmap
+        configMap:
+          name: php-config-vol
+---
+# Source: optscale/templates/ngui.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngui
+  labels:
+    app: ngui
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngui
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: ngui
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-auth"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z auth.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-jira-bus"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z jira-bus.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-keeper"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z keeper.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-slacker"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z slacker.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-redis"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z redis.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: ngui
+        image: "ngui:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: BUILD_MODE
+          value: 
+        - name: UI_BUILD_PATH
+          value: /usr/src/app/ui
+        - name: PROXY_URL
+          value: https://ngingress-nginx-ingress-controller:443
+        - name: VITE_GOOGLE_OAUTH_CLIENT_ID
+          value: 
+        - name: VITE_MICROSOFT_OAUTH_CLIENT_ID
+          value: 
+        - name: VITE_GOOGLE_MAP_API_KEY
+          value: 
+        - name: VITE_GANALYTICS_ID
+          value: 
+        - name: VITE_HOTJAR_ID
+          value: ""
+        readinessProbe:
+          tcpSocket:
+            port: 4000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/organization_violations.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: organization-violations-worker
+  labels:
+    app: organization-violations-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: organization-violations-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: organization-violations-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: organization-violations-worker
+        image: "organization_violations:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/power_schedule.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: power-schedule-worker
+  labels:
+    app: power-schedule-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: power-schedule-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: power-schedule-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+
+      containers:
+      - name: power-schedule-worker
+        image: "power_schedule:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/resource_discovery.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-discovery-worker
+  labels:
+    app: resource-discovery-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resource-discovery-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: resource-discovery-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: resource-discovery-worker
+        image: "resource_discovery:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: FAKE_CAD_ENABLED
+          value: "0"
+        resources:
+          limits:
+            memory: 1024Mi
+---
+# Source: optscale/templates/resource_observer.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-observer-worker
+  labels:
+    app: resource-observer-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resource-observer-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: resource-observer-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: resource-observer-worker
+        image: "resource_observer:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/resource_violations.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-violations-worker
+  labels:
+    app: resource-violations-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resource-violations-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: resource-violations-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: resource-violations-worker
+        image: "resource_violations:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/restapi.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restapi
+  labels:
+    app: restapi
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restapi
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: restapi
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: wait-mariadb
+        image: "mariadb:local"
+        imagePullPolicy: Never
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: password
+        command: ['sh', '-c', 'until mysql --connect-timeout=2 -h mariadb.default.svc.cluster.local -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 2; done']
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      containers:
+      - name: restapi
+        image: "rest_api:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8999
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: REQUESTS_CA_BUNDLE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: FAKE_CAD_ENABLED
+          value: "0"
+        readinessProbe:
+          tcpSocket:
+            port: 8999
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/risp_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: risp-worker
+  labels:
+    app: risp-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: risp-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: risp-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      containers:
+      - name: risp-worker
+        image: "risp_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/slacker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slacker
+  labels:
+    app: slacker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      app: slacker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: slacker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-mariadb"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+      - name: "wait-auth"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z auth.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: slacker
+        image: "slacker:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+        - name: SLACK_SIGNING_SECRET
+          value: 
+        - name: SLACK_CLIENT_ID
+          value: 
+        - name: SLACK_CLIENT_SECRET
+          value: 
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+# Source: optscale/templates/slacker_executor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slacker-executor
+  labels:
+    app: slacker-executor
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slacker-executor
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: slacker-executor
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-slacker"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z slacker.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: slacker-executor
+        image: "slacker_executor:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/thanos_query.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-query
+  labels:
+    app: thanos-query
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thanos-query
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: thanos-query
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-thanos-receive"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z thanos-receive.default.svc.cluster.local 10902 -w 2; do sleep 2; done']
+      - name: "wait-thanos-storegateway"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z thanos-storegateway.default.svc.cluster.local 10902 -w 2; do sleep 2; done']
+      containers:
+        - name: query
+          image: "thanosio/thanos:v0.39.1"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - thanos
+          args:
+            - query
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+            - --endpoint=dnssrv+_grpc._tcp.thanos-storegateway.default.svc.cluster.local
+            - --endpoint=dnssrv+_grpc._tcp.thanos-receive.default.svc.cluster.local
+          ports:
+            - name: http
+              containerPort: 10902
+              protocol: TCP
+            - name: grpc
+              containerPort: 10901
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+---
+# Source: optscale/templates/trapper_worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trapper-worker
+  labels:
+    app: trapper-worker
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trapper-worker
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: trapper-worker
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-clickhouse"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+      containers:
+      - name: trapper-worker
+        image: "trapper_worker:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/webhook_executor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-executor
+  labels:
+    app: webhook-executor
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-executor
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: webhook-executor
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-restapi"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+      - name: webhook-executor
+        image: "webhook_executor:local"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+---
+# Source: optscale/templates/clickhouse/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  labels:
+    heritage: Helm
+    release: optscale
+    app: clickhouse
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+      release: optscale
+  serviceName: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+        release: optscale
+    spec:
+      containers:
+        - name: clickhouse
+          image: "clickhouse/clickhouse-server:24.12"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLICKHOUSE_SKIP_USER_SETUP
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 8123
+            - name: native
+              containerPort: 9000
+          livenessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 9000
+          readinessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+            tcpSocket:
+              port: 9000
+          volumeMounts:
+            - name: clickhouse-data-volume
+              mountPath: /var/lib/clickhouse/
+            - name: config-volume
+              mountPath: /etc/clickhouse-server/
+            - name: clickhouse-logs
+              mountPath: /var/log/clickhouse-server/
+      volumes:
+        - name: clickhouse-data-volume
+          hostPath:
+            path: /optscale/clickhouse
+            type: DirectoryOrCreate
+        - name: clickhouse-logs
+          hostPath:
+            path: /optscale/clickhouse/logs
+            type: DirectoryOrCreate
+        - name: config-volume
+          configMap:
+            name: clickhouse-config
+---
+# Source: optscale/templates/etcd.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: etcd
+  labels:
+    app: etcd
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd
+      release: optscale
+  serviceName: etcd-client
+  template:
+    metadata:
+      labels:
+        app: etcd
+        release: optscale
+    spec:
+      containers:
+      - name: etcd
+        image: "etcd:local"
+        imagePullPolicy: Never
+        command:
+          - "/usr/local/bin/etcd"
+          - "-listen-client-urls"
+          - "http://0.0.0.0:2379"
+          - "-advertise-client-urls"
+          - "http://0.0.0.0:2379"
+        ports:
+        - name: client
+          containerPort: 2379
+        - name: peer
+          containerPort: 2380
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -ec
+            - |
+              etcdctl --endpoints=http://[127.0.0.1]:2379 cluster-health
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 20
+        volumeMounts:
+        - name: etcd-persistent-storage
+          mountPath: /default.etcd
+          readOnly: false
+          mountPropagation: HostToContainer
+        env:
+        - name: INITIAL_CLUSTER_SIZE
+          value: "1"
+        - name: SET_NAME
+          value: etcd-cluster
+        - name: IMAGE_ID
+          value: 
+        - name: ETCD_HEARTBEAT_INTERVAL
+          value: "500"
+        - name: ETCD_ELECTION_TIMEOUT
+          value: "5000"
+      volumes:
+      - name: etcd-persistent-storage
+        hostPath:
+          path: /optscale/etcd
+          type: DirectoryOrCreate
+      nodeSelector:
+        node-role.kubernetes.io/control-plane:
+---
+# Source: optscale/templates/influxdb.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+      release: optscale
+  serviceName: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+        release: optscale
+    spec:
+      containers:
+      - name: influxdb
+        image: "influxdb:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8086
+        volumeMounts:
+        - name: influxdb-storage
+          mountPath: /var/lib/influxdb
+          readOnly: false
+          mountPropagation: HostToContainer
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8086
+        env:
+        - name: IMAGE_ID
+          value: 
+      volumes:
+      - name: influxdb-storage
+        hostPath:
+          path: /optscale/influxdb
+          type: DirectoryOrCreate
+      nodeSelector:
+        node-role.kubernetes.io/control-plane:
+---
+# Source: optscale/templates/mariadb.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  labels:
+    app: mariadb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+      release: optscale
+  serviceName: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+        release: optscale
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - mariadb
+      initContainers:
+      - name: copy-mariadb-config
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'cp /configmap/* /etc/mysql/conf.d']
+        volumeMounts:
+        - name: configmap
+          mountPath: /configmap
+        - name: config
+          mountPath: /etc/mysql/conf.d
+      containers:
+      - name: mariadb
+        image: "mariadb:local"
+        imagePullPolicy: Never
+        env:
+        - name: MARIADB_CNF_SHA
+          value: 0a9e2bd19a9e03d175f16ebcb7ea383d37a4e965c9f5f326487a0174d988ba9d
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: IMAGE_ID
+          value: 
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: password
+        ports:
+        - name: mariadb
+          containerPort: 3306
+        args: ["--max_connections=4096"]
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - |
+              mysql -h 127.0.0.1 -e "SELECT 1" -p$MYSQL_ROOT_PASSWORD
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 20
+        volumeMounts:
+        - name: mariadb-persistent-storage
+          mountPath: /var/lib/mysql
+          readOnly: false
+        - name: config
+          mountPath: /etc/mysql/conf.d
+      volumes:
+      - name: mariadb-persistent-storage
+        hostPath:
+          path: /optscale/db
+          type: DirectoryOrCreate
+      - name: config
+        emptyDir: {}
+      - name: configmap
+        configMap:
+          name: mysql-config-vol
+          items:
+          - path: "mariadb.cnf"
+            key: mariadb.cnf
+---
+# Source: optscale/templates/minio.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    app: minio
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+      release: optscale
+  serviceName: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+        release: optscale
+    spec:
+      initContainers:
+      containers:
+      - name: "minio"
+        image: "minio/minio:RELEASE.2020-03-19T21-49-00Z"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: "minio-secret"
+              key: access
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: "minio-secret"
+              key: secret
+        ports:
+        - name: minio
+          containerPort: 9000
+        args:
+        - "server"
+        - "/data"
+        volumeMounts:
+        - name: minio-persistent-storage
+          mountPath: /data
+          readOnly: false
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: minio-persistent-storage
+        hostPath:
+          path: /optscale/minio
+          type: DirectoryOrCreate
+---
+# Source: optscale/templates/mongodb.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+      release: optscale
+  serviceName: "mongo-discovery"
+  template:
+    metadata:
+      labels:
+        app: mongo
+        release: optscale
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+      - name: copy-config
+        image: "busybox:1.30.0"
+        imagePullPolicy: "IfNotPresent"
+        command:
+          - "sh"
+        args:
+          - "-c"
+          - |
+            set -e
+            set -x
+            cp /configdb-readonly/mongod.conf /data/configdb/mongod.conf
+            cp /keydir-readonly/key.txt /data/configdb/key.txt
+            chmod 600 /data/configdb/key.txt
+        volumeMounts:
+        - name: config
+          mountPath: /configdb-readonly
+        - name: configdir
+          mountPath: /data/configdb
+        - name: keydir
+          mountPath: /keydir-readonly
+      - name: bootstrap
+        image: "mongo:local"
+        command:
+          - peer-finder
+        args:
+          - -on-start=/on-start.sh
+          - "-service=mongo-discovery"
+        imagePullPolicy: Never
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: REPLICA_SET
+          value: "mongo"
+        - name: TIMEOUT
+          value: "900"
+        - name: SKIP_INIT
+          value: "false"
+        - name: TLS_MODE
+          value: "requireSSL"
+        - name: AUTH
+          value: "true"
+        - name: ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: "mongo-secret"
+              key: username
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "mongo-secret"
+              key: password
+        volumeMounts:
+        - name: configdir
+          mountPath: /data/configdb
+        - name: datadir
+          mountPath: /data/db
+        - name: workdir
+          mountPath: /work-dir
+      containers:
+      - name: mongo
+        image: "mongo:local"
+        imagePullPolicy: "Never"
+        ports:
+        - name: mongodb
+          containerPort: 27017
+        command:
+          - mongod
+        args:
+          - --config=/data/configdb/mongod.conf
+          - --dbpath=/data/db
+          - --replSet=mongo
+          - --port=27017
+          - --bind_ip=0.0.0.0
+          - --auth
+          - --keyFile=/data/configdb/key.txt
+          - --storageEngine=wiredTiger
+          - --wiredTigerCacheSizeGB=1
+        livenessProbe:
+          exec:
+            command:
+              - mongo
+              - --eval
+              - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+        readinessProbe:
+          exec:
+            command:
+              - mongo
+              - --eval
+              - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+        volumeMounts:
+        - name: datadir
+          mountPath: /data/db
+        - name: configdir
+          mountPath: /data/configdb
+      volumes:
+      - name: config
+        configMap:
+          name: mongo-config
+      - name: keydir
+        secret:
+          defaultMode: 0400
+          secretName: mongo-secret
+      - name: configdir
+        emptyDir: {}
+      - name: workdir
+        emptyDir: {}
+      - name: datadir
+        hostPath:
+          path: /optscale/mongo
+          type: DirectoryOrCreate
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - mongo
+---
+# Source: optscale/templates/rabbitmq.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  labels:
+    app: rabbitmq
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+      release: optscale
+  serviceName: rabbitmq-discovery
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        release: optscale
+    spec:
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: rabbitmq
+      initContainers:
+      - name: bootstrap
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh']
+        args:
+          - "-c"
+          - |
+            set -ex
+            cp /configmap/* /etc/rabbitmq
+            echo "${RABBITMQ_ERLANG_COOKIE}" > /var/lib/rabbitmq/.erlang.cookie
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: RABBITMQ_MNESIA_DIR
+          value: /var/lib/rabbitmq/mnesia/rabbit@$(POD_NAME).rabbitmq-discovery.default.svc.cluster.local
+        - name: RABBITMQ_ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: erlang-cookie
+        volumeMounts:
+        - name: configmap
+          mountPath: /configmap
+        - name: config
+          mountPath: /etc/rabbitmq
+        - name: datadir
+          mountPath: /var/lib/rabbitmq
+        - name: mnesia
+          mountPath: /var/lib/rabbitmq/mnesia/
+      containers:
+      - name: rabbitmq
+        image: "rabbitmq:3.8.2-management-alpine"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: IMAGE_ID
+          value: 
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: username
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: password
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: RABBITMQ_USE_LONGNAME
+          value: "true"
+        - name: RABBITMQ_NODENAME
+          value: rabbit@$(MY_POD_NAME).rabbitmq-discovery.default.svc.cluster.local
+        - name: K8S_HOSTNAME_SUFFIX
+          value: .rabbitmq-discovery.default.svc.cluster.local
+        - name: K8S_SERVICE_NAME
+          value: rabbitmq-discovery
+        - name: RABBITMQ_ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: erlang-cookie
+        - name: RABBIT_MANAGEMENT_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: management-username
+        - name: RABBIT_MANAGEMENT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbit-secret
+              key: management-password
+        - name: CONFIG_HASH
+          value: d0e9ddd45e3b7c1d423c81a91d7827b7d3dbcf1a583f9bb3546bc30921ae3d4f
+        - name: PLUGINS_HASH
+          value: 229a96cd88e88074f5891cfe31305540ee307a4e4113586f98ec39b3bc62c8f6
+        ports:
+        - name: epmd
+          protocol: TCP
+          containerPort: 4369
+        - name: amqp
+          protocol: TCP
+          containerPort: 5672
+        - name: http
+          protocol: TCP
+          containerPort: 15672
+        livenessProbe:
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - 'wget -O - -q --header "Authorization: Basic `echo -n \"$RABBIT_MANAGEMENT_USER:$RABBIT_MANAGEMENT_PASSWORD\" | base64`" http://127.0.0.1:15672/api/healthchecks/node | grep -qF "{\"status\":\"ok\"}"'
+        readinessProbe:
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 6
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - 'wget -O - -q --header "Authorization: Basic `echo -n \"$RABBIT_MANAGEMENT_USER:$RABBIT_MANAGEMENT_PASSWORD\" | base64`" http://127.0.0.1:15672/api/healthchecks/node | grep -qF "{\"status\":\"ok\"}"'
+        volumeMounts:
+        - name: datadir
+          mountPath: /var/lib/rabbitmq
+        - name: mnesia
+          mountPath: /var/lib/rabbitmq/mnesia
+        - name: config
+          mountPath: /etc/rabbitmq
+        - name: definitions
+          mountPath: /etc/definitions
+          readOnly: true
+      volumes:
+      - name: config
+        emptyDir: {}
+      - name: configmap
+        configMap:
+          name: rabbitmq-config
+      - name: datadir
+        emptyDir: {}
+      - name: mnesia
+        persistentVolumeClaim:
+          claimName: rabbitmq-claim
+      - name: definitions
+        secret:
+          secretName: rabbit-secret
+          items:
+          - key: definitions.json
+            path: definitions.json
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - rabbitmq
+---
+# Source: optscale/templates/redis.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  labels:
+    app: redis
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      release: optscale
+  serviceName: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        release: optscale
+    spec:
+      initContainers:
+      containers:
+      - name: redis
+        image: "redis:local"
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 6379
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "redis-cli -h $(hostname) ping"
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        env:
+        - name: IMAGE_ID
+          value:
+---
+# Source: optscale/templates/thanos_receive.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: thanos-receive
+  labels:
+    app: thanos-receive
+    release: optscale
+spec:
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  serviceName: thanos-receive
+  selector:
+    matchLabels:
+      app: thanos-receive
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: thanos-receive
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-minio"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z minio.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+        - name: receive
+          imagePullPolicy: "IfNotPresent"
+          image: "thanosio/thanos:v0.39.1"
+          env:
+            - name: NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 10901
+              name: grpc
+              protocol: TCP
+            - containerPort: 10902
+              name: http
+              protocol: TCP
+            - containerPort: 19291
+              name: remote
+              protocol: TCP
+          resources:
+            limits:
+              memory: 8192Mi
+              cpu: 2
+          command:
+            - thanos
+          args:
+            - receive
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+            - --remote-write.address=0.0.0.0:19291
+            - --objstore.config-file=/var/thanos/config/thanos_conf.yaml
+            - --tsdb.path=/var/thanos/receive
+            - --tsdb.retention=4h
+            - --tsdb.wal-compression
+            - --tsdb.no-lockfile
+            # - --tsdb.too-far-in-future.time-window=1h  # TODO: uncomment me later
+            - --tsdb.out-of-order.time-window=1h
+            - --label=receive="$(NAME)"
+            - --receive.tenant-header=Cloud-Account-Id
+            - --receive-forward-timeout=2m
+            - --log.level=info
+            - --receive.limits-config-file=/var/thanos/limits_config/thanos_limits.yaml
+            - --tsdb.memory-snapshot-on-shutdown
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/thanos/receive
+            - name: config
+              mountPath: /var/thanos/config
+              readOnly: true
+            - name: limits-config
+              mountPath: /var/thanos/limits_config
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsUser: 0
+      volumes:
+        - name: config
+          secret:
+            secretName: thanos-secret
+            items:
+            - key: thanos_conf.yaml
+              path: thanos_conf.yaml
+        - name: limits-config
+          configMap:
+            name: thanos-receive-limits-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: thanos-receive-claim
+---
+# Source: optscale/templates/thanos_storegateway.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: thanos-storegateway
+  labels:
+    app: thanos-storegateway
+    release: optscale
+spec:
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  serviceName: thanos-storegateway
+  selector:
+    matchLabels:
+      app: thanos-storegateway
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: thanos-storegateway
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-minio"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z minio.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+        - name: storegateway
+          image: "thanosio/thanos:v0.39.1"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - thanos
+          args:
+            - store
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+            - --ignore-deletion-marks-delay=3h
+            - --objstore.config-file=/var/thanos/config/thanos_conf.yaml
+            - --data-dir=/var/thanos/data
+          ports:
+            - containerPort: 10901
+              name: grpc
+              protocol: TCP
+            - containerPort: 10902
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/thanos/data
+            - name: config
+              mountPath: /var/thanos/config
+              readOnly: true
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsUser: 0
+      volumes:
+        - name: config
+          secret:
+            secretName: thanos-secret
+            items:
+              - key: thanos_conf.yaml
+                path: thanos_conf.yaml
+        - name: data
+          persistentVolumeClaim:
+            claimName: thanos-storegateway-claim
+---
+# Source: optscale/templates/thanos_web.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: thanos-web
+  labels:
+    app: thanos-web
+    release: optscale
+spec:
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  serviceName: thanos-web
+  selector:
+    matchLabels:
+      app: thanos-web
+      release: optscale
+  template:
+    metadata:
+      labels:
+        app: thanos-web
+        release: optscale
+    spec:
+      initContainers:
+      - name: "wait-minio"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z minio.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      containers:
+        - name: web
+          image: "thanosio/thanos:v0.39.1"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - thanos
+          args:
+            - tools
+            - bucket
+            - web
+            - --http-address=0.0.0.0:10902
+            - --objstore.config-file=/var/thanos/config/thanos_conf.yaml
+            - --refresh=10m
+          ports:
+            - containerPort: 10902
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          volumeMounts:
+            - name: config
+              mountPath: /var/thanos/config
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: thanos-secret
+            items:
+              - key: thanos_conf.yaml
+                path: thanos_conf.yaml
+---
+# Source: optscale/templates/etcd.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pre-configurator
+  annotations:
+    checksum/config: cea0af6a627a93c83149c27d93f56313cdacbf34248cb6440626579a73d52138
+  labels:
+    app: configurator
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  template:
+    metadata:
+      name: pre-configurator
+      labels:
+        app: configurator
+        release: optscale
+    spec:
+      containers:
+      - name: configurator
+        image: configurator:local
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+        env:
+        - name: HX_ETCD_HOST
+          value: etcd-client
+        - name: HX_ETCD_PORT
+          value: "2379"
+      initContainers:
+      - name: "wait-etcd-client"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+      - name: wait-mariadb
+        image: "mariadb:local"
+        imagePullPolicy: Never
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: password
+        command: ['sh', '-c', 'until mysql --connect-timeout=2 -h mariadb.default.svc.cluster.local -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 2; done']
+      - name: "wait-mongo"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      - name: "wait-rabbitmq"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+      - name: "wait-influxdb"
+        image: "busybox:1.30.0"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nc -z influxdb.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+      restartPolicy: Never
+      volumes:
+      - name: config-volume
+        configMap:
+          name: optscale-etcd
+      nodeSelector:
+        node-role.kubernetes.io/control-plane:
+  backoffLimit: 10
+---
+# Source: optscale/templates/bi_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bi-scheduler
+  labels:
+    app: bi-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: bi-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: bi-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: bi-scheduler
+            image: "bi_scheduler:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/bi_scheduler/scheduler.py"
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/booking_observer.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: booking-observer-scheduler
+  labels:
+    app: booking-observer-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/1 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: booking-observer-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: booking-observer-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: booking-observer-scheduler
+            image: "booking_observer:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/booking_observer/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/calendar_observer.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: calendar-observer-scheduler
+  labels:
+    app: calendar-observer-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: calendar-observer-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: calendar-observer-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: calendar-observer-scheduler
+            image: "calendar_observer:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/calendar_observer/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/cleaninfluxdb.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleaninfluxdb
+  labels:
+    app: cleaninfluxdb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "@weekly"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: cleaninfluxdb
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: cleaninfluxdb
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-influxdb"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z influxdb.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: cleaninfluxdb
+            image: "cleaninfluxdb:local"
+            env:
+            - name: HX_INFLUXDB_HOST
+              value: "influxdb"
+            - name: HX_INFLUXDB_PORT
+              value: "80"
+            - name: HX_DAYS_TO_STORE
+              value: "90"
+          restartPolicy: Never
+---
+# Source: optscale/templates/cleanmongodb.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanmongodb
+  labels:
+    app: cleanmongodb
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/3 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: cleanmongodb
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: cleanmongodb
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-mariadb"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+          - name: "wait-mongo"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: cleanmongodb
+            image: "cleanmongodb:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+            volumeMounts:
+              - name: cleanmongodb-data-volume
+                mountPath: /src/archive/
+          restartPolicy: Never
+          volumes:
+            - name: cleanmongodb-data-volume
+              hostPath:
+                path: /optscale/cleanmongodb/archive
+                type: DirectoryOrCreate
+---
+# Source: optscale/templates/deactivatorg.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: deactivatorg
+  labels:
+    app: deactivatorg
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 2 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: deactivatorg
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: deactivatorg
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-mariadb"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+          containers:
+          - name: deactivatorg
+            image: "deactivatorg:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/demo_org_cleanup.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: demoorgcleanup
+  labels:
+    app: demoorgcleanup
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: demoorgcleanup
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: demoorgcleanup
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: demoorgcleanup
+            image: "demo_org_cleanup:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/failed_imports_dataset_generator.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: failed-imports-dataset-generator
+  labels:
+    app: failed-imports-dataset-generator
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: failed-imports-dataset-generator
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: failed-imports-dataset-generator
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-mariadb"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+          containers:
+          - name: failed-imports-dataset-generator
+            image: "failed_imports_dataset_generator:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/gemini_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gemini-scheduler
+  labels:
+    app: gemini-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: gemini-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: gemini-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-etcd-client"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: gemini-scheduler
+            image: "gemini_scheduler:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/insider_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: insider-scheduler
+  labels:
+    app: insider-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: insider-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: insider-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-etcd-client"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+          - name: "wait-mongo"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: insider-scheduler
+            image: "insider_scheduler:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/layout_cleaner.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: layout-cleaner
+  labels:
+    app: layout-cleaner
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 3 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: layout-cleaner
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: layout-cleaner
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: layout-cleaner
+            image: "layout_cleaner:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/layout_cleaner/worker.py"
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/live_demo_generator.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: live-demo-generator-scheduler
+  labels:
+    app: live-demo-generator-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: live-demo-generator-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: live-demo-generator-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-mongo"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: live-demo-generator-scheduler
+            image: "live_demo_generator:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/live_demo_generator/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/metroculus_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: metroculusscheduler
+  labels:
+    app: metroculusscheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/30 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: metroculusscheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: metroculusscheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-etcd-client"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: metroculusscheduler
+            image: "metroculus_scheduler:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/organization_violations.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: organization-violations-scheduler
+  labels:
+    app: organization-violations-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: organization-violations-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: organization-violations-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: organization-violations-scheduler
+            image: "organization_violations:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/organization_violations/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/power_schedule.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: power-schedule-scheduler
+  labels:
+    app: power-schedule-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: power-schedule-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: power-schedule-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: power-schedule-scheduler
+            image: "power_schedule:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/power_schedule/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/report_import_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report-import-scheduler-0
+  labels:
+    app: report-import-scheduler-0
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/15 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: report-import-scheduler-0
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: report-import-scheduler-0
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: report-import-scheduler-0
+            image: "curlimages/curl:latest"
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: PERIOD
+              value: "0"
+            - name: CLUSTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cluster-secret
+                  key: cluster_secret
+            command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              set -x
+              
+              curl -X POST -f -H "Secret: $CLUSTER_SECRET" -d '{"period": '"$PERIOD"'}' \
+                http://restapi:80/restapi/v2/schedule_imports
+          restartPolicy: Never
+---
+# Source: optscale/templates/report_import_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report-import-scheduler-1
+  labels:
+    app: report-import-scheduler-1
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: report-import-scheduler-1
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: report-import-scheduler-1
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: report-import-scheduler-1
+            image: "curlimages/curl:latest"
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: PERIOD
+              value: "1"
+            - name: CLUSTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cluster-secret
+                  key: cluster_secret
+            command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              set -x
+              
+              curl -X POST -f -H "Secret: $CLUSTER_SECRET" -d '{"period": '"$PERIOD"'}' \
+                http://restapi:80/restapi/v2/schedule_imports
+          restartPolicy: Never
+---
+# Source: optscale/templates/report_import_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report-import-scheduler-24
+  labels:
+    app: report-import-scheduler-24
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: report-import-scheduler-24
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: report-import-scheduler-24
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: report-import-scheduler-24
+            image: "curlimages/curl:latest"
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: PERIOD
+              value: "24"
+            - name: CLUSTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cluster-secret
+                  key: cluster_secret
+            command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              set -x
+              
+              curl -X POST -f -H "Secret: $CLUSTER_SECRET" -d '{"period": '"$PERIOD"'}' \
+                http://restapi:80/restapi/v2/schedule_imports
+          restartPolicy: Never
+---
+# Source: optscale/templates/report_import_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report-import-scheduler-6
+  labels:
+    app: report-import-scheduler-6
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 */6 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: report-import-scheduler-6
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: report-import-scheduler-6
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: report-import-scheduler-6
+            image: "curlimages/curl:latest"
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: PERIOD
+              value: "6"
+            - name: CLUSTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cluster-secret
+                  key: cluster_secret
+            command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              set -x
+              
+              curl -X POST -f -H "Secret: $CLUSTER_SECRET" -d '{"period": '"$PERIOD"'}' \
+                http://restapi:80/restapi/v2/schedule_imports
+          restartPolicy: Never
+---
+# Source: optscale/templates/resource_discovery.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: resource-discovery-scheduler
+  labels:
+    app: resource-discovery-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: resource-discovery-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: resource-discovery-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: resource-discovery-scheduler
+            image: "resource_discovery:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/resource_discovery/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/resource_observer.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: resource-observer-scheduler
+  labels:
+    app: resource-observer-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: resource-observer-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: resource-observer-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: resource-observer-scheduler
+            image: "resource_observer:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/resource_observer/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/resource_violations.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: resource-violations-scheduler
+  labels:
+    app: resource-violations-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "*/5 * * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: resource-violations-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: resource-violations-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: resource-violations-scheduler
+            image: "resource_violations:local"
+            imagePullPolicy: Never
+            command:
+            - "python3"
+            - "docker_images/resource_violations/scheduler.py"
+            env:
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/risp_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: risp-scheduler
+  labels:
+    app: risp-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "45 */1 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: risp-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: risp-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-etcd-client"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: risp-scheduler
+            image: "risp_scheduler:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/thanos_compactor.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: thanos-compactor
+  labels:
+    app: thanos-compactor
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  schedule: "0 */12 * * *"
+  startingDeadlineSeconds: 100
+  suspend: false
+  jobTemplate:
+    metadata:
+      labels:
+        app: thanos-compactor
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: thanos-compactor
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-minio"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z minio.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: compact
+            image: "thanosio/thanos:v0.39.1"
+            imagePullPolicy: IfNotPresent
+            command:
+              - thanos
+            args:
+              - compact
+              - --log.level=info
+              - --http-address=0.0.0.0:10902
+              - --consistency-delay=4h
+              - --objstore.config-file=/var/thanos/config/thanos_conf.yaml
+              - --data-dir=/var/thanos/data
+              - --delete-delay=6h
+              - --retention.resolution-raw=30d
+              - --retention.resolution-5m=90d
+              - --retention.resolution-1h=120d
+              - --compact.enable-vertical-compaction
+            ports:
+              - containerPort: 10902
+                name: http
+                protocol: TCP
+            livenessProbe:
+              httpGet:
+                path: /-/healthy
+                port: http
+              initialDelaySeconds: 30
+              timeoutSeconds: 30
+              periodSeconds: 10
+              successThreshold: 1
+              failureThreshold: 6
+            readinessProbe:
+              httpGet:
+                path: /-/ready
+                port: http
+              initialDelaySeconds: 30
+              timeoutSeconds: 30
+              periodSeconds: 10
+              successThreshold: 1
+              failureThreshold: 6
+            volumeMounts:
+              - name: data
+                mountPath: /var/thanos/data
+              - name: config
+                mountPath: /var/thanos/config
+                readOnly: true
+          volumes:
+            - name: config
+              secret:
+                secretName: thanos-secret
+                items:
+                  - key: thanos_conf.yaml
+                    path: thanos_conf.yaml
+            - name: data
+              persistentVolumeClaim:
+                claimName: thanos-compactor-claim
+          restartPolicy: Never
+---
+# Source: optscale/templates/trapper_scheduler.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trapper-scheduler
+  labels:
+    app: trapper-scheduler
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "45 */1 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: trapper-scheduler
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: trapper-scheduler
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-rabbitmq"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z rabbitmq.default.svc.cluster.local 5672 -w 2; do sleep 2; done']
+          - name: "wait-etcd-client"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z etcd-client.default.svc.cluster.local 2379 -w 2; do sleep 2; done']
+          - name: "wait-restapi"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z restapi.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: trapper-scheduler
+            image: "trapper_scheduler:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/users_dataset_generator.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: users-dataset-generator
+  labels:
+    app: users-dataset-generator
+    chart: optscale-0.1.0
+    release: optscale
+spec:
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 100
+  jobTemplate:
+    metadata:
+      labels:
+        app: users-dataset-generator
+        release: optscale
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: users-dataset-generator
+            release: optscale
+        spec:
+          initContainers:
+          - name: "wait-mariadb"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mariadb.default.svc.cluster.local 3306 -w 2; do sleep 2; done']
+          - name: "wait-clickhouse"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z clickhouse.default.svc.cluster.local 9000 -w 2; do sleep 2; done']
+          - name: "wait-mongo"
+            image: "busybox:1.30.0"
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'until nc -z mongo.default.svc.cluster.local 80 -w 2; do sleep 2; done']
+          containers:
+          - name: users-dataset-generator
+            image: "users_dataset_generator:local"
+            imagePullPolicy: Never
+            env:
+            - name: IMAGE_ID
+              value: 
+            - name: HX_ETCD_HOST
+              value: etcd-client
+            - name: HX_ETCD_PORT
+              value: "2379"
+          restartPolicy: Never
+---
+# Source: optscale/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/custom-http-errors: "503"
+    nginx.ingress.kubernetes.io/default-backend: error-pages
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"
+    nginx.ingress.kubernetes.io/connection-proxy-header: "keep-alive"
+    nginx.ingress.kubernetes.io/client-body-buffer-size:  "512m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: optscale
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: auth
+            port:
+              number: 80
+        path: /auth
+        pathType: Prefix
+      - backend:
+          service:
+            name: restapi
+            port:
+              number: 80
+        path: /restapi
+        pathType: Prefix
+      - backend:
+          service:
+            name: keeper
+            port:
+              number: 80
+        path: /report
+        pathType: Prefix
+      - backend:
+          service:
+            name: ngui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+      - backend:
+          service:
+            name: herald
+            port:
+              number: 80
+        path: /herald
+        pathType: Prefix
+      - backend:
+          service:
+            name: katara
+            port:
+              number: 80
+        path: /katara
+        pathType: Prefix
+      - backend:
+          service:
+            name: insider-api
+            port:
+              number: 80
+        path: /insider
+        pathType: Prefix
+      - backend:
+          service:
+            name: slacker
+            port:
+              number: 80
+        path: /slacker
+        pathType: Prefix
+      - backend:
+          service:
+            name: metroculusapi
+            port:
+              number: 80
+        path: /metroculus
+        pathType: Prefix
+      - backend:
+          service:
+            name: jira-bus
+            port:
+              number: 80
+        path: /jira_bus
+        pathType: Prefix
+      - backend:
+          service:
+            name: jira-ui
+            port:
+              number: 80
+        path: /jira_ui
+        pathType: Prefix
+      - backend:
+          service:
+            name: diproxy
+            port:
+              number: 80
+        path: /storage
+        pathType: Prefix
+  tls:
+  - secretName: defaultcert

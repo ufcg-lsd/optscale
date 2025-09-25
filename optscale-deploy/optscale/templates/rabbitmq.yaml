@@ -1,4 +1,7 @@
 {{- $config := .Values.rabbitmq -}}
+{{- $sc := default "" .Values.global.storageclass -}}
+{{- $useExternal := ne $sc "" -}}
+{{- $scName := ternary $sc (printf "%s-storage" $config.name) $useExternal -}}
 ---
 apiVersion: v1
 kind: Secret
@@ -133,6 +136,8 @@ metadata:
     release: {{ .Release.Name }}
   name: {{ $config.name }}
 automountServiceAccountToken: true
+
+{{- if not $useExternal }}
 ---
 kind: PersistentVolume
 apiVersion: v1
@@ -141,25 +146,27 @@ metadata:
   labels:
     type: local
   annotations:
-    volume.alpha.kubernetes.io/storage-class: {{ $config.name }}-storage
+    volume.alpha.kubernetes.io/storage-class: {{ $scName }}
 spec:
-  storageClassName: {{ $config.name }}-storage
+  storageClassName: {{ $scName }}
   capacity:
     storage: {{ $config.mnesiaSize }}
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Delete
   hostPath:
     path: "/optscale/rabbitmq"
+{{- end }}
+
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ $config.name }}-claim
 spec:
-  storageClassName: {{ $config.name }}-storage
+  storageClassName: {{ $scName }}
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: {{ $config.mnesiaSize }}
@@ -190,7 +197,7 @@ spec:
       serviceAccountName: {{ $config.name }}
       initContainers:
       - name: bootstrap
-        image: "busybox:1.30.0"
+        image: {{ $config.statefulSet.spec.initContainers.image | quote }}
         imagePullPolicy: {{ $config.image.pullPolicy }}
         command: ['sh']
         args:
@@ -231,7 +238,7 @@ spec:
 {{- end }}
       containers:
       - name: {{ $config.name }}
-        image: "rabbitmq:3.8.2-management-alpine"
+        image: {{ $config.statefulSet.spec.containers.image | quote }}
         imagePullPolicy: {{ $config.image.pullPolicy }}
         env:
         - name: IMAGE_ID

@@ -1,4 +1,7 @@
 {{- $config := .Values.thanos_receive -}}
+{{- $sc := default "" .Values.global.storageclass -}}
+{{- $useExternal := ne $sc "" -}}
+{{- $scName := ternary $sc (printf "%s-storage" $config.name) $useExternal -}}
 ---
 apiVersion: v1
 kind: Secret
@@ -57,6 +60,8 @@ spec:
   selector:
     app: {{ $config.name }}
     release: {{ .Release.Name }}
+
+{{- if not $useExternal }}
 ---
 kind: PersistentVolume
 apiVersion: v1
@@ -65,9 +70,9 @@ metadata:
   labels:
     type: local
   annotations:
-    volume.alpha.kubernetes.io/storage-class: {{ $config.name }}
+    volume.alpha.kubernetes.io/storage-class: {{ $scName }}
 spec:
-  storageClassName: {{ $config.name }}
+  storageClassName: {{ $scName }}
   capacity:
     storage: {{ $config.dataSize }}
   accessModes:
@@ -75,13 +80,15 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   hostPath:
     path: "/optscale/{{ $config.name }}"
+{{- end }}
+
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ $config.name }}-claim
 spec:
-  storageClassName: {{ $config.name }}
+  storageClassName: {{ $scName }}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -117,7 +124,7 @@ spec:
       containers:
         - name: receive
           imagePullPolicy: "{{ $config.image.pullPolicy }}"
-          image: "thanosio/thanos:v0.39.1"
+          image: {{ $config.statefulSet.spec.containers.image | quote }}
           env:
             - name: NAME
               valueFrom:
