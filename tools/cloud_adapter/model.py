@@ -309,22 +309,22 @@ class BucketResource(CloudResource):
         - tiers (list): list of [display_name, size_gb] per storage tier
         - last_checked (list): dates strings when object GETs were observed
         """
-         super().__init__(**kwargs)
-         self.name = name
-         self.is_public_policy = is_public_policy
-         self.is_public_acls = is_public_acls
-         self.folder_id = folder_id
+        super().__init__(**kwargs)
+        self.name = name
+        self.is_public_policy = is_public_policy
+        self.is_public_acls = is_public_acls
+        self.folder_id = folder_id
 
-         self.intelligent_tiering_enabled = intelligent_tiering_enabled
-         self.intelligent_tiering_configs = intelligent_tiering_configs or []
-         self.lifecycle_rules = lifecycle_rules or []
-         self.storage_class_analysis = storage_class_analysis or []
-         self.metrics_configurations = metrics_configurations or []
-         self.total_size_bytes = total_size_bytes
-         self.object_count = object_count
-         self.it_status_bucket = it_status_bucket
-         self.tiers = tiers or []
-         self.last_checked = last_checked or []
+        self.intelligent_tiering_enabled = intelligent_tiering_enabled
+        self.intelligent_tiering_configs = intelligent_tiering_configs or []
+        self.lifecycle_rules = lifecycle_rules or []
+        self.storage_class_analysis = storage_class_analysis or []
+        self.metrics_configurations = metrics_configurations or []
+        self.total_size_bytes = total_size_bytes
+        self.object_count = object_count
+        self.it_status_bucket = it_status_bucket
+        self.tiers = tiers or []
+        self.last_checked = last_checked or []
 
     def __repr__(self):
         return (

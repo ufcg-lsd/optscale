@@ -187,7 +187,7 @@ class Aws(S3CloudMixin):
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
             LoadBalancerResource: self.load_balancer_discovery_calls,
-            LogGroupResource: self.log_group_discovery_calls
+
         }
 
     @property
@@ -471,12 +471,12 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_snapshots, (r,))
                 for r in self.list_regions()]
     
-    def log_group_discovery_calls(self):
-        """
-        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
-        """
-        return [(self.discover_region_log_groups, (r,))
-                for r in self.list_regions()]
+    # def log_group_discovery_calls(self):
+    #     """
+    #     Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+    #     """
+    #     return [(self.discover_region_log_groups, (r,))
+    #             for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
@@ -2005,204 +2005,204 @@ class Aws(S3CloudMixin):
             else:
                 raise
 
-    def list_all_log_groups(self, region):
-        try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            if session is None:
-                raise RuntimeError("No AWS session available")
-            logs_client = session.client('logs', region_name=region)
-            paginator = logs_client.get_paginator('describe_log_groups')
-            result = []
-            for page in paginator.paginate():
-                for g in page.get('logGroups', []):
-                    if 'logGroupName' in g:
-                        result.append(g['logGroupName'])
-            return result
-        except ClientError as e:
-            code = e.response.get('Error', {}).get('Code')
-            if code == 'InvalidParameterException':
-                raise ValueError(str(e))
-            raise
+    # def list_all_log_groups(self, region):
+    #     try:
+    #         session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+    #         if session is None:
+    #             raise RuntimeError("No AWS session available")
+    #         logs_client = session.client('logs', region_name=region)
+    #         paginator = logs_client.get_paginator('describe_log_groups')
+    #         result = []
+    #         for page in paginator.paginate():
+    #             for g in page.get('logGroups', []):
+    #                 if 'logGroupName' in g:
+    #                     result.append(g['logGroupName'])
+    #         return result
+    #     except ClientError as e:
+    #         code = e.response.get('Error', {}).get('Code')
+    #         if code == 'InvalidParameterException':
+    #             raise ValueError(str(e))
+    #         raise
 
-    def get_log_groups_details(self, log_group_names, region):
-        try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            logs_client = session.client('logs', region_name=region)
-            result = {}
-            for lg_name in log_group_names:
-                try:
-                    resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
-                    chosen = None
-                    for g in resp.get('logGroups', []):
-                        if g.get('logGroupName') == lg_name:
-                            chosen = g
-                            break
-                    if not chosen:
-                        result[lg_name] = None
-                        continue
+    # def get_log_groups_details(self, log_group_names, region):
+    #     try:
+    #         session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+    #         logs_client = session.client('logs', region_name=region)
+    #         result = {}
+    #         for lg_name in log_group_names:
+    #             try:
+    #                 resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
+    #                 chosen = None
+    #                 for g in resp.get('logGroups', []):
+    #                     if g.get('logGroupName') == lg_name:
+    #                         chosen = g
+    #                         break
+    #                 if not chosen:
+    #                     result[lg_name] = None
+    #                     continue
 
-                    ct = None
-                    if 'creationTime' in chosen and chosen['creationTime'] is not None:
-                        ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
+    #                 ct = None
+    #                 if 'creationTime' in chosen and chosen['creationTime'] is not None:
+    #                     ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
 
-                    result[lg_name] = {
-                        'name': chosen.get('logGroupName'),
-                        'stored_bytes': chosen.get('storedBytes', 0),
-                        'retention_in_days': chosen.get('retentionInDays'),
-                        'creation_time': ct,
-                        'arn': chosen.get('arn'),
-                        'kms_key_id': chosen.get('kmsKeyId')
-                    }
-                except Exception as e:
-                    LOG.exception("Error getting details for %s: %s", lg_name, e)
-                    result[lg_name] = None
-            return result
-        except ClientError as e:
-            code = e.response.get('Error', {}).get('Code')
-            if code == 'InvalidParameterException':
-                raise ValueError(str(e))
-            raise
+    #                 result[lg_name] = {
+    #                     'name': chosen.get('logGroupName'),
+    #                     'stored_bytes': chosen.get('storedBytes', 0),
+    #                     'retention_in_days': chosen.get('retentionInDays'),
+    #                     'creation_time': ct,
+    #                     'arn': chosen.get('arn'),
+    #                     'kms_key_id': chosen.get('kmsKeyId')
+    #                 }
+    #             except Exception as e:
+    #                 LOG.exception("Error getting details for %s: %s", lg_name, e)
+    #                 result[lg_name] = None
+    #         return result
+    #     except ClientError as e:
+    #         code = e.response.get('Error', {}).get('Code')
+    #         if code == 'InvalidParameterException':
+    #             raise ValueError(str(e))
+    #         raise
         
 
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
-        try:
-            log_group_names = self.list_all_log_groups(region)
+    # def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+    #     try:
+    #         log_group_names = self.list_all_log_groups(region)
             
-            if not log_group_names:
-                return []
+    #         if not log_group_names:
+    #             return []
             
-            details = self.get_log_groups_details(log_group_names, region)
-            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
-            resources = []
+    #         details = self.get_log_groups_details(log_group_names, region)
+    #         metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+    #         resources = []
             
-            for lg_name in log_group_names:
-                try:
-                    lg_details = details.get(lg_name)
-                    if lg_details is None:
-                        continue
-                    cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
+    #         for lg_name in log_group_names:
+    #             try:
+    #                 lg_details = details.get(lg_name)
+    #                 if lg_details is None:
+    #                     continue
+    #                 cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
                     
-                    resource = LogGroupResource(
-                        name=lg_details['name'],
-                        stored_bytes=lg_details['stored_bytes'],
-                        retention_in_days=lg_details['retention_in_days'],
-                        creation_time=lg_details['creation_time'],
-                        arn=lg_details['arn'],
-                        kms_key_id=lg_details['kms_key_id'],
+    #                 resource = LogGroupResource(
+    #                     name=lg_details['name'],
+    #                     stored_bytes=lg_details['stored_bytes'],
+    #                     retention_in_days=lg_details['retention_in_days'],
+    #                     creation_time=lg_details['creation_time'],
+    #                     arn=lg_details['arn'],
+    #                     kms_key_id=lg_details['kms_key_id'],
                         
-                        cloud_resource_id=cloud_resource_id,
-                        cloud_account_id=getattr(self, 'cloud_account_id', None),
-                        region=region,
-                        organization_id=getattr(self, 'organization_id', None),
-                        tags={}
-                    )
+    #                     cloud_resource_id=cloud_resource_id,
+    #                     cloud_account_id=getattr(self, 'cloud_account_id', None),
+    #                     region=region,
+    #                     organization_id=getattr(self, 'organization_id', None),
+    #                     tags={}
+    #                 )
                     
-                    setattr(resource, 'metrics', metrics.get(lg_name, {}))
-                    resources.append(resource)
+    #                 setattr(resource, 'metrics', metrics.get(lg_name, {}))
+    #                 resources.append(resource)
                     
-                except Exception as e:
-                    LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
-                    continue
+    #             except Exception as e:
+    #                 LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
+    #                 continue
             
-            return resources      
-        except Exception as e:
-            LOG.exception(f"Error creating log group resources for region {region}: {e}")
-            raise
+    #         return resources      
+    #     except Exception as e:
+    #         LOG.exception(f"Error creating log group resources for region {region}: {e}")
+    #         raise
 
-    def discover_region_log_groups(self, region):
-        """
-        Discover LogGroupResource objects for region (delegates to create_log_group_resources).
-        """
-        try:
-            for resource in self.create_log_group_resources(region):
-                yield resource
-        except Exception as e:
-            LOG.error("Error discovering log groups in %s: %s", region, e)
-            return
+    # def discover_region_log_groups(self, region):
+    #     """
+    #     Discover LogGroupResource objects for region (delegates to create_log_group_resources).
+    #     """
+    #     try:
+    #         for resource in self.create_log_group_resources(region):
+    #             yield resource
+    #     except Exception as e:
+    #         LOG.error("Error discovering log groups in %s: %s", region, e)
+    #         return
 
 
-    def get_log_group_tags(self, logs_client, log_group_name):
-        try:
-            response = logs_client.list_tags_log_group(logGroupName=log_group_name)
-            return response.get('tags', {})
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                return {}
-            LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
-            return {}
+    # def get_log_group_tags(self, logs_client, log_group_name):
+    #     try:
+    #         response = logs_client.list_tags_log_group(logGroupName=log_group_name)
+    #         return response.get('tags', {})
+    #     except ClientError as e:
+    #         if e.response['Error']['Code'] == 'ResourceNotFoundException':
+    #             return {}
+    #         LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
+    #         return {}
 
-    def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
+    # def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
 
-        if not log_group_names:
-            return {}
+    #     if not log_group_names:
+    #         return {}
     
-        metrics_to_fetch = {
-            'ingestion': {
-                'MetricName': 'IncomingBytes',
-                'Period': 3600,
-                'Stat': 'Sum',
-                'Unit': 'Bytes'
-            },
-            'storage': {
-                'MetricName': 'StoredBytes',
-                'Period': 86400,
-                'Stat': 'Maximum',
-                'Unit': 'Bytes'
-            },
-            'incoming_events': {
-                'MetricName': 'IncomingLogEvents',
-                'Period': 3600,
-                'Stat': 'Sum',
-                'Unit': 'Count'
-            }
-        }
+    #     metrics_to_fetch = {
+    #         'ingestion': {
+    #             'MetricName': 'IncomingBytes',
+    #             'Period': 3600,
+    #             'Stat': 'Sum',
+    #             'Unit': 'Bytes'
+    #         },
+    #         'storage': {
+    #             'MetricName': 'StoredBytes',
+    #             'Period': 86400,
+    #             'Stat': 'Maximum',
+    #             'Unit': 'Bytes'
+    #         },
+    #         'incoming_events': {
+    #             'MetricName': 'IncomingLogEvents',
+    #             'Period': 3600,
+    #             'Stat': 'Sum',
+    #             'Unit': 'Count'
+    #         }
+    #     }
         
-        end_time = datetime.now(timezone.utc)
-        start_time = end_time - timedelta(days=days_ago)
+    #     end_time = datetime.now(timezone.utc)
+    #     start_time = end_time - timedelta(days=days_ago)
         
-        session = self.get_session()
-        cw = session.client('cloudwatch', region_name=region)
+    #     session = self.get_session()
+    #     cw = session.client('cloudwatch', region_name=region)
         
-        results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
+    #     results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
         
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_key = {}
+    #     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    #         future_to_key = {}
             
-            for lg_name in log_group_names:
-                for metric_key, metric_config in metrics_to_fetch.items():
-                    params = {
-                        'Namespace': 'AWS/Logs',
-                        'MetricName': metric_config['MetricName'],
-                        'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
-                        'StartTime': start_time,
-                        'EndTime': end_time,
-                        'Period': _ensure_period(metric_config['Period']),
-                        'Statistics': [metric_config['Stat']],
-                        'Unit': metric_config['Unit']
-                    }
+    #         for lg_name in log_group_names:
+    #             for metric_key, metric_config in metrics_to_fetch.items():
+    #                 params = {
+    #                     'Namespace': 'AWS/Logs',
+    #                     'MetricName': metric_config['MetricName'],
+    #                     'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
+    #                     'StartTime': start_time,
+    #                     'EndTime': end_time,
+    #                     'Period': _ensure_period(metric_config['Period']),
+    #                     'Statistics': [metric_config['Stat']],
+    #                     'Unit': metric_config['Unit']
+    #                 }
                     
-                    future = executor.submit(
-                        self._exp_backoff_retry, 
-                        cw.get_metric_statistics, 
-                        **params
-                    )
-                    future_to_key[future] = (lg_name, metric_key)
+    #                 future = executor.submit(
+    #                     self._exp_backoff_retry, 
+    #                     cw.get_metric_statistics, 
+    #                     **params
+    #                 )
+    #                 future_to_key[future] = (lg_name, metric_key)
             
-            for future in as_completed(future_to_key):
-                lg_name, metric_key = future_to_key[future]
-                try:
-                    response = future.result(timeout=60)
-                    results[lg_name][metric_key] = response.get('Datapoints', [])
-                    LOG.debug(f"Collected {len(response.get('Datapoints', []))} datapoints for {metric_key} on {lg_name}")
-                except Exception as e:
-                    LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
-                    results[lg_name][metric_key] = []
+    #         for future in as_completed(future_to_key):
+    #             lg_name, metric_key = future_to_key[future]
+    #             try:
+    #                 response = future.result(timeout=60)
+    #                 results[lg_name][metric_key] = response.get('Datapoints', [])
+    #                 LOG.debug(f"Collected {len(response.get('Datapoints', []))} datapoints for {metric_key} on {lg_name}")
+    #             except Exception as e:
+    #                 LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
+    #                 results[lg_name][metric_key] = []
         
-        return results
+    #     return results
     
-    def _generate_log_group_cloud_link(self, region, log_group_name):
-        encoded_name = urllib.parse.quote(log_group_name, safe='')
-        return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
+    # def _generate_log_group_cloud_link(self, region, log_group_name):
+    #     encoded_name = urllib.parse.quote(log_group_name, safe='')
+    #     return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
 
     
     def _exp_backoff_retry(self, func, max_retries=5, base_delay=1, *args, **kwargs):

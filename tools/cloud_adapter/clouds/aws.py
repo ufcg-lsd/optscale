@@ -188,7 +188,6 @@ class Aws(S3CloudMixin):
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
             LoadBalancerResource: self.load_balancer_discovery_calls,
-            LogGroupResource: self.log_group_discovery_calls
         }
 
     @property
@@ -472,12 +471,12 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_snapshots, (r,))
                 for r in self.list_regions()]
     
-    def log_group_discovery_calls(self):
-        """
-        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
-        """
-        return [(self.discover_region_log_groups, (r,))
-                for r in self.list_regions()]
+    # def log_group_discovery_calls(self):
+    #     """
+    #     Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+    #     """
+    #     return [(self.discover_region_log_groups, (r,))
+    #             for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
