@@ -155,6 +155,10 @@ spec:
             secretKeyRef:
               name: "mongo-secret"
               key: password
+        resources:
+          requests:
+            cpu: 23m
+            memory: 1239M
         volumeMounts:
         - name: configdir
           mountPath: /data/configdb

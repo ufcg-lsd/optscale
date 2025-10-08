@@ -61,6 +61,10 @@ spec:
             - containerPort: {{ $config.httpPort }}
               name: http
               protocol: TCP
+          resources:
+            requests:
+              cpu: 15m
+              memory: 105M
           livenessProbe:
             httpGet:
               path: /-/healthy

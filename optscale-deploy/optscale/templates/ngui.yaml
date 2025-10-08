@@ -72,4 +72,8 @@ spec:
           value: {{ $config.env.ganalytics_id }}
         - name: VITE_HOTJAR_ID
           value: {{ $config.env.hotjar_id | quote }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
 {{ include "ready_probe" $config | indent 8 }}

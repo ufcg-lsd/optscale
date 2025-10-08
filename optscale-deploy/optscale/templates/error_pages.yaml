@@ -45,3 +45,8 @@ spec:
         imagePullPolicy: {{ $config.image.pullPolicy }}
         ports:
         - containerPort: {{ $config.service.internalPort }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
+

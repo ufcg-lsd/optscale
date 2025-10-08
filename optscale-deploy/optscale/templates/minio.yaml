@@ -70,6 +70,11 @@ spec:
             secretKeyRef:
               name: "{{ $config.name }}-secret"
               key: secret
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
+
         ports:
         - name: {{ $config.service.name }}
           containerPort: {{ $config.service.internalPort }}

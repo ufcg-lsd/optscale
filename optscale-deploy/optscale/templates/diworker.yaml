@@ -45,3 +45,8 @@ spec:
           value: {{ .Values.etcd.service.externalPort | quote }}
         - name: FAKE_CAD_ENABLED
           value: {{ .Values.fake_cad_enabled | quote }}
+        resources:
+          requests:
+            cpu: 50m
+            memory: 105M
+

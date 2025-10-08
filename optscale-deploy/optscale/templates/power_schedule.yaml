@@ -38,6 +38,10 @@ spec:
           value: {{ .Values.etcd.service.name }}
         - name: HX_ETCD_PORT
           value: {{ .Values.etcd.service.externalPort | quote }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 226M
 ---
 apiVersion: batch/v1
 kind: CronJob

@@ -160,6 +160,11 @@ spec:
           value: {{ $config.hb_interval | quote }}
         - name: ETCD_ELECTION_TIMEOUT
           value: {{ $config.election_timeout | quote }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
+
       volumes:
       - name: etcd-persistent-storage
         hostPath:

@@ -63,4 +63,8 @@ spec:
           value: /etc/ssl/certs/ca-certificates.crt
         - name: FAKE_CAD_ENABLED
           value: {{ .Values.fake_cad_enabled | quote }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 421M
 {{ include "ready_probe" $config | indent 8 }}

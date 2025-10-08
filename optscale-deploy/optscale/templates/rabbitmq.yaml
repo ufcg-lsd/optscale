@@ -224,6 +224,10 @@ spec:
             secretKeyRef:
               name: rabbit-secret
               key: erlang-cookie
+        resources:
+          requests:
+            cpu: 143m
+            memory: 226M
         volumeMounts:
         - name: configmap
           mountPath: /configmap
