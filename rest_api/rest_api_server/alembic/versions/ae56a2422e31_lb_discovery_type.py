@@ -20,7 +20,7 @@ old_res_types = sa.Enum('instance', 'volume', 'snapshot', 'bucket', 'k8s_pod',
                         'image')
 new_res_types = sa.Enum('instance', 'volume', 'snapshot', 'bucket', 'k8s_pod',
                         'snapshot_chain', 'rds_instance', 'ip_address',
-                        'image', 'load_balancer')
+                        'image', 'load_balancer', 'log_group')
 
 
 def upgrade():
