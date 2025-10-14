@@ -2297,7 +2297,7 @@ class Aws(S3CloudMixin):
                         'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
                         'StartTime': start_time,
                         'EndTime': end_time,
-                        'Period': _ensure_period(metric_config['Period']),
+                        'Period': metric_config['Period'],
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }
