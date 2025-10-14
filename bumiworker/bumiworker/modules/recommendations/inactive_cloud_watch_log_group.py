@@ -12,8 +12,8 @@ SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 LOG = logging.getLogger(__name__)
 
 BYTES_PER_GIB = 1024 ** 3  
-RECENT_WINDOW_DAYS_DEFAULT = 30
-DEAD_RESOURCE_DAYS_DEFAULT = 30
+RECENT_WINDOW_DAYS_DEFAULT = 3
+DEAD_RESOURCE_DAYS_DEFAULT = 3
 
 class MetricKey(str, Enum):
     INGESTION = "IngestionBytes"
