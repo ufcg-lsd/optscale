@@ -998,6 +998,7 @@ class LogGroupResource(CloudResource):
         """Return short textual representation for debugging."""
         return "Log Group {0} name={1}".format(self.cloud_resource_id, self.name)
 
+    @staticmethod
     def _datapoint_value(dp: dict):
         """Return the numeric value found in a CloudWatch datapoint dict.
 
@@ -1029,7 +1030,7 @@ class LogGroupResource(CloudResource):
                             if isinstance(dp["Timestamp"], datetime)
                             else dp["Timestamp"]
                         ),
-                        "value": _datapoint_value(dp),
+                        "value": self._datapoint_value(dp),
                     }
                     for dp in data_points
                 ]
