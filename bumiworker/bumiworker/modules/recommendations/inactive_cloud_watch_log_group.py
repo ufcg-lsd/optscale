@@ -156,7 +156,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             query_cost = query_gb * CWL_PRICING.query_usd_per_gb
 
             total = storage_monthly_cost + ingestion_cost + query_cost
-            return round(total, 2)
+            return float(total)
         except Exception:
             return 0.0
     
