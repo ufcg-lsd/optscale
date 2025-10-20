@@ -16,6 +16,7 @@ from .constants import (
 
 LOG = logging.getLogger(__name__)
 
+
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
     """
     Normalize 'tiers' into [{'name': <tier_name>, 'gb': <float>}].
@@ -305,4 +306,3 @@ def main(organization_id, config_client, created_at, **kwargs):
 
 def get_module_email_name():
     return "S3 Intelligent-Tiering candidates"
-
