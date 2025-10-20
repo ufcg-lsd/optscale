@@ -11,9 +11,10 @@ import InactiveUsers from "containers/RecommendationsOverviewContainer/recommend
 import InsecureSecurityGroups from "containers/RecommendationsOverviewContainer/recommendations/InsecureSecurityGroups";
 import InstancesForShutdown from "containers/RecommendationsOverviewContainer/recommendations/InstancesForShutdown";
 import InstancesGenerationUpgrade from "containers/RecommendationsOverviewContainer/recommendations/InstancesGenerationUpgrade";
-import InstancesInStoppedStateForALongTime from "containers/RecommendationsOverviewContainer/recommendations/InstancesInStoppedStateForALongTime";
 import InstancesMigration from "containers/RecommendationsOverviewContainer/recommendations/InstancesMigration";
 import InstanceSubscription from "containers/RecommendationsOverviewContainer/recommendations/InstanceSubscription";
+import InstancesInStoppedStateForALongTime from "containers/RecommendationsOverviewContainer/recommendations/InstancesInStoppedStateForALongTime";
+import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import NebiusMigration from "containers/RecommendationsOverviewContainer/recommendations/NebiusMigration";
 import ObsoleteImages from "containers/RecommendationsOverviewContainer/recommendations/ObsoleteImages";
 import ObsoleteIps from "containers/RecommendationsOverviewContainer/recommendations/ObsoleteIps";
@@ -25,7 +26,6 @@ import RightsizingInstances from "containers/RecommendationsOverviewContainer/re
 import RightsizingRdsInstances from "containers/RecommendationsOverviewContainer/recommendations/RightsizingRdsInstances";
 import ShortLivingInstances from "containers/RecommendationsOverviewContainer/recommendations/ShortLivingInstances";
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
-import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
 import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 
