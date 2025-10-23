@@ -18,6 +18,11 @@ import tools.optscale_time as opttime
 import pyarrow.parquet as pq
 
 LOG = logging.getLogger(__name__)
+
+
+def _log_bucket(message, *args):
+    """Centralised logging entry point for bucket-related events."""
+    LOG.info('[Bucket] ' + message, *args)
 CHUNK_SIZE = 200
 IGNORE_EXPENSE_TYPES = ['Credit']
 RI_PLATFORMS = [
@@ -764,6 +769,18 @@ class AWSReportImporter(CSVBaseReportImporter):
             **fake_cad_extras,
             **meta_dict
         }
+        if info['type'] == 'Bucket':
+            bucket_resource_id = (
+                expenses[0].get('resource_id') if expenses else None)
+            _log_bucket(
+                'Aggregated bucket info: resource_id=%s, region=%s, '
+                'first_seen=%s, last_seen=%s, expense_count=%s',
+                self.short_resource_id(bucket_resource_id),
+                info['region'],
+                info['first_seen'],
+                info['last_seen'],
+                len(expenses)
+            )
         LOG.debug('Detected resource info: %s', info)
         return info
 
@@ -823,8 +840,18 @@ class AWSReportImporter(CSVBaseReportImporter):
         })
         resource_type_keys = [k for k, v in resource_type_map.items()
                               if v is True]
-        return (resource_type_keys[0] if resource_type_keys else
-                resource_type_map.get('Other'))
+        detected_type = (resource_type_keys[0] if resource_type_keys else
+                         resource_type_map.get('Other'))
+        if detected_type == bucket_type:
+            _log_bucket(
+                'Classified expense as bucket: resource_id=%s, product=%s, '
+                'operation=%s, usage_type=%s',
+                AWSReportImporter.short_resource_id(resource_id),
+                product,
+                operation,
+                usage_type
+            )
+        return detected_type
 
     def get_resource_info_map(self, chunk):
         regular_res_info_map = {}
@@ -862,6 +889,19 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def clean_expenses_for_resource(self, resource_id, expenses):
         clean_expenses = {}
+        is_bucket_resource = False
+        if expenses:
+            try:
+                detected_type = self.get_resource_type(expenses[-1], None)
+            except Exception:
+                detected_type = None
+            is_bucket_resource = detected_type == 'Bucket'
+        if is_bucket_resource:
+            _log_bucket(
+                'Normalising %s raw expenses for resource_id=%s',
+                len(expenses),
+                self.short_resource_id(resource_id)
+            )
         for e in expenses:
             start_date = self._datetime_from_expense(
                 e, 'start_date')
@@ -884,6 +924,12 @@ class AWSReportImporter(CSVBaseReportImporter):
                         'resource_id': resource_id,
                         'cloud_account_id': e['cloud_account_id']
                     }
+        if is_bucket_resource:
+            _log_bucket(
+                'Produced %s normalised expense rows for resource_id=%s',
+                len(clean_expenses),
+                self.short_resource_id(resource_id)
+            )
         return clean_expenses
 
     @staticmethod
