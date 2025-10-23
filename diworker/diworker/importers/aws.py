@@ -114,7 +114,15 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     @staticmethod
     def short_resource_id(resource_id):
-        return resource_id[resource_id.find('/') + 1:]
+        if not resource_id:
+            return resource_id
+        slash_pos = resource_id.find('/')
+        if slash_pos != -1:
+            short_id = resource_id[slash_pos + 1:]
+            return short_id or resource_id
+        if resource_id.startswith('arn:aws:s3:::'):
+            return resource_id.split(':::')[-1]
+        return resource_id
 
     @staticmethod
     def unzip_report(report_path, dest_dir):

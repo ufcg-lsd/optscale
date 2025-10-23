@@ -280,9 +280,15 @@ class DiscoveryWorker(ConsumerMixin):
                 return res
             futures = []
             for call in discover_calls:
-                futures.append(executor.submit(call[0], *call[1]))
-            for f in futures:
-                res.append(f.result())
+                futures.append((executor.submit(call[0], *call[1]), call))
+            for future, call in futures:
+                try:
+                    res.append(future.result())
+                except Exception as exc:
+                    LOG.warning(
+                        'Discovery call %s with args %s failed with %s. Skipping.',
+                        call[0].__name__, call[1], str(exc)
+                    )
         return res
 
     @staticmethod
