@@ -1,4 +1,5 @@
 {{- $config := .Values.rabbitmq -}}
+{{- $clusterDomain := default "cluster.local" .Values.clusterDomain -}}
 ---
 apiVersion: v1
 kind: Secret
@@ -16,7 +17,6 @@ data:
   erlang-cookie: {{ $config.credentials.cookie | b64enc | quote }}
   definitions.json: {{ include "definitions.json" . | b64enc | quote }}
 ---
-# discovery service
 apiVersion: v1
 kind: Service
 metadata:
@@ -101,14 +101,23 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  name: {{ $config.name }}
   labels:
     app: {{ $config.name }}
     release: {{ .Release.Name }}
-  name: {{ $config.name }}
 rules:
-- apiGroups: [""]
-  resources: ["endpoints"]
-  verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["endpoints", "pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch", "update", "get"]
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create", "patch", "update", "get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -188,51 +197,483 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       serviceAccountName: {{ $config.name }}
+
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: "OnRootMismatch"
+
       initContainers:
-      - name: bootstrap
-        image: "busybox:1.30.0"
+      # --- Phase 1: bring data forward with a 3.8.x node ---
+      - name: bootstrap-38
+        image: "rabbitmq:3.8.2-management-alpine"
         imagePullPolicy: {{ $config.image.pullPolicy }}
-        command: ['sh']
+        command: [ "sh","-c" ]
         args:
-          - "-c"
           - |
-            set -ex
-            cp /configmap/* /etc/rabbitmq
-            echo "${RABBITMQ_ERLANG_COOKIE}" > /var/lib/rabbitmq/.erlang.cookie
-            {{- if .Values.forceBoot }}
-            if [ -d "${RABBITMQ_MNESIA_DIR}" ]; then
-              touch "${RABBITMQ_MNESIA_DIR}/force_load"
+            set -euo pipefail
+            mkdir -p /var/lib/rabbitmq /var/lib/rabbitmq/mnesia /var/lib/rabbitmq/plugins-expand
+            umask 077
+            printf "%s" "${RABBITMQ_ERLANG_COOKIE}" > /var/lib/rabbitmq/.erlang.cookie
+            chmod 700 /var/lib/rabbitmq
+            chmod 600 /var/lib/rabbitmq/.erlang.cookie
+            chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /etc/rabbitmq || true
+            umask 022
+
+            NS="{{ .Release.Namespace }}"
+            SVC="{{ $config.service.name }}-discovery"
+            DOMAIN="{{ $clusterDomain }}"
+            export RABBITMQ_USE_LONGNAME=true
+            export RABBITMQ_NODENAME="rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export RABBITMQ_MNESIA_DIR="/var/lib/rabbitmq/mnesia/rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+
+            export HOME=/var/lib/rabbitmq
+            export RABBITMQ_PLUGINS_EXPAND_DIR=/var/lib/rabbitmq/plugins-expand
+            export RABBITMQ_LOGS=-
+            export RABBITMQ_SASL_LOGS=-
+            COOKIE="$(cat /var/lib/rabbitmq/.erlang.cookie)"
+
+            if command -v su-exec >/dev/null 2>&1; then runas="su-exec rabbitmq"; elif command -v gosu >/dev/null 2>&1; then runas="gosu rabbitmq"; else runas=""; fi
+
+            echo "[bootstrap-38] starting temp 3.8 node: ${RABBITMQ_NODENAME}"
+            env HOME=/var/lib/rabbitmq RABBITMQ_PLUGINS_EXPAND_DIR="$RABBITMQ_PLUGINS_EXPAND_DIR" \
+              $runas rabbitmq-server -detached
+
+            echo "[bootstrap-38] waiting for ping..."
+            for i in $(seq 1 180); do
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping && break
+              sleep 1
+            done
+
+            echo "[bootstrap-38] await startup..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" await_startup -t 300 || true
+
+            if env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" help 2>/dev/null | grep -q enable_feature_flag; then
+              env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag all || true
+              for f in quorum_queue stream_queue user_limits virtual_host_metadata implicit_default_bindings classic_mirrored_queue_version maintenance_mode_status; do
+                env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag "$f" || true
+              done
+              env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" list_feature_flags || true
             fi
-            {{- end }}
+
+            echo "[bootstrap-38] stop..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" stop || true
+            for i in $(seq 1 60); do
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping 2>/dev/null || break
+              sleep 2
+            done
         env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: RABBITMQ_MNESIA_DIR
-          value: /var/lib/rabbitmq/mnesia/rabbit@$(POD_NAME).{{ $config.service.name }}-discovery.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
-        - name: RABBITMQ_ERLANG_COOKIE
-          valueFrom:
-            secretKeyRef:
-              name: rabbit-secret
-              key: erlang-cookie
+          - name: POD_NAME
+            valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.name } }
+          - name: RABBITMQ_ERLANG_COOKIE
+            valueFrom: { secretKeyRef: { name: rabbit-secret, key: erlang-cookie } }
         volumeMounts:
-        - name: configmap
-          mountPath: /configmap
-        - name: config
-          mountPath: /etc/rabbitmq
-        - name: datadir
-          mountPath: /var/lib/rabbitmq
-        - name: mnesia
-          mountPath: /var/lib/rabbitmq/mnesia/
+          - name: configmap
+            mountPath: /configmap
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia/
+
+      # --- Phase 2: advance to 3.10 and enable “stable” flags ---
+      - name: bootstrap-310
+        image: "rabbitmq:3.10.25-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy }}
+        command: [ "sh","-c" ]
+        args:
+          - |
+            set -euo pipefail
+            NS="{{ .Release.Namespace }}"
+            SVC="{{ $config.service.name }}-discovery"
+            DOMAIN="{{ $clusterDomain }}"
+            export RABBITMQ_USE_LONGNAME=true
+            export RABBITMQ_NODENAME="rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export RABBITMQ_MNESIA_DIR="/var/lib/rabbitmq/mnesia/rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export HOME=/var/lib/rabbitmq
+            export RABBITMQ_PLUGINS_EXPAND_DIR=/var/lib/rabbitmq/plugins-expand
+            export RABBITMQ_LOGS=-
+            export RABBITMQ_SASL_LOGS=-
+            COOKIE="$(cat /var/lib/rabbitmq/.erlang.cookie)"
+            if command -v su-exec >/dev/null 2>&1; then runas="su-exec rabbitmq"; elif command -v gosu >/dev/null 2>&1; then runas="gosu rabbitmq"; else runas=""; fi
+
+            echo "[bootstrap-310] starting temp 3.10 node: ${RABBITMQ_NODENAME}"
+            $runas rabbitmq-server -detached
+
+            echo "[bootstrap-310] waiting for ping..."
+            for i in $(seq 1 180); do
+              $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping && break
+              sleep 1
+            done
+
+            echo "[bootstrap-310] await startup..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" await_startup -t 300 || true
+
+            echo "[bootstrap-310] enable stable feature flags..."
+            if $runas rabbitmqctl --erlang-cookie "$COOKIE" help 2>/dev/null | grep -q enable_feature_flag; then
+              $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag all || true
+              for f in classic_mirrored_queue_version maintenance_mode_status quorum_queue stream_queue user_limits virtual_host_metadata implicit_default_bindings classic_queue_type_delivery_support; do
+                $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag "$f" || true
+              done
+            fi
+
+            echo "[bootstrap-310] verify..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" list_feature_flags || true
+
+            echo "[bootstrap-310] stop..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" stop || true
+            for i in $(seq 1 60); do
+              $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping 2>/dev/null || break
+              sleep 2
+            done
+        env:
+          - name: POD_NAME
+            valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.name } }
+          - name: RABBITMQ_ERLANG_COOKIE
+            valueFrom: { secretKeyRef: { name: rabbit-secret, key: erlang-cookie } }
+        volumeMounts:
+          - name: configmap
+            mountPath: /configmap
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia/
+
+      # --- Phase 3: 3.11 to bring in v2 flags etc., then copy config for main ---
+      - name: bootstrap-311
+        image: "rabbitmq:3.11.22-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy }}
+        command: [ "sh","-c" ]
+        args:
+          - |
+            set -euo pipefail
+            NS="{{ .Release.Namespace }}"
+            SVC="{{ $config.service.name }}-discovery"
+            DOMAIN="{{ $clusterDomain }}"
+            export RABBITMQ_USE_LONGNAME=true
+            export RABBITMQ_NODENAME="rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export RABBITMQ_MNESIA_DIR="/var/lib/rabbitmq/mnesia/rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export HOME=/var/lib/rabbitmq
+            export RABBITMQ_PLUGINS_EXPAND_DIR=/var/lib/rabbitmq/plugins-expand
+            export RABBITMQ_LOGS=-
+            export RABBITMQ_SASL_LOGS=-
+            COOKIE="$(cat /var/lib/rabbitmq/.erlang.cookie)"
+            if command -v su-exec >/dev/null 2>&1; then runas="su-exec rabbitmq"; elif command -v gosu >/dev/null 2>&1; then runas="gosu rabbitmq"; else runas=""; fi
+
+            echo "[bootstrap-311] starting temp 3.11 node: ${RABBITMQ_NODENAME}"
+            $runas rabbitmq-server -detached
+
+            echo "[bootstrap-311] waiting for ping..."
+            for i in $(seq 1 180); do
+              $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping && break
+              sleep 1
+            done
+
+            echo "[bootstrap-311] await startup..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" await_startup -t 300 || true
+
+            echo "[bootstrap-311] enable extended flags..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag all || true
+            for f in feature_flags_v2 direct_exchange_routing_v2 listener_records_in_ets tracking_records_in_ets stream_single_active_consumer stream_sac_coordinator_unblock_group; do
+              $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag "$f" || true
+            done
+
+            echo "[bootstrap-311] verify..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" list_feature_flags || true
+
+            echo "[bootstrap-311] stop..."
+            $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" stop || true
+            for i in $(seq 1 60); do
+              $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping 2>/dev/null || break
+              sleep 2
+            done
+
+            cp /configmap/* /etc/rabbitmq
+            chmod 644 /etc/rabbitmq/rabbitmq.conf /etc/rabbitmq/enabled_plugins || true
+        env:
+          - name: POD_NAME
+            valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.name } }
+          - name: RABBITMQ_ERLANG_COOKIE
+            valueFrom: { secretKeyRef: { name: rabbit-secret, key: erlang-cookie } }
+        volumeMounts:
+          - name: configmap
+            mountPath: /configmap
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia/
+
+      - name: bootstrap-313
+        image: "rabbitmq:3.13.7-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy }}
+        command: [ "sh","-c" ]
+        args:
+          - |
+            set -euo pipefail
+            NS="{{ .Release.Namespace }}"
+            SVC="{{ $config.service.name }}-discovery"
+            DOMAIN="{{ $clusterDomain }}"
+            export RABBITMQ_USE_LONGNAME=true
+            export RABBITMQ_NODENAME="rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export RABBITMQ_MNESIA_DIR="/var/lib/rabbitmq/mnesia/rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export HOME=/var/lib/rabbitmq
+            export RABBITMQ_PLUGINS_EXPAND_DIR=/var/lib/rabbitmq/plugins-expand
+
+            # <<< IMPORTANT for rabbit_peer_discovery_k8s in init too >>>
+            export K8S_SERVICE_NAME="{{ $config.service.name }}-discovery"
+            export K8S_HOSTNAME_SUFFIX=".{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}"
+
+            # Log to stdout so early crashes are visible in `kubectl logs`
+            export RABBITMQ_LOGS=-
+            export RABBITMQ_SASL_LOGS=-
+
+            COOKIE="$(cat /var/lib/rabbitmq/.erlang.cookie || true)"
+
+            mkdir -p /var/lib/rabbitmq /var/lib/rabbitmq/mnesia /var/lib/rabbitmq/plugins-expand
+            cp -f /configmap/* /etc/rabbitmq/ || true
+            chmod 644 /etc/rabbitmq/rabbitmq.conf /etc/rabbitmq/enabled_plugins || true
+            [ -f /etc/rabbitmq/rabbitmq.conf ] && cp -f /etc/rabbitmq/rabbitmq.conf /etc/rabbitmq/rabbitmq.conf.orig || true
+            touch /etc/rabbitmq/rabbitmq.conf
+            if grep -Eq '^\s*cluster_formation\.peer_discovery_backend\s*=' /etc/rabbitmq/rabbitmq.conf; then
+             sed -ri 's|^\s*cluster_formation\.peer_discovery_backend\s*=.*$|cluster_formation.peer_discovery_backend = classic_config|' /etc/rabbitmq/rabbitmq.conf
+            else
+              printf '\ncluster_formation.peer_discovery_backend = classic_config\n' >> /etc/rabbitmq/rabbitmq.conf
+            fi
+     
+            
+            chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /etc/rabbitmq || true
+            chmod 700 /var/lib/rabbitmq || true
+            [ -f /var/lib/rabbitmq/.erlang.cookie ] && chmod 600 /var/lib/rabbitmq/.erlang.cookie || true
+
+            if command -v su-exec >/dev/null 2>&1; then runas="su-exec rabbitmq"; \
+            elif command -v gosu     >/dev/null 2>&1; then runas="gosu rabbitmq"; \
+            else runas=""; fi
+
+            echo "[bootstrap-313] env:"
+            env | grep -E '^(RABBITMQ|K8S|SVC|NS|DOMAIN)'
+
+            echo "[bootstrap-313] start (foreground): ${RABBITMQ_NODENAME}"
+            set +e
+            env HOME=/var/lib/rabbitmq RABBITMQ_PLUGINS_EXPAND_DIR="$RABBITMQ_PLUGINS_EXPAND_DIR" \
+              $runas rabbitmq-server &
+            srvpid=$!
+            set -e
+
+            echo "[bootstrap-313] wait for ping..."
+            ok=0
+            for i in $(seq 1 180); do
+              if env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics \
+                   --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping; then
+                ok=1; break
+              fi
+              # show a short status pulse every 10s
+              if [ $((i%10)) -eq 0 ]; then
+                echo "[bootstrap-313] still waiting ($i s)..."
+              fi
+              sleep 1
+            done
+
+            if [ "$ok" -ne 1 ]; then
+              echo "[bootstrap-313] ping failed; dumping diagnostics"
+              echo "--- perms ---"
+              ls -ld /var/lib/rabbitmq || true
+              ls -l /var/lib/rabbitmq/.erlang.cookie || true
+              command -v stat >/dev/null 2>&1 && stat -c '%a %U:%G %n' /var/lib/rabbitmq/.erlang.cookie || true
+              echo "COOKIE length:" $(wc -c </var/lib/rabbitmq/.erlang.cookie 2>/dev/null || echo N/A)
+              echo "--- processes (epmd / beam) ---"
+              ps auxww || true
+              echo "--- diagnostics ---"
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --longnames -n "$RABBITMQ_NODENAME" erlang_version || true
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --longnames -n "$RABBITMQ_NODENAME" environment || true
+              echo "--- tail stdout from rabbitmq-server (if any) ---"
+              # give the foreground server a couple seconds to flush output, then exit non-zero
+              sleep 2
+              exit 1
+            fi
+
+            echo "[bootstrap-313] await startup..."
+            if ! env HOME=/var/lib/rabbitmq $runas rabbitmqctl \
+                 --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" await_startup -t 600; then
+              echo "[bootstrap-313] await_startup failed (see stdout above)"
+              exit 1
+            fi
+
+            echo "[bootstrap-313] enable flags for 4.x compatibility..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag restart_streams || true
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag all || true
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" list_feature_flags || true
+
+            echo "[bootstrap-313] stop..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" stop || true
+            for i in $(seq 1 60); do
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping 2>/dev/null || break
+              sleep 2
+            done
+        env:
+          - name: POD_NAME
+            valueFrom: { fieldRef: { fieldPath: metadata.name } }
+          - name: RABBITMQ_ERLANG_COOKIE
+            valueFrom: { secretKeyRef: { name: rabbit-secret, key: erlang-cookie } }
+        volumeMounts:
+          - name: configmap
+            mountPath: /configmap
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia/
+          - name: definitions
+            mountPath: /etc/definitions
+            readOnly: true
+
+
+      - name: bootstrap-41x
+        image: "rabbitmq:3.13.7-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy }}
+        command: [ "sh","-c" ]
+        args:
+          - |
+            set -euo pipefail
+            NS="{{ .Release.Namespace }}"
+            SVC="{{ $config.service.name }}-discovery"
+            DOMAIN="{{ $clusterDomain }}"
+            export RABBITMQ_USE_LONGNAME=true
+            export RABBITMQ_NODENAME="rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export RABBITMQ_MNESIA_DIR="/var/lib/rabbitmq/mnesia/rabbit@${POD_NAME}.${SVC}.${NS}.svc.${DOMAIN}"
+            export HOME=/var/lib/rabbitmq
+            export RABBITMQ_PLUGINS_EXPAND_DIR=/var/lib/rabbitmq/plugins-expand
+            export RABBITMQ_LOGS=-
+            export RABBITMQ_SASL_LOGS=-
+            COOKIE="$(cat /var/lib/rabbitmq/.erlang.cookie || true)"
+
+            mkdir -p /var/lib/rabbitmq /var/lib/rabbitmq/mnesia /var/lib/rabbitmq/plugins-expand
+            chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /etc/rabbitmq || true
+            chmod 700 /var/lib/rabbitmq || true
+            if [ -n "${COOKIE}" ]; then
+              printf "%s" "${COOKIE}" > /var/lib/rabbitmq/.erlang.cookie
+              chmod 600 /var/lib/rabbitmq/.erlang.cookie
+            fi
+
+            if command -v su-exec >/dev/null 2>&1; then runas="su-exec rabbitmq"; elif command -v gosu >/dev/null 2>&1; then runas="gosu rabbitmq"; else runas=""; fi
+
+            echo "[bootstrap-41x] starting temp 3.13 node: ${RABBITMQ_NODENAME}"
+            env HOME=/var/lib/rabbitmq RABBITMQ_PLUGINS_EXPAND_DIR="$RABBITMQ_PLUGINS_EXPAND_DIR" \
+              $runas rabbitmq-server -detached
+
+            echo "[bootstrap-41x] wait for ping..."
+            for i in $(seq 1 300); do
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping && break
+              sleep 2
+            done
+
+            echo "[bootstrap-41x] await startup..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" await_startup -t 600 || true
+
+            echo "[bootstrap-41x] enabling 4.x-required flags..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag restart_streams || true
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" enable_feature_flag all || true
+
+            echo "[bootstrap-41x] verify flags..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" list_feature_flags || true
+
+            echo "[bootstrap-41x] stop..."
+            env HOME=/var/lib/rabbitmq $runas rabbitmqctl --erlang-cookie "$COOKIE" --longnames -n "$RABBITMQ_NODENAME" stop || true
+            for i in $(seq 1 60); do
+              env HOME=/var/lib/rabbitmq $runas rabbitmq-diagnostics --erlang-cookie "$COOKIE" --longnames -q -n "$RABBITMQ_NODENAME" ping 2>/dev/null || break
+              sleep 2
+            done
+            if [ -f /etc/rabbitmq/rabbitmq.conf.orig ]; then
+              mv -f /etc/rabbitmq/rabbitmq.conf.orig /etc/rabbitmq/rabbitmq.conf
+            else
+              cp -f /configmap/* /etc/rabbitmq/ 2>/dev/null || true
+            fi
+            chmod 644 /etc/rabbitmq/rabbitmq.conf /etc/rabbitmq/enabled_plugins 2>/dev/null || true
+        env:
+          - name: POD_NAME
+            valueFrom: { fieldRef: { fieldPath: metadata.name } }
+          - name: RABBITMQ_ERLANG_COOKIE
+            valueFrom: { secretKeyRef: { name: rabbit-secret, key: erlang-cookie } }
+        volumeMounts:
+          - name: configmap
+            mountPath: /configmap
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia/
+          - name: definitions
+            mountPath: /etc/definitions
+            readOnly: true
+
+      - name: fix-perms
+        image: "rabbitmq:3.13.7-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy }}
+        command: [ "sh","-c" ]
+        args:
+          - |
+            set -e
+            chown -R 999:999 /var/lib/rabbitmq /etc/rabbitmq || true
+            chmod 700 /var/lib/rabbitmq || true
+            [ -f /var/lib/rabbitmq/.erlang.cookie ] && chmod 600 /var/lib/rabbitmq/.erlang.cookie || true
+            echo "[fix-perms] ownership & perms set"
+            ls -ld /var/lib/rabbitmq ; ls -l /var/lib/rabbitmq/.erlang.cookie || true
+        volumeMounts:
+          - name: config
+            mountPath: /etc/rabbitmq
+          - name: datadir
+            mountPath: /var/lib/rabbitmq
+          - name: mnesia
+            mountPath: /var/lib/rabbitmq/mnesia
+
 {{- if .Values.elk.enabled }}
 {{ include "wait_for_elk" . | indent 6 }}
 {{- end }}
       containers:
       - name: {{ $config.name }}
-        image: "rabbitmq:3.8.2-management-alpine"
-        imagePullPolicy: {{ $config.image.pullPolicy }}
+
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+          allowPrivilegeEscalation: false
+
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -lc
+                - |
+                  set +e
+                  echo "[postStart] waiting for node to respond to ping..."
+                  for i in $(seq 1 120); do
+                    rabbitmq-diagnostics --longnames -q ping && break
+                    sleep 1
+                  done
+
+                  if rabbitmqctl help 2>/dev/null | grep -q "enable_feature_flag"; then
+                    if rabbitmqctl help enable_feature_flag 2>/dev/null | grep -q "all"; then
+                      echo "[postStart] enabling all feature flags (bulk)..."
+                      rabbitmqctl --longnames enable_feature_flag all || true
+                    else
+                      echo "[postStart] enabling disabled feature flags (per-flag)..."
+                      for f in $(rabbitmqctl --longnames list_feature_flags 2>/dev/null | awk '/^\[ \]/{print $2}'); do
+                        rabbitmqctl --longnames enable_feature_flag "$f" || true
+                      done
+                    fi
+                    rabbitmqctl --longnames list_feature_flags || true
+                  else
+                    echo "[postStart] feature flag CLI not available; skipping"
+                  fi
+                  exit 0
+
+        image: "rabbitmq:4.1.4-management-alpine"
+        imagePullPolicy: {{ $config.image.pullPolicy}}
         env:
         - name: IMAGE_ID
           value: {{ $config.image.id }}
@@ -274,6 +715,10 @@ spec:
             secretKeyRef:
               name: rabbit-secret
               key: management-password
+        - name: HOME
+          value: /var/lib/rabbitmq
+        - name: RABBITMQ_PLUGINS_EXPAND_DIR
+          value: /var/lib/rabbitmq/plugins-expand
         - name: CONFIG_HASH
           value: {{ include "rabbitmq.conf" . | sha256sum }}
         - name: PLUGINS_HASH
@@ -323,7 +768,7 @@ spec:
         emptyDir: {}
       - name: configmap
         configMap:
-          name: {{ $config.name }}-config
+          name: {{ $config.service.name }}-config
       - name: datadir
         emptyDir: {}
       - name: mnesia

@@ -63,6 +63,10 @@ rabbitmq:
   replicaCount: 1
   mnesiaSize: 10Gi
   memory_limit: 512
+  enableClassicMirroring: false     # MUST be false on 4.x
+  enableQuorumDefaults: true        # optional: default policy for quorum queues
+  quorum:
+    deliveryLimit: 100
   image:
     id:
     pullPolicy: IfNotPresent
