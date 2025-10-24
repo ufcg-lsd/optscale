@@ -292,10 +292,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "region": d.get("region"),
                     "cloud_account_id": d.get("cloud_account_id"),
                     "cloud_type": "aws_cnr",
-                    "owner": self._extract_owner( 
-                        bucket.get('owner_id'), employees), 
-                    "pool": self._extract_pool( 
-                        bucket.get('pool_id'), pools), 
+                    "owner": {"id": None, "name": None},
+                    "pool": {"id": d.get("pool_id"), "name": None, "purpose": None},
                     "is_excluded": False,
                     "is_with_intelligent_tiering": eval_res["is_with_it"],
                     "detected_at": self.created_at,
