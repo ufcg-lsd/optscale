@@ -54,15 +54,15 @@
 
 - name: Add Helm repos
   kubernetes.core.helm_repository:
-    name: bitnami
-    repo_url: https://raw.githubusercontent.com/bitnami/charts/refs/heads/archive-full-index/bitnami/
+    name: ingress-nginx
+    repo_url: https://kubernetes.github.io/ingress-nginx
     force_update: true
 
 - name: Update Helm repos
   shell: helm repo update
 
 - name: Install nginx ingress controller
-  shell: helm upgrade --install ngingress bitnami/nginx-ingress-controller --version 11.3.17 --set hostNetwork=true --set extraArgs.default-ssl-certificate=default/defaultcert --set kind=DaemonSet --set daemonset.useHostPort=true --set containerPorts.http=80 --set containerPorts.https=443 --set resources.limits.memory=896Mi --set resources.requests.memory=384Mi
+  shell: helm upgrade --install ngingress ingress-nginx/ingress-nginx --set controller.hostNetwork=true --set controller.extraArgs."default-ssl-certificate"=default/defaultcert --set controller.kind=DaemonSet --set controller.daemonset.useHostPort=true --set controller.containerPort.http=80 --set controller.containerPort.https=443 --set controller.resources.limits.memory=896Mi --set controller.resources.requests.memory=384Mi
   run_once: true
 
 - name: Copy custom nginx-ingress chart

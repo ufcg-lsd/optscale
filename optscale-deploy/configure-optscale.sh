@@ -4,7 +4,7 @@ set -eo pipefail
 #================================================================================
 # Configuration (defaults - can be overridden by args)
 #================================================================================
-EKS_CLUSTER_NAME="geralados-cluster-2"
+EKS_CLUSTER_NAME="optscale-cluster"
 AWS_REGION="us-east-1"
 CONFIGURE_DTS_DOMAIN=true
 DTS_DOMAIN="dts.loc"
@@ -140,7 +140,6 @@ install_nginx_and_ssl() {
   # Configure LoadBalancer to only accept requests from LSD's Nat
   echo "-> Installing/Upgrading NGINX Ingress Controller (ingress-nginx)..."
   helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx --create-namespace \
   --set controller.hostNetwork=true \
   --set controller.kind=DaemonSet \
   --set controller.daemonset.useHostPort=true \

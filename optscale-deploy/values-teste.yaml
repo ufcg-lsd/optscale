@@ -4,7 +4,7 @@ auth:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/auth
+    repository: andrezavilar/auth
     tag: latest
   microsoft_oauth_client_id: ""
   name: auth
@@ -18,7 +18,7 @@ bi_exporter:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/bi_exporter
+    repository: andrezavilar/bi_exporter
     tag: latest
   name: bi-exporter
   replicaCount: 1
@@ -26,7 +26,7 @@ bi_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/bi_scheduler
+    repository: andrezavilar/bi_scheduler
     tag: latest
   name: bi-scheduler
   schedule: '*/5 * * * *'
@@ -38,7 +38,7 @@ bi_settings:
 booking_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/booking_observer
+    repository: andrezavilar/booking_observer
     tag: latest
   name: booking-observer
   replicaCount: 2
@@ -54,7 +54,7 @@ bumischeduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/bumischeduler
+    repository: andrezavilar/bumischeduler
     tag: latest
   name: bumischeduler
   replicaCount: 1
@@ -62,14 +62,14 @@ bumiworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/bumiworker
+    repository: andrezavilar/bumiworker
     tag: latest
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/calendar_observer
+    repository: andrezavilar/calendar_observer
     tag: latest
   name: calendar-observer
   replicaCount: 1
@@ -113,7 +113,7 @@ certificates:
 cleanelkdb:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/cleanelkdb
+    repository: andrezavilar/cleanelkdb
     tag: latest
   log_max_size: 5120
   name: cleanelkdb
@@ -123,7 +123,7 @@ cleaninfluxdb:
   days_to_store: 90
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/cleaninfluxdb
+    repository: andrezavilar/cleaninfluxdb
     tag: latest
   influxdb_host: influxdb
   influxdb_port: 80
@@ -137,7 +137,7 @@ cleanmongodb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/cleanmongodb
+    repository: andrezavilar/cleanmongodb
     tag: latest
   name: cleanmongodb
   rows_limit: 10000
@@ -152,7 +152,7 @@ clickhouse:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/clickhouse
+    repository: andrezavilar/clickhouse
     tag: latest
   name: clickhouse
   replicaCount: 1
@@ -169,7 +169,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/configurator
+    repository: andrezavilar/configurator
     tag: latest
 databases:
 - auth-db
@@ -189,7 +189,7 @@ deactivatorg:
   enable: true
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/deactivatorg
+    repository: andrezavilar/deactivatorg
     tag: latest
   name: deactivatorg
   schedule: 0 2 * * *
@@ -200,7 +200,7 @@ demo_org_cleanup:
   demo_org_lifetime_hrs: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/demo_org_cleanup
+    repository: andrezavilar/demo_org_cleanup
     tag: latest
   name: demoorgcleanup
   schedule: 0 0 * * *
@@ -211,7 +211,7 @@ diproxy:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/diproxy
+    repository: andrezavilar/diproxy
     tag: latest
   name: diproxy
   replicaCount: 1
@@ -225,7 +225,7 @@ diworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/diworker
+    repository: andrezavilar/diworker
     tag: latest
   name: diworker
   replicaCount: 1
@@ -249,7 +249,7 @@ elk:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/elk
+    repository: andrezavilar/elk
     tag: latest
   ls_heap_size: 2g
   name: elk
@@ -268,7 +268,7 @@ error_pages:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/error_pages
+    repository: andrezavilar/error_pages
     tag: latest
   name: error-pages
   replicaCount: 1
@@ -283,11 +283,11 @@ etcd:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/etcd
+    repository: andrezavilar/etcd
     tag: latest
   job:
     containers:
-      image: andrezafariaslsd/configurator:latest
+      image: andrezavilar/configurator:latest
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -308,7 +308,7 @@ failed_imports_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/failed_imports_dataset_generator
+    repository: andrezavilar/failed_imports_dataset_generator
     tag: latest
   name: failed-imports-dataset-generator
   s3_path: null
@@ -319,7 +319,7 @@ filebeat:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/filebeat
+    repository: andrezavilar/filebeat
     tag: latest
   name: filebeat
   service:
@@ -332,7 +332,7 @@ gemini_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/gemini_scheduler
+    repository: andrezavilar/gemini_scheduler
     tag: latest
   name: gemini-scheduler
   schedule: '*/5 * * * *'
@@ -341,7 +341,7 @@ gemini_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/gemini_worker
+    repository: andrezavilar/gemini_worker
     tag: latest
   name: gemini-worker
   replicaCount: 1
@@ -370,13 +370,13 @@ grafana:
     image:
       id: null
       pullPolicy: Never
-      repository: andrezafariaslsd/grafana
+      repository: andrezavilar/grafana
       tag: latest
     name: grafana-nginx
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/grafana
+    repository: andrezavilar/grafana
     tag: latest
   internalPort: 3000
   name: grafana
@@ -389,7 +389,7 @@ grafana:
 grafana_nginx:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/grafana_nginx
+    repository: andrezavilar/grafana_nginx
     tag: latest
 herald:
   api:
@@ -401,7 +401,7 @@ herald:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/herald
+    repository: andrezavilar/herald
     tag: latest
   name: herald
   service:
@@ -413,7 +413,7 @@ herald_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/herald_executor
+    repository: andrezavilar/herald_executor
     tag: latest
   name: herald-executor
   replicaCount: 1
@@ -421,7 +421,7 @@ influxdb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/influxdb
+    repository: andrezavilar/influxdb
     tag: latest
   name: influxdb
   replicaCount: 1
@@ -434,7 +434,7 @@ insider_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/insider_api
+    repository: andrezavilar/insider_api
     tag: latest
   name: insider-api
   replicaCount: 1
@@ -446,7 +446,7 @@ insider_api:
 insider_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/insider_scheduler
+    repository: andrezavilar/insider_scheduler
     tag: latest
   name: insider-scheduler
   replicaCount: 1
@@ -456,7 +456,7 @@ insider_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/insider_worker
+    repository: andrezavilar/insider_worker
     tag: latest
   name: insider-worker
   replicaCount: 1
@@ -465,7 +465,7 @@ jira_bus:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/jira_bus
+    repository: andrezavilar/jira_bus
     tag: latest
   name: jira-bus
   replicaCount: 1
@@ -478,7 +478,7 @@ jira_ui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/jira_ui
+    repository: andrezavilar/jira_ui
     tag: latest
   name: jira-ui
   replicaCount: 1
@@ -495,7 +495,7 @@ katara_service:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/katara_service
+    repository: andrezavilar/katara_service
     tag: latest
   name: katara
   scheduler:
@@ -510,7 +510,7 @@ katara_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/katara_worker
+    repository: andrezavilar/katara_worker
     tag: latest
   name: kataraworker
   replicaCount: 1
@@ -518,7 +518,7 @@ keeper:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/keeper
+    repository: andrezavilar/keeper
     tag: latest
   name: keeper
   replicaCount: 1
@@ -531,7 +531,7 @@ keeper_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/keeper_executor
+    repository: andrezavilar/keeper_executor
     tag: latest
   name: keeper-executor
   replicaCount: 1
@@ -539,7 +539,7 @@ layout_cleaner:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/layout_cleaner
+    repository: andrezavilar/layout_cleaner
     tag: latest
   name: layout-cleaner
   schedule: 0 3 * * *
@@ -547,7 +547,7 @@ layout_cleaner:
 live_demo_generator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/live_demo_generator
+    repository: andrezavilar/live_demo_generator
     tag: latest
   name: live-demo-generator
   replicaCount: 1
@@ -560,7 +560,7 @@ mariadb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/mariadb
+    repository: andrezavilar/mariadb
     tag: latest
   name: mariadb
   replicaCount: 1
@@ -573,7 +573,7 @@ metroculus_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/metroculus_api
+    repository: andrezavilar/metroculus_api
     tag: latest
   name: metroculusapi
   replicaCount: 1
@@ -585,7 +585,7 @@ metroculus_api:
 metroculus_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/metroculus_scheduler
+    repository: andrezavilar/metroculus_scheduler
     tag: latest
   name: metroculusscheduler
   replicaCount: 1
@@ -595,7 +595,7 @@ metroculus_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/metroculus_worker
+    repository: andrezavilar/metroculus_worker
     tag: latest
   name: metroculusworker
   replicaCount: 1
@@ -606,7 +606,7 @@ minio:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/minio
+    repository: andrezavilar/minio
     tag: latest
   name: minio
   replicaCount: 1
@@ -625,10 +625,11 @@ mongo:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/mongo
+    repository: andrezavilar/mongo
     tag: latest
   name: mongo
   replicaCount: 1
+  dataSize: 100Gi
   service:
     externalPort: 80
     host: mongo
@@ -650,7 +651,7 @@ ngui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/ngui
+    repository: andrezavilar/ngui
     tag: latest
   name: ngui
   replicaCount: 1
@@ -721,7 +722,7 @@ optscale_service_emails:
 organization_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/organization_violations
+    repository: andrezavilar/organization_violations
     tag: latest
   name: organization-violations
   replicaCount: 1
@@ -743,7 +744,7 @@ phpmyadmin:
 power_schedule:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/power_schedule
+    repository: andrezavilar/power_schedule
     tag: latest
   name: power-schedule
   replicaCount: 1
@@ -780,7 +781,7 @@ redis:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/redis
+    repository: andrezavilar/redis
     tag: latest
   name: redis
   replicaCount: 1
@@ -805,7 +806,7 @@ report_import_schedules:
 resource_discovery:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/resource_discovery
+    repository: andrezavilar/resource_discovery
     tag: latest
   memory_limit: 1024
   name: resource-discovery
@@ -821,7 +822,7 @@ resource_discovery_settings:
 resource_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/resource_observer
+    repository: andrezavilar/resource_observer
     tag: latest
   name: resource-observer
   replicaCount: 1
@@ -830,7 +831,7 @@ resource_observer:
 resource_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/resource_violations
+    repository: andrezavilar/resource_violations
     tag: latest
   name: resource-violations
   replicaCount: 1
@@ -840,7 +841,7 @@ rest_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/rest_api
+    repository: andrezavilar/rest_api
     tag: latest
   name: restapi
   replicaCount: 1
@@ -852,7 +853,7 @@ rest_api:
 risp_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/risp_scheduler
+    repository: andrezavilar/risp_scheduler
     tag: latest
   name: risp-scheduler
   replicaCount: 1
@@ -862,7 +863,7 @@ risp_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/risp_worker
+    repository: andrezavilar/risp_worker
     tag: latest
   name: risp-worker
   replicaCount: 1
@@ -903,7 +904,7 @@ slacker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/slacker
+    repository: andrezavilar/slacker
     tag: latest
   name: slacker
   replicaCount: 1
@@ -916,7 +917,7 @@ slacker_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/slacker_executor
+    repository: andrezavilar/slacker_executor
     tag: latest
   name: slacker-executor
   replicaCount: 1
@@ -1031,7 +1032,7 @@ token_expiration: 168
 trapper_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/trapper_scheduler
+    repository: andrezavilar/trapper_scheduler
     tag: latest
   name: trapper-scheduler
   replicaCount: 1
@@ -1041,7 +1042,7 @@ trapper_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/trapper_worker
+    repository: andrezavilar/trapper_worker
     tag: latest
   name: trapper-worker
   replicaCount: 1
@@ -1053,7 +1054,7 @@ users_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/users_dataset_generator
+    repository: andrezavilar/users_dataset_generator
     tag: latest
   name: users-dataset-generator
   s3_path: null
@@ -1063,7 +1064,7 @@ webhook_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezafariaslsd/webhook_executor
+    repository: andrezavilar/webhook_executor
     tag: latest
   name: webhook-executor
   replicaCount: 1

@@ -124,10 +124,6 @@ spec:
         - name: GALERA_CNF_SHA
           value: {{ include "galera.cnf" . | sha256sum }}
 {{- end }}
-        resources:
-          requests:
-            cpu: 15m
-            memory: 105M
         ports:
         - name: {{ $config.service.name }}
           containerPort: {{ $config.service.internalPort }}
