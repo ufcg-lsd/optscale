@@ -14,6 +14,17 @@ load_definitions = /etc/definitions/definitions.json
 
 ## Memory-based Flow Control threshold
 vm_memory_high_watermark.absolute = {{ .Values.rabbitmq.memory_limit }}MB
+
+## Explicitly deny deprecated features
+deprecated_features.permit.queue_master_locator = false
+## disabling metrics_collection will break a tab in the UI
+##deprecated_features.permit.management_metrics_collection = false
+deprecated_features.permit.global_qos = false
+deprecated_features.permit.ram_node_type = false
+deprecated_features.permit.transient_nonexcl_queues = false
+deprecated_features.permit.amqp_filter_set_bug = false
+deprecated_features.permit.amqp_address_v1 = false
+
 {{- end }}
 
 
