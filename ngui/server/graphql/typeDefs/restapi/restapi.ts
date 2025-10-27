@@ -647,6 +647,27 @@ export default gql`
   input AvailableFiltersParams {
     start_date: Int!
     end_date: Int!
+    cloud_account_id: [String!]
+    pool_id: [String!]
+    owner_id: [String!]
+    region: [String!]
+    service_name: [String!]
+    resource_type: [String!]
+    active: [Boolean!]
+    recommendations: [Boolean!]
+    constraint_violated: [Boolean!]
+    first_seen_gte: Int
+    first_seen_lte: Int
+    last_seen_gte: Int
+    last_seen_lte: Int
+    tag: [String!]
+    without_tag: [String!]
+    meta: [String!]
+    traffic_from: [String!]
+    traffic_to: [String!]
+    k8s_node: [String!]
+    k8s_service: [String!]
+    k8s_namespace: [String!]
   }
 
   type Query {

@@ -625,3 +625,5 @@ export const OPTSCALE_CAPABILITY_QUERY_PARAMETER_NAME = "capability";
 export const NEXT_QUERY_PARAMETER_NAME = "next";
 
 export const WITH_LEGEND_QUERY_PARAMETER_NAME = "withLegend";
+
+export const APPLY_FILTER_BY_CATEGORY_QUERY_PARAMETER_NAME = "applyFilterByCategory";

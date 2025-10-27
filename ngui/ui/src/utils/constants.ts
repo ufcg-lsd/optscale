@@ -1030,7 +1030,7 @@ export const POWER_SCHEDULE_ACTIONS = Object.freeze({
 });
 
 // Different backend responses for not set values
-export const NOT_SET_BREAKDOWN_KEY = Object.freeze({
+export const EMPTY_BREAKDOWN_KEY = Object.freeze({
   NOT_SET: "(not set)",
   NULL: "null"
 });

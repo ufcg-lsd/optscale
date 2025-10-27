@@ -5,7 +5,7 @@ import TableComponent from "components/Table";
 import TableLoader from "components/TableLoader";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import TextWithDate from "components/TextWithDate";
-import { FORMATTED_MONEY_TYPES, NOT_SET_BREAKDOWN_KEY } from "utils/constants";
+import { FORMATTED_MONEY_TYPES, EMPTY_BREAKDOWN_KEY } from "utils/constants";
 import { getMetaFormattedValue } from "utils/metadata";
 import { TableLoadingWrapperProps, TotalsTableProps } from "./types";
 
@@ -32,10 +32,12 @@ const TotalsTable = ({ startDate, endDate, totals, metaName }: TotalsTableProps)
         ),
         id: "name",
         accessorFn: (originalRow) => {
-          if (Object.values(NOT_SET_BREAKDOWN_KEY).includes(originalRow.name)) {
+          if (originalRow.name === EMPTY_BREAKDOWN_KEY.NOT_SET) {
             return intl.formatMessage({ id: "(not set)" });
           }
-
+          if (originalRow.name === EMPTY_BREAKDOWN_KEY.NULL) {
+            return "null";
+          }
           return getMetaFormattedValue(metaName, originalRow.name);
         },
         style: {

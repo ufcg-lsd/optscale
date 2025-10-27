@@ -5,7 +5,7 @@ import FormattedMoney, { useMoneyFormatter } from "components/FormattedMoney";
 import KeyValueLabel from "components/KeyValueLabel";
 import { isEmptyArray, splitIntoTwoChunks } from "utils/arrays";
 import { AXIS_FORMATS, getBreakdownChartLegendLabel, getColorsMap } from "utils/charts";
-import { FORMATTED_MONEY_TYPES, NOT_SET_BREAKDOWN_KEY } from "utils/constants";
+import { FORMATTED_MONEY_TYPES, EMPTY_BREAKDOWN_KEY } from "utils/constants";
 import { EN_FORMAT_SHORT_YEAR, formatUTC } from "utils/datetime";
 import { sum } from "utils/math";
 import { getMetaFormattedValue } from "utils/metadata";
@@ -122,8 +122,11 @@ const BreakdownChart = ({
       if (legendItemId === OTHER_CHART_BREAKDOWN_GROUP_NAME) {
         return intl.formatMessage({ id: "other" });
       }
-      if (legendItemId === NOT_SET_BREAKDOWN_KEY.NOT_SET || legendItemId === NOT_SET_BREAKDOWN_KEY.NULL) {
+      if (legendItemId === EMPTY_BREAKDOWN_KEY.NOT_SET) {
         return intl.formatMessage({ id: "(not set)" });
+      }
+      if (legendItemId === EMPTY_BREAKDOWN_KEY.NULL) {
+        return "null";
       }
       return getMetaFormattedValue(breakdownBy, legendItemId);
     },
