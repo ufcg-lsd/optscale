@@ -646,6 +646,7 @@ class Aws(S3CloudMixin):
             configs_list = it_configs.get('IntelligentTieringConfigurationList', [])
             metadata['intelligent_tiering_enabled'] = bool(configs_list)
             metadata['intelligent_tiering_configs'] = configs_list
+            LOG.debug('it_api configs_ok')
             # Check if IT applies to entire bucket (no filter or empty prefix)
             full_bucket = False
             for cfg in configs_list:
@@ -664,6 +665,10 @@ class Aws(S3CloudMixin):
             metadata['it_status_bucket'] = 'enabled' if (metadata['intelligent_tiering_enabled'] and full_bucket) else 'disabled'
         except ClientError as exc:
             err_code = exc.response['Error'].get('Code')
+            if err_code != 'NoSuchConfiguration':
+                LOG.warning('it_api configs_err: %s', err_code)
+            else:
+                LOG.debug('it_api configs_err: %s', err_code)
             if err_code in {'AccessDenied', 'AllAccessDisabled'}:
                 LOG.warning(f"[IT] Unable to read Intelligent-Tiering config for bucket {bucket_name} due to %s", err_code)
             elif err_code != 'NoSuchConfiguration':
@@ -675,8 +680,10 @@ class Aws(S3CloudMixin):
             )
             metadata['lifecycle_rules'] = lifecycle.get('Rules', [])
             metadata['has_lifecycle'] = True
+            LOG.debug('it_api lifecycle_ok')
         except ClientError as exc:
             err_code = exc.response['Error'].get('Code')
+            LOG.warning('it_api lifecycle_err: %s', err_code)
             if err_code in {'AccessDenied', 'AllAccessDisabled'}:
                 LOG.warning(f"[IT] Unable to read lifecycle config for bucket %s due to %s", bucket_name, err_code)
             elif err_code != 'NoSuchLifecycleConfiguration':
@@ -689,9 +696,11 @@ class Aws(S3CloudMixin):
             metadata['storage_class_analysis'] = analytics.get(
                 'AnalyticsConfigurationList', []
             )
+            LOG.debug('it_api analytics_ok')
         except ClientError as exc:
             err_code = exc.response['Error'].get('Code')
             allowed = {'NoSuchConfiguration', 'NoSuchAnalyticsConfiguration'}
+            LOG.warning('it_api analytics_err: %s', err_code)
             if err_code in {'AccessDenied', 'AllAccessDisabled'}:
                 LOG.warning(f"[IT] Unable to read analytics config for bucket %s due to %s", bucket_name, err_code)
             elif err_code not in allowed:
