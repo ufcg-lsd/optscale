@@ -358,37 +358,48 @@ class AzureImporterBase(BaseReportImporter):
     def generate_reservations_expenses(self, period_start):
         chunk = []
         now = opttime.utcnow()
-        orders = self.cloud_adapter.reservations.reservation_order.list()
-        for order in orders:
-            order_id = order.id.split('/')[-1]
-            reservations = self.cloud_adapter.reservations.reservation.list(
-                order_id)
-            for reservation in reservations:
-                # create reservations in subscription where it is billed
-                if reservation.properties.billing_scope_id.split(
-                        '/subscriptions/')[-1] == self.cloud_acc['account_id']:
-                    reservation = reservation.as_dict()
-                    reservation.update(reservation.pop('properties', None))
-                    reservation.pop('utilization', None)
-                    reservation['resource_id'] = reservation.pop('id').lower()
-                    reservation['cloud_account_id'] = self.cloud_acc_id
-                    reservation['report_identity'] = self.report_identity
-                    order_obj = self.cloud_adapter.reservations.reservation_order.get(
-                        order_id, expand="schedule")
-                    start = period_start.replace(tzinfo=timezone.utc).date()
-                    for transaction in order_obj.plan_information.transactions:
-                        if (transaction.status == 'Completed' and
-                                start <= transaction.payment_date <= now.date()):
-                            start_date = datetime.combine(
-                                transaction.payment_date, datetime.min.time(),
-                                tzinfo=timezone.utc)
-                            reservation.update({
-                                'cost': transaction.pricing_currency_total.amount,
-                                'start_date': start_date,
-                                'end_date': start_date.replace(
-                                    hour=23, minute=59, second=59),
-                            })
-                            chunk.append(reservation)
+        try:
+            orders = list(
+                self.cloud_adapter.reservations.reservation_order.list())
+            for order in orders:
+                order_id = order.id.split('/')[-1]
+                reservations = self.cloud_adapter.reservations.reservation.list(
+                    order_id)
+                for reservation in reservations:
+                    # create reservations in subscription where it is billed
+                    if reservation.properties.billing_scope_id.split(
+                            '/subscriptions/')[-1] == self.cloud_acc[
+                                'account_id']:
+                        reservation = reservation.as_dict()
+                        reservation.update(reservation.pop('properties', None))
+                        reservation.pop('utilization', None)
+                        reservation['resource_id'] = reservation.pop(
+                            'id').lower()
+                        reservation['cloud_account_id'] = self.cloud_acc_id
+                        reservation['report_identity'] = self.report_identity
+                        order_obj = self.cloud_adapter.reservations.reservation_order.get(
+                            order_id, expand="schedule")
+                        start = period_start.replace(
+                            tzinfo=timezone.utc).date()
+                        for transaction in order_obj.plan_information.transactions:
+                            if (transaction.status == 'Completed' and
+                                    start <= transaction.payment_date <= now.date()):
+                                start_date = datetime.combine(
+                                    transaction.payment_date,
+                                    datetime.min.time(),
+                                    tzinfo=timezone.utc)
+                                reservation.update({
+                                    'cost': transaction.pricing_currency_total.amount,
+                                    'start_date': start_date,
+                                    'end_date': start_date.replace(
+                                        hour=23, minute=59, second=59),
+                                })
+                                chunk.append(reservation)
+        except AzureConsumptionException as e:
+            if e.error.code == 'AuthorizationFailed':
+                LOG.warning('Not authorized to use reservations: %s',
+                            e.error.message)
+            return
         if chunk:
             self.update_raw_records(chunk)
 

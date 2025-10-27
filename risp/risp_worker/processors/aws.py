@@ -285,6 +285,8 @@ class AwsProcessor(RispProcessorBase):
                 if 'metal' in expense.get('product/instanceType', ''):
                     # skip instances on dedicated hosts
                     continue
+                if 'lineItem/UsageAmount' not in expense:
+                    continue
                 raise Exception('Unsupported expense for resource %s, '
                                 'cloud account: %s, date: %s' % (
                                     expense['resource_id'],
