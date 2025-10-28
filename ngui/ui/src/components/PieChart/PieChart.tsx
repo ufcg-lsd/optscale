@@ -5,7 +5,7 @@ import ChartTooltip from "components/ChartTooltip";
 import FormattedMoney from "components/FormattedMoney";
 import { useChartHoverStyles } from "hooks/useChartHoverStyles";
 import { DEFAULT_CHART_BORDER_WIDTH, FORMATTED_MONEY_TYPES } from "utils/constants";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const CenteredMetric = ({ dataWithArc, centerX, centerY }) => {
   const total = dataWithArc.reduce((accumulator, { value }) => accumulator + value, 0);
@@ -58,7 +58,7 @@ const PieChart = ({
         data={data}
         layers={["arcs", CenteredMetric]}
         margin={margin}
-        colors={isEmpty(colorsMap) ? chartPalette : getColor(colorsMap)}
+        colors={isEmptyObject(colorsMap) ? chartPalette : getColor(colorsMap)}
         enableRadialLabels={false}
         enableSliceLabels={false}
         borderWidth={borderWidth}

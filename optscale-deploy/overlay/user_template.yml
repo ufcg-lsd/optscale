@@ -98,7 +98,14 @@ ngui:
     google_map_api_key: ""
     ganalytics_id: ""
     hotjar_id: ""
-
+    # Defines how an organization is set up on app initialization
+    # "automatic" (default) - a new organization is automatically created for the user unless invited to an existing organization
+    # "invite-only" - users are only allowed to accept invitations and join an existing organization
+    on_initialize_organization_setup_mode: "automatic"
+    # Defines if the FinOps portal overview is enabled
+    # "enabled" - the overview is enabled
+    # otherwise - the overview is disabled
+    finops_in_practice_portal_overview: ""
 elk:
   env:
     htpasswd_user: userforelk

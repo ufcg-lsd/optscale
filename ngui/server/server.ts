@@ -13,6 +13,7 @@ import SlackerClient from "./api/slacker/client.js";
 import RestApiClient from "./api/restapi/client.js";
 import AuthClient from "./api/auth/client.js";
 import { schema } from "./graphql/schema.js";
+import rateLimit from "express-rate-limit";
 
 if (process.env.NODE_ENV === "development") {
   const dotenv = await import("dotenv");
@@ -24,6 +25,9 @@ if (process.env.NODE_ENV === "development") {
 checkEnvironment(["UI_BUILD_PATH", "PROXY_URL"]);
 
 const app = express();
+
+// https://github.com/express-rate-limit/express-rate-limit/wiki/Troubleshooting-Proxy-Issues
+app.set("trust proxy", 1);
 
 const httpServer = http.createServer(app);
 
@@ -84,14 +88,26 @@ app.use("/jira_bus", proxyMiddleware);
 app.use("/restapi", proxyMiddleware);
 
 const UI_BUILD_PATH = process.env.UI_BUILD_PATH;
+const UI_BUILD_DIR = (process.env.UI_BUILD_DIR || "build").trim();
 
-// Serve static build
-app.use(express.static(path.join(UI_BUILD_PATH, "build")));
+// Validate UI_BUILD_DIR to prevent path traversal and absolute paths
+if (UI_BUILD_DIR.includes("..") || UI_BUILD_DIR.startsWith("/")) {
+  throw new Error("Invalid UI_BUILD_DIR: path traversal and absolute paths are not allowed");
+}
 
-app.get("/*", function (req, res) {
-  res.sendFile(path.join(UI_BUILD_PATH, "build", "index.html"));
+const staticDir = path.join(UI_BUILD_PATH, UI_BUILD_DIR);
+
+app.use(express.static(staticDir, { index: false }));
+
+const indexLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500
 });
 
-// Modified server startup
-await new Promise<void>((resolve) => httpServer.listen({ port: 4000 }, resolve));
-console.log(`🚀 Server ready at http://localhost:4000/`);
+app.get("*", indexLimiter, (_, res) => res.sendFile(path.join(staticDir, "index.html")));
+
+const port = parseInt(process.env.PORT || "4000", 10);
+
+await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
+
+console.log(`🚀 Server ready at http://localhost:${port}/`);

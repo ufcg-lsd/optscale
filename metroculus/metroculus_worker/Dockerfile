@@ -1,18 +1,18 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
-COPY tools/cloud_adapter tools/cloud_adapter
-COPY tools/optscale_data tools/optscale_data
-COPY tools/optscale_time tools/optscale_time
+COPY optscale_client optscale_client
+COPY tools tools
 
-COPY metroculus/metroculus_worker/requirements.txt metroculus/metroculus_worker/requirements.txt
-RUN pip install --no-cache-dir -r metroculus/metroculus_worker/requirements.txt
+COPY metroculus/__init__.py metroculus/
+COPY metroculus/metroculus_worker/pyproject.toml metroculus/metroculus_worker/
+COPY metroculus/metroculus_worker/uv.lock metroculus/metroculus_worker/
 COPY metroculus/metroculus_worker/*.py ./metroculus/metroculus_worker/
 COPY metroculus/metroculus_worker/migrations metroculus/metroculus_worker/migrations
 
-CMD ["python", "-u","/usr/src/app/metroculus/metroculus_worker/main.py"]
+RUN uv --project metroculus/metroculus_worker sync --locked --no-dev
+
+CMD ["uv", "run", "--project", "metroculus/metroculus_worker", "python", "-u","/usr/src/app/metroculus/metroculus_worker/main.py"]

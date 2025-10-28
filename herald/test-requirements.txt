@@ -1,9 +1,0 @@
-coverage==7.5
-freezegun==1.5.2
-pytest==7.4.0
-pytest-mock==3.14.0
-pytest-cov==6.1.1
-ruff==0.11.13
-
--e optscale_client/herald_client
--e tools/check_alembic_down_revisions

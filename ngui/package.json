@@ -29,10 +29,10 @@
     "@types/react": "18.2.45",
     "@types/react-dom": "18.2.18",
     "@types/react-syntax-highlighter": "15.5.13",
-    "@typescript-eslint/eslint-plugin": "8.19.1",
-    "@typescript-eslint/parser": "8.19.1",
+    "@typescript-eslint/eslint-plugin": "8.41.0",
+    "@typescript-eslint/parser": "8.41.0",
     "concurrently": "9.2.0",
-    "eslint": "9.17.0",
+    "eslint": "9.34.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-prettier": "5.2.1",
@@ -40,9 +40,8 @@
     "eslint-plugin-react-hooks": "5.1.0",
     "eslint-plugin-unused-imports": "4.1.4",
     "globals": "15.13.0",
-    "graphql-scalars": "1.24.0",
     "prettier": "3.3.3",
     "typescript": "5.7.2",
-    "typescript-eslint": "8.19.1"
+    "typescript-eslint": "8.41.0"
   }
 }

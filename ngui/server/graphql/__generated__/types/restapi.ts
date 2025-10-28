@@ -15,7 +15,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  JSONObject: { input: Record<string, any>; output: Record<string, any> };
+  JSONObject: { input: Record<string, unknown>; output: Record<string, unknown> };
 };
 
 export type AlibabaConfig = {
@@ -43,6 +43,11 @@ export type AlibabaDataSource = DataSourceInterface & {
   name: Scalars["String"]["output"];
   parent_id?: Maybe<Scalars["String"]["output"]>;
   type: DataSourceType;
+};
+
+export type AvailableFiltersParams = {
+  end_date: Scalars["Int"]["input"];
+  start_date: Scalars["Int"]["input"];
 };
 
 export type AwsAssumedRoleConfigInput = {
@@ -188,13 +193,18 @@ export type BreakdownBy =
 
 export type BreakdownParams = {
   active?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
-  breakdown_by: BreakdownBy;
+  breakdown_by: Scalars["String"]["input"];
   cloud_account_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   constraint_violated?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
   end_date: Scalars["Int"]["input"];
+  first_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  first_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
   k8s_namespace?: InputMaybe<Array<Scalars["String"]["input"]>>;
   k8s_node?: InputMaybe<Array<Scalars["String"]["input"]>>;
   k8s_service?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  last_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  last_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
+  meta?: InputMaybe<Array<Scalars["String"]["input"]>>;
   owner_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   pool_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   recommendations?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
@@ -222,6 +232,7 @@ export type CleanExpensesParams = {
   last_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
   last_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
+  meta?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   owner_id?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   pool_id?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   recommendations?: InputMaybe<Array<InputMaybe<Scalars["Boolean"]["input"]>>>;
@@ -384,9 +395,9 @@ export type ExpensesDailyBreakdown = {
 
 export type GcpBillingDataConfig = {
   __typename?: "GcpBillingDataConfig";
-  dataset_name?: Maybe<Scalars["String"]["output"]>;
+  dataset_name: Scalars["String"]["output"];
   project_id?: Maybe<Scalars["String"]["output"]>;
-  table_name?: Maybe<Scalars["String"]["output"]>;
+  table_name: Scalars["String"]["output"];
 };
 
 export type GcpBillingDataConfigInput = {
@@ -398,11 +409,13 @@ export type GcpBillingDataConfigInput = {
 export type GcpConfig = {
   __typename?: "GcpConfig";
   billing_data?: Maybe<GcpBillingDataConfig>;
+  pricing_data?: Maybe<GcpPricingDataConfig>;
 };
 
 export type GcpConfigInput = {
   billing_data: GcpBillingDataConfigInput;
   credentials: Scalars["JSONObject"]["input"];
+  pricing_data?: InputMaybe<GcpPricingDataConfigInput>;
 };
 
 export type GcpDataSource = DataSourceInterface & {
@@ -422,21 +435,36 @@ export type GcpDataSource = DataSourceInterface & {
   type: DataSourceType;
 };
 
+export type GcpPricingDataConfig = {
+  __typename?: "GcpPricingDataConfig";
+  dataset_name: Scalars["String"]["output"];
+  project_id?: Maybe<Scalars["String"]["output"]>;
+  table_name: Scalars["String"]["output"];
+};
+
+export type GcpPricingDataConfigInput = {
+  dataset_name: Scalars["String"]["input"];
+  project_id?: InputMaybe<Scalars["String"]["input"]>;
+  table_name: Scalars["String"]["input"];
+};
+
 export type GcpTenantBillingDataConfig = {
   __typename?: "GcpTenantBillingDataConfig";
-  dataset_name?: Maybe<Scalars["String"]["output"]>;
+  dataset_name: Scalars["String"]["output"];
   project_id?: Maybe<Scalars["String"]["output"]>;
-  table_name?: Maybe<Scalars["String"]["output"]>;
+  table_name: Scalars["String"]["output"];
 };
 
 export type GcpTenantConfig = {
   __typename?: "GcpTenantConfig";
   billing_data?: Maybe<GcpTenantBillingDataConfig>;
+  pricing_data?: Maybe<GcpTenantPricingDataConfig>;
 };
 
 export type GcpTenantConfigInput = {
   billing_data: GcpBillingDataConfigInput;
   credentials: Scalars["JSONObject"]["input"];
+  pricing_data?: InputMaybe<GcpPricingDataConfigInput>;
 };
 
 export type GcpTenantDataSource = DataSourceInterface & {
@@ -454,6 +482,13 @@ export type GcpTenantDataSource = DataSourceInterface & {
   name: Scalars["String"]["output"];
   parent_id?: Maybe<Scalars["String"]["output"]>;
   type: DataSourceType;
+};
+
+export type GcpTenantPricingDataConfig = {
+  __typename?: "GcpTenantPricingDataConfig";
+  dataset_name: Scalars["String"]["output"];
+  project_id?: Maybe<Scalars["String"]["output"]>;
+  table_name: Scalars["String"]["output"];
 };
 
 export type Invitation = {
@@ -509,6 +544,14 @@ export type K8sDataSource = DataSourceInterface & {
   name: Scalars["String"]["output"];
   parent_id?: Maybe<Scalars["String"]["output"]>;
   type: DataSourceType;
+};
+
+export type MetaBreakdown = {
+  __typename?: "MetaBreakdown";
+  breakdown: Scalars["JSONObject"]["output"];
+  end_date: Scalars["Int"]["output"];
+  start_date: Scalars["Int"]["output"];
+  totals: Scalars["JSONObject"]["output"];
 };
 
 export type Mutation = {
@@ -664,6 +707,7 @@ export type OrganizationLimitHit = {
 export type Query = {
   __typename?: "Query";
   _empty?: Maybe<Scalars["String"]["output"]>;
+  availableFilters?: Maybe<Scalars["JSONObject"]["output"]>;
   cleanExpenses?: Maybe<Scalars["JSONObject"]["output"]>;
   cloudPolicies?: Maybe<Scalars["JSONObject"]["output"]>;
   currentEmployee?: Maybe<Employee>;
@@ -672,14 +716,20 @@ export type Query = {
   employeeEmails?: Maybe<Array<Maybe<EmployeeEmail>>>;
   expensesDailyBreakdown?: Maybe<ExpensesDailyBreakdown>;
   invitations?: Maybe<Array<Maybe<Invitation>>>;
+  metaBreakdown?: Maybe<MetaBreakdown>;
   organizationConstraint?: Maybe<OrganizationConstraint>;
   organizationFeatures?: Maybe<Scalars["JSONObject"]["output"]>;
   organizationLimitHits?: Maybe<Array<OrganizationLimitHit>>;
   organizationPerspectives?: Maybe<Scalars["JSONObject"]["output"]>;
   organizationThemeSettings?: Maybe<Scalars["JSONObject"]["output"]>;
-  organizations?: Maybe<Array<Maybe<Organization>>>;
+  organizations: Array<Organization>;
   relevantFlavors?: Maybe<Scalars["JSONObject"]["output"]>;
   resourceCountBreakdown?: Maybe<ResourceCountBreakdown>;
+};
+
+export type QueryAvailableFiltersArgs = {
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<AvailableFiltersParams>;
 };
 
 export type QueryCleanExpensesArgs = {
@@ -710,6 +760,11 @@ export type QueryEmployeeEmailsArgs = {
 };
 
 export type QueryExpensesDailyBreakdownArgs = {
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<BreakdownParams>;
+};
+
+export type QueryMetaBreakdownArgs = {
   organizationId: Scalars["ID"]["input"];
   params?: InputMaybe<BreakdownParams>;
 };
@@ -881,6 +936,7 @@ export type ResolversTypes = {
   AlibabaConfig: ResolverTypeWrapper<AlibabaConfig>;
   AlibabaConfigInput: AlibabaConfigInput;
   AlibabaDataSource: ResolverTypeWrapper<AlibabaDataSource>;
+  AvailableFiltersParams: AvailableFiltersParams;
   AwsAssumedRoleConfigInput: AwsAssumedRoleConfigInput;
   AwsConfig: ResolverTypeWrapper<AwsConfig>;
   AwsDataSource: ResolverTypeWrapper<AwsDataSource>;
@@ -916,10 +972,13 @@ export type ResolversTypes = {
   GcpConfig: ResolverTypeWrapper<GcpConfig>;
   GcpConfigInput: GcpConfigInput;
   GcpDataSource: ResolverTypeWrapper<GcpDataSource>;
+  GcpPricingDataConfig: ResolverTypeWrapper<GcpPricingDataConfig>;
+  GcpPricingDataConfigInput: GcpPricingDataConfigInput;
   GcpTenantBillingDataConfig: ResolverTypeWrapper<GcpTenantBillingDataConfig>;
   GcpTenantConfig: ResolverTypeWrapper<GcpTenantConfig>;
   GcpTenantConfigInput: GcpTenantConfigInput;
   GcpTenantDataSource: ResolverTypeWrapper<GcpTenantDataSource>;
+  GcpTenantPricingDataConfig: ResolverTypeWrapper<GcpTenantPricingDataConfig>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
   Invitation: ResolverTypeWrapper<Invitation>;
@@ -929,6 +988,7 @@ export type ResolversTypes = {
   K8sConfig: ResolverTypeWrapper<K8sConfig>;
   K8sConfigInput: K8sConfigInput;
   K8sDataSource: ResolverTypeWrapper<K8sDataSource>;
+  MetaBreakdown: ResolverTypeWrapper<MetaBreakdown>;
   Mutation: ResolverTypeWrapper<{}>;
   NebiusConfig: ResolverTypeWrapper<NebiusConfig>;
   NebiusConfigInput: NebiusConfigInput;
@@ -952,6 +1012,7 @@ export type ResolversParentTypes = {
   AlibabaConfig: AlibabaConfig;
   AlibabaConfigInput: AlibabaConfigInput;
   AlibabaDataSource: AlibabaDataSource;
+  AvailableFiltersParams: AvailableFiltersParams;
   AwsAssumedRoleConfigInput: AwsAssumedRoleConfigInput;
   AwsConfig: AwsConfig;
   AwsDataSource: AwsDataSource;
@@ -985,10 +1046,13 @@ export type ResolversParentTypes = {
   GcpConfig: GcpConfig;
   GcpConfigInput: GcpConfigInput;
   GcpDataSource: GcpDataSource;
+  GcpPricingDataConfig: GcpPricingDataConfig;
+  GcpPricingDataConfigInput: GcpPricingDataConfigInput;
   GcpTenantBillingDataConfig: GcpTenantBillingDataConfig;
   GcpTenantConfig: GcpTenantConfig;
   GcpTenantConfigInput: GcpTenantConfigInput;
   GcpTenantDataSource: GcpTenantDataSource;
+  GcpTenantPricingDataConfig: GcpTenantPricingDataConfig;
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
   Invitation: Invitation;
@@ -998,6 +1062,7 @@ export type ResolversParentTypes = {
   K8sConfig: K8sConfig;
   K8sConfigInput: K8sConfigInput;
   K8sDataSource: K8sDataSource;
+  MetaBreakdown: MetaBreakdown;
   Mutation: {};
   NebiusConfig: NebiusConfig;
   NebiusConfigInput: NebiusConfigInput;
@@ -1292,9 +1357,9 @@ export type GcpBillingDataConfigResolvers<
   ContextType = ContextValue,
   ParentType extends ResolversParentTypes["GcpBillingDataConfig"] = ResolversParentTypes["GcpBillingDataConfig"]
 > = {
-  dataset_name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  dataset_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   project_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  table_name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  table_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1303,6 +1368,7 @@ export type GcpConfigResolvers<
   ParentType extends ResolversParentTypes["GcpConfig"] = ResolversParentTypes["GcpConfig"]
 > = {
   billing_data?: Resolver<Maybe<ResolversTypes["GcpBillingDataConfig"]>, ParentType, ContextType>;
+  pricing_data?: Resolver<Maybe<ResolversTypes["GcpPricingDataConfig"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1326,13 +1392,23 @@ export type GcpDataSourceResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type GcpPricingDataConfigResolvers<
+  ContextType = ContextValue,
+  ParentType extends ResolversParentTypes["GcpPricingDataConfig"] = ResolversParentTypes["GcpPricingDataConfig"]
+> = {
+  dataset_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  project_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  table_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type GcpTenantBillingDataConfigResolvers<
   ContextType = ContextValue,
   ParentType extends ResolversParentTypes["GcpTenantBillingDataConfig"] = ResolversParentTypes["GcpTenantBillingDataConfig"]
 > = {
-  dataset_name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  dataset_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   project_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  table_name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  table_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1341,6 +1417,7 @@ export type GcpTenantConfigResolvers<
   ParentType extends ResolversParentTypes["GcpTenantConfig"] = ResolversParentTypes["GcpTenantConfig"]
 > = {
   billing_data?: Resolver<Maybe<ResolversTypes["GcpTenantBillingDataConfig"]>, ParentType, ContextType>;
+  pricing_data?: Resolver<Maybe<ResolversTypes["GcpTenantPricingDataConfig"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1361,6 +1438,16 @@ export type GcpTenantDataSourceResolvers<
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   parent_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes["DataSourceType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GcpTenantPricingDataConfigResolvers<
+  ContextType = ContextValue,
+  ParentType extends ResolversParentTypes["GcpTenantPricingDataConfig"] = ResolversParentTypes["GcpTenantPricingDataConfig"]
+> = {
+  dataset_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  project_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  table_name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1428,6 +1515,17 @@ export type K8sDataSourceResolvers<
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   parent_id?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes["DataSourceType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type MetaBreakdownResolvers<
+  ContextType = ContextValue,
+  ParentType extends ResolversParentTypes["MetaBreakdown"] = ResolversParentTypes["MetaBreakdown"]
+> = {
+  breakdown?: Resolver<ResolversTypes["JSONObject"], ParentType, ContextType>;
+  end_date?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  start_date?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totals?: Resolver<ResolversTypes["JSONObject"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1587,6 +1685,12 @@ export type QueryResolvers<
   ParentType extends ResolversParentTypes["Query"] = ResolversParentTypes["Query"]
 > = {
   _empty?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  availableFilters?: Resolver<
+    Maybe<ResolversTypes["JSONObject"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAvailableFiltersArgs, "organizationId">
+  >;
   cleanExpenses?: Resolver<
     Maybe<ResolversTypes["JSONObject"]>,
     ParentType,
@@ -1630,6 +1734,12 @@ export type QueryResolvers<
     RequireFields<QueryExpensesDailyBreakdownArgs, "organizationId">
   >;
   invitations?: Resolver<Maybe<Array<Maybe<ResolversTypes["Invitation"]>>>, ParentType, ContextType>;
+  metaBreakdown?: Resolver<
+    Maybe<ResolversTypes["MetaBreakdown"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryMetaBreakdownArgs, "organizationId">
+  >;
   organizationConstraint?: Resolver<
     Maybe<ResolversTypes["OrganizationConstraint"]>,
     ParentType,
@@ -1660,7 +1770,7 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryOrganizationThemeSettingsArgs, "organizationId">
   >;
-  organizations?: Resolver<Maybe<Array<Maybe<ResolversTypes["Organization"]>>>, ParentType, ContextType>;
+  organizations?: Resolver<Array<ResolversTypes["Organization"]>, ParentType, ContextType>;
   relevantFlavors?: Resolver<
     Maybe<ResolversTypes["JSONObject"]>,
     ParentType,
@@ -1711,15 +1821,18 @@ export type Resolvers<ContextType = ContextValue> = {
   GcpBillingDataConfig?: GcpBillingDataConfigResolvers<ContextType>;
   GcpConfig?: GcpConfigResolvers<ContextType>;
   GcpDataSource?: GcpDataSourceResolvers<ContextType>;
+  GcpPricingDataConfig?: GcpPricingDataConfigResolvers<ContextType>;
   GcpTenantBillingDataConfig?: GcpTenantBillingDataConfigResolvers<ContextType>;
   GcpTenantConfig?: GcpTenantConfigResolvers<ContextType>;
   GcpTenantDataSource?: GcpTenantDataSourceResolvers<ContextType>;
+  GcpTenantPricingDataConfig?: GcpTenantPricingDataConfigResolvers<ContextType>;
   Invitation?: InvitationResolvers<ContextType>;
   InvitationAssignment?: InvitationAssignmentResolvers<ContextType>;
   JSONObject?: GraphQLScalarType;
   K8CostModelConfig?: K8CostModelConfigResolvers<ContextType>;
   K8sConfig?: K8sConfigResolvers<ContextType>;
   K8sDataSource?: K8sDataSourceResolvers<ContextType>;
+  MetaBreakdown?: MetaBreakdownResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   NebiusConfig?: NebiusConfigResolvers<ContextType>;
   NebiusDataSource?: NebiusDataSourceResolvers<ContextType>;

@@ -1,6 +1,6 @@
 import PoolsRequiringAttentionCard from "components/PoolsRequiringAttentionCard";
 import PoolsService from "services/PoolsService";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { isCostOverLimit, isForecastOverLimit } from "utils/pools";
 
 // TODO: move to generic types when created
@@ -68,7 +68,7 @@ const PoolsRequiringAttentionCardContainer = () => {
       isLoading={isLoading}
       withExceededLimit={withExceededLimit}
       withForecastedOverspend={withForecastedOverspend}
-      rootPoolLimitUnset={data.limit === 0 && data.parent_id === null && isEmpty(data.children)}
+      rootPoolLimitUnset={data.limit === 0 && data.parent_id === null && isEmptyArray(data.children)}
     />
   );
 };

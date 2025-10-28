@@ -7,9 +7,9 @@ import IconButton from "components/IconButton";
 import Popover from "components/Popover";
 import RunGoals from "components/RunGoals";
 import { useGoalMetColors } from "hooks/useGoalMetColors";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SORTING_ORDER } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 
 const SortableHeader = ({

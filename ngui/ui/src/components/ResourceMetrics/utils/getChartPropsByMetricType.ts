@@ -2,7 +2,7 @@ import { useTheme } from "@mui/material/styles";
 import { useIntl } from "react-intl";
 import { formatCompactNumber } from "components/CompactFormattedNumber";
 import { IEC_UNITS, formatDigitalUnit } from "components/FormattedDigitalUnit";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { getAverageLineValue, getTotalLineValue } from "utils/charts";
 import { METRIC_TYPES } from "utils/constants";
 import { CHART_VALUE_TYPES } from "./constants";

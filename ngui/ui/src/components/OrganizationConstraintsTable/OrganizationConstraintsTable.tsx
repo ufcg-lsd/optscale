@@ -3,18 +3,19 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
-import AnomaliesFilters from "components/AnomaliesFilters";
-import Filters from "components/Filters";
-import { RESOURCE_FILTERS } from "components/Filters/constants";
+import ExpandableList from "components/ExpandableList";
+import { FILTER_TYPE } from "components/FilterComponents/constants";
 import { useMoneyFormatter } from "components/FormattedMoney";
 import IconButton from "components/IconButton";
+import KeyValueLabel from "components/KeyValueLabel";
+import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import Table from "components/Table";
 import TableLoader from "components/TableLoader";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import { useAllDataSources } from "hooks/coreData/useAllDataSources";
 import { useIsAllowed } from "hooks/useAllowedActions";
 import { intl } from "translations/react-intl-config";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { organizationConstraintName, organizationConstraintStatus } from "utils/columns";
 import {
   QUOTA_POLICY,
@@ -26,7 +27,6 @@ import {
   FORMATTED_MONEY_TYPES
 } from "utils/constants";
 import { EN_FULL_FORMAT, format, secondsToMilliseconds } from "utils/datetime";
-import { isEmpty as isEmptyObject } from "utils/objects";
 import { getResourcesLink } from "utils/organizationConstraints/getResourcesLink";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 
@@ -117,29 +117,64 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
 
   const dataSources = useAllDataSources();
 
-  const memoizedConstraints = useMemo(
+  const tableData = useMemo(
     () =>
       constraints.map((constraint) => {
-        const filtersResources = new Filters({
-          filters: RESOURCE_FILTERS,
-          filterValues: constraint.filters
+        const { filters } = constraint;
+
+        const constraintFilters = Object.values(FILTER_CONFIGS).flatMap((config) => {
+          if (config.type === FILTER_TYPE.SELECTION) {
+            const appliedFilters = filters[config.apiName] ?? [];
+
+            if (isEmptyArray(appliedFilters)) {
+              return [];
+            }
+
+            return appliedFilters.map((appliedFilter) => {
+              const value = config.transformers.getValue(appliedFilter);
+
+              return {
+                displayedName: config.label,
+                displayedValue: config.renderPerspectiveItem(value, appliedFilters),
+                displayedNameString: config.labelString,
+                displayedValueString: config.renderPerspectiveItem(value, appliedFilters, { stringify: true })
+              };
+            });
+          }
+
+          if (config.type === FILTER_TYPE.RANGE) {
+            const from = filters[config.fromApiName];
+            const to = filters[config.toApiName];
+
+            if (!from && !to) {
+              return [];
+            }
+
+            return [
+              {
+                displayedName: config.label,
+                displayedValue: config.renderPerspectiveItem({ from, to }),
+                displayedNameString: config.labelString,
+                displayedValueString: config.renderPerspectiveItem({ from, to })
+              }
+            ];
+          }
+
+          return [];
         });
-        const filtersString = isEmptyObject(constraint.filters)
-          ? ""
-          : filtersResources
-              .getFilterValuesAsAppliedItems()
-              .map(({ displayedNameString, displayedValueString }) => `${displayedNameString}: ${displayedValueString}`)
-              .join(" ");
 
         return {
           ...constraint,
+          filters: constraintFilters,
+          filtersString: constraintFilters
+            .map(({ displayedNameString, displayedValueString }) => `${displayedNameString}: ${displayedValueString}`)
+            .join(" "),
           descriptionForSearch: buildDescription({
             type: constraint.type,
             definition: constraint.definition,
             formatter,
             rawString: true
-          }),
-          filtersString
+          })
         };
       }),
     [constraints, formatter]
@@ -166,9 +201,25 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
           </TextWithDataTestId>
         ),
         accessorKey: "filtersString",
-        enableSorting: false,
-        cell: ({ row: { original: { filters } = {} } }) =>
-          isEmptyObject(filters) ? CELL_EMPTY_VALUE : <AnomaliesFilters filters={filters} />
+        cell: ({ row: { original } }) => {
+          const { filters } = original;
+
+          return isEmptyArray(filters) ? (
+            CELL_EMPTY_VALUE
+          ) : (
+            <ExpandableList
+              items={filters}
+              render={({ displayedNameString, displayedValueString, displayedName, displayedValue }) => (
+                <KeyValueLabel
+                  key={`${displayedNameString}-${displayedValueString}`}
+                  keyText={displayedName}
+                  value={displayedValue}
+                />
+              )}
+              maxRows={5}
+            />
+          );
+        }
       },
       {
         header: (
@@ -218,7 +269,7 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
           ]
         }
       }}
-      data={memoizedConstraints}
+      data={tableData}
       columns={columns}
       withSearch
       dataTestIds={{

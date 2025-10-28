@@ -1,6 +1,6 @@
 import queryString from "query-string";
 import { dispatchSearchParamsChangeEvent } from "./events";
-import { isEmpty as isEmptyObject, removeKey } from "./objects";
+import { isEmptyObject, removeKey } from "./objects";
 
 type SearchParams = Record<
   string,

@@ -2,7 +2,7 @@ import { FormattedMessage } from "react-intl";
 import CopyText from "components/CopyText";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import SummaryList from "components/SummaryList";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 type FilesSummaryListProps = {
   filePaths?: string[];
@@ -43,7 +43,7 @@ const FilesSummaryList = ({ filePaths = [], isLoading }: FilesSummaryListProps) 
       titleMessage={<FormattedMessage id="files" />}
       isLoading={isLoading}
       items={
-        isEmpty(files) ? (
+        isEmptyArray(files) ? (
           <FormattedMessage id="noFiles" />
         ) : (
           <>

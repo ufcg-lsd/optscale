@@ -1,4 +1,4 @@
-import { findMaxNumber, findMinNumber, isEmpty as isEmptyArray } from "utils/arrays";
+import { findMaxNumber, findMinNumber, isEmptyArray } from "utils/arrays";
 import { denormalize as denormalizeUtil, normalize as normalizeUtil, round } from "utils/math";
 
 const UNITLESS = "uniteless";

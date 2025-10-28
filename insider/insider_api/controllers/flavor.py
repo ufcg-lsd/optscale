@@ -70,7 +70,8 @@ class FlavorController(BaseController):
         config = self.get_service_credentials('gcp')
         if self.cloud_account_id:
             cloud_acc = self.get_cloud_account(self.cloud_account_id)
-            config = cloud_acc['config']
+            if 'pricing_data' in cloud_acc['config']:
+                config = cloud_acc['config']
         return Gcp(config)
 
     @cached_property
@@ -382,11 +383,16 @@ class FlavorController(BaseController):
         source_flavor = InstanceType(source_flavor_id)
         source_flavor.parse_machine_family()
         source_flavor.parse_ram_cpu_from_flavor_name()
+        conversion_rate = additional_params.get('currency_conversion_rate')
+        use_usd_price = False
+        if conversion_rate:
+            use_usd_price = True
         with CachedThreadPoolExecutor(self.mongo_client) as executor:
             try:
                 instance_types = executor.submit(
                     self.gcp.get_instance_types_priced, region,
-                    source_flavor_id, mode, cpu=vcpu).result()
+                    source_flavor_id, mode, cpu=vcpu,
+                    use_usd_price=use_usd_price).result()
             except RegionNotFoundException:
                 raise WrongArgumentsException(Err.OI0012, [region])
             except ValueError as ex:
@@ -431,7 +437,10 @@ class FlavorController(BaseController):
             flavors = [relevant_flavor]
         if not flavors:
             raise TypeNotMatchedException()
-        return min(flavors, key=lambda x: x['price'])
+        flavor = min(flavors, key=lambda x: x['price'])
+        if conversion_rate:
+            flavor['price'] = flavor['price'] * conversion_rate
+        return flavor
 
     def find_nebius_flavor(self, region, family_specs, mode,
                            additional_params=None):

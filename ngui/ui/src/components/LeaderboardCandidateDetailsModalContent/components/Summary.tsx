@@ -8,7 +8,7 @@ import LeaderboardDatasetsCoverageRules from "components/LeaderboardDatasetsCove
 import MetricUnitLabel from "components/MetricUnitLabel";
 import SubTitle from "components/SubTitle";
 import SummaryList from "components/SummaryList";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const Coverage = ({ coverage }) => (
   <Box>

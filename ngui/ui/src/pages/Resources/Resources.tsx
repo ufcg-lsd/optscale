@@ -5,6 +5,7 @@ import ResourcesContainer from "containers/ResourcesContainer";
 import { useOrganizationPerspectives } from "hooks/coreData/useOrganizationPerspectives";
 import {
   DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME,
+  DAILY_META_BREAKDOWN_BY_PARAMETER_NAME,
   DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME,
   getResourcesExpensesUrl,
   GROUP_BY_PARAM_NAME,
@@ -78,6 +79,11 @@ const Resources = () => {
         ...(breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.RESOURCE_COUNT
           ? {
               [DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME]: breakdownData.breakdownBy
+            }
+          : {}),
+        ...(breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.META
+          ? {
+              [DAILY_META_BREAKDOWN_BY_PARAMETER_NAME]: breakdownData.breakdownBy
             }
           : {}),
         [RESOURCES_BREAKDOWN_BY_QUERY_PARAMETER_NAME]: breakdownBy

@@ -4,7 +4,7 @@ import MuiTable from "@mui/material/Table";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FormattedMessage } from "react-intl";
 import TableLoader from "components/TableLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SPACING_1 } from "utils/layouts";
 import InfoArea from "./components/InfoArea";
 import Pagination from "./components/Pagination";

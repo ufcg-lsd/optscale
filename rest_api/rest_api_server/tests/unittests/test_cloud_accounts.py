@@ -163,6 +163,55 @@ class TestCloudAccountApi(TestApiBase):
         self.p_configure_aws.assert_called_once_with()
         self.assertEqual(self.p_send_ca_email.call_count, 1)
 
+    def test_create_cloud_key_acc_key(self):
+        valid_config = {
+            'name': 'my cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'access_key_id': 'key',
+                'secret_access_key': 'secret',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, valid_config)
+        cloud_acc_id = cloud_acc["id"]
+        valid_config.pop('type')
+        c1 = copy.deepcopy(valid_config)
+        c1['config'].pop('secret_access_key')
+
+        code, cloud_acc = self.client.cloud_account_update(cloud_acc_id, c1)
+        self.assertEqual(code, 400)
+        self.assertEqual(cloud_acc['error']['error_code'], 'OE0548')
+
+        c2 = copy.deepcopy(valid_config)
+        c2['config'].pop('access_key_id')
+
+        code, cloud_acc = self.client.cloud_account_update(cloud_acc_id, c2)
+        self.assertEqual(code, 400)
+        self.assertEqual(cloud_acc['error']['error_code'], 'OE0548')
+
+    def test_restrict_change_to_assumed(self):
+        valid_config = {
+            'name': 'my cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'access_key_id': 'key',
+                'secret_access_key': 'secret',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, valid_config)
+        cloud_acc_id = cloud_acc["id"]
+        valid_config.pop('type')
+        # add valid parameter set for assumed account
+        # but restrict changed account type
+        for i in ['assume_role_account_id', 'assume_role_name']:
+            update_cfg = copy.deepcopy(valid_config)
+            update_cfg['config'][i] = ''
+
+            code, cloud_acc = self.client.cloud_account_update(
+                cloud_acc_id, update_cfg)
+            self.assertEqual(code, 400)
+            self.assertEqual(cloud_acc['error']['error_code'], 'OE0212')
+
     def test_create_aws_cloud_acc_assume(self):
         assume_role_account_id = '87629'
         assume_role_name = 'va-test'
@@ -225,6 +274,160 @@ class TestCloudAccountApi(TestApiBase):
                          self._aws_service_creds['access_key_id'])
         self.assertEqual(new_cloud_acc['config']['assume_role_account_id'],
                          config['config']['assume_role_account_id'])
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assume_restricted_keys(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'config_scheme': 'create_report'
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test',  # valid
+
+            }
+        }
+        # restricted in assumed roles
+        for i in ['access_key_id', 'secret_access_key']:
+            ch_config.update(
+                {i: 'somevalue'},
+            )
+            code, new_cloud_acc = self.client.cloud_account_update(
+                ca_id, ch_config)
+
+            self.assertEqual(code, 400)
+            self.assertEqual(new_cloud_acc['error']['error_code'], 'OE0212')
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_linked(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'linked': True,  # linked acc with assumed role
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test1',  # valid
+                'linked': False  # not allowed, linked is immutable
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(
+            ca_id, ch_config)
+        self.assertEqual(code, 400)
+        self.assertEqual(new_cloud_acc['error']['error_code'], 'OE0211')
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_linked_patch_ok(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'linked': True,  # linked acc with assumed role
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test1',  # valid
+                # linked not passed
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(
+            ca_id, ch_config)
+        self.assertEqual(code, 200)
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_role_required(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'linked': True,  # linked acc with assumed role
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test1',  # valid
+                'linked': False  # not allowed
+
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(ca_id,
+                                                               ch_config)
+        self.assertEqual(code, 400)
+        self.assertEqual(new_cloud_acc['error']['error_code'], 'OE0211')
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_role_required_if_acc_set(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                # role is required, but not set
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(ca_id,
+                                                               ch_config)
+        self.assertEqual(code, 400)
+        self.assertEqual(new_cloud_acc['error']['error_code'], 'OE0548')
 
     def test_create_aws_cloud_acc_assume_not_allowed(self):
         not_allowed = [

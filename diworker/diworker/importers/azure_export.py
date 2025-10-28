@@ -83,6 +83,10 @@ class AzureExportImporter(CSVBaseReportImporter, AzureImporterBase):
         else:
             raise Exception(
                 f'Unsupported expense import scheme: {import_scheme}')
+        try:
+            self.generate_reservations_expenses(self.min_date_import_threshold)
+        except Exception as exc:
+            LOG.exception("Failed getting reservations info: %s", str(exc))
         self.clear_rudiments()
 
     def data_import(self):

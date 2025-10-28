@@ -259,3 +259,6 @@ class Client:
             "payload": payload
         }
         return self.get(self.resource_url(), body)
+
+    def close(self):
+        self._http_provider.close()

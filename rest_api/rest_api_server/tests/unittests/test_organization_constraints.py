@@ -66,7 +66,7 @@ class TestOrganizationConstraints(TestApiBase):
                               region=None, created_by_kind=None, created_by_name=None,
                               host_ip=None, instance_address=None, k8s_namespace=None,
                               k8s_node=None, pod_ip=None, first_seen=None, k8s_service=None,
-                              service_name=None):
+                              service_name=None, meta=None):
         now = opttime.utcnow_timestamp()
         resource = {
             'cloud_resource_id': self.gen_id(),
@@ -82,6 +82,8 @@ class TestOrganizationConstraints(TestApiBase):
 
         if tags:
             resource.update({'tags': tags})
+        if meta:
+            resource.update({'meta': meta})
         if created_by_kind:
             resource.update({'created_by_kind': created_by_kind})
         if created_by_name:
@@ -164,15 +166,18 @@ class TestOrganizationConstraints(TestApiBase):
         service_name = 'AWS svc'
         resource_type = 'Instance'
         tag_key = 'tag_key'
+        meta_key = 'flavor'
+
         _, resource = self.create_cloud_resource(
             self.cloud_acc['id'], name='name_1', region=region,
-            resource_type=resource_type, service_name=service_name,
-            tags={tag_key: 'tag_val'})
+            resource_type=resource_type,
+            service_name=service_name,
+            tags={tag_key: 'tag_val'}, meta={meta_key: 'fl1'})
         self._make_resources_active([resource['id']])
         _, resource2 = self.create_cloud_resource(
             self.cloud_acc['id'], name='name_2', region=region,
             resource_type=resource_type, service_name=service_name,
-            tags={tag_key: 'tag_val'})
+            tags={tag_key: 'tag_val'}, meta={meta_key: 'fl1'})
 
         params = self.valid_constraint_params.copy()
         params['filters'] = {
@@ -181,7 +186,8 @@ class TestOrganizationConstraints(TestApiBase):
             'resource_type': ['%s:regular' % resource_type],
             'cloud_account_id': [self.cloud_acc['id']],
             'tag': [tag_key],
-            'active': [True, False]
+            'active': [True, False],
+            'meta': [meta_key]
         }
 
         code, resp = self.client.organization_constraint_create(

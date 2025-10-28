@@ -1,15 +1,15 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY jira_bus/requirements.txt .
+COPY jira_bus/pyproject.toml jira_bus/pyproject.toml
+COPY jira_bus/uv.lock jira_bus/uv.lock
+COPY jira_bus/__init__.py jira_bus/__init__.py
 
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/auth_client optscale_client/auth_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
-COPY tools/optscale_exceptions tools/optscale_exceptions
+COPY optscale_client optscale_client
+COPY tools tools
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv --project jira_bus sync --locked --no-dev
 
 WORKDIR /usr/src/app/jira_bus/jira_bus_server
 
@@ -24,7 +24,7 @@ COPY jira_bus/jira_bus_server/controllers ./controllers
 COPY jira_bus/jira_bus_server/atlassian_client ./atlassian_client
 
 WORKDIR /usr/src/app/
-RUN python -u jira_bus/jira_bus_server/write_spec.py
+RUN uv --project jira_bus run python -u jira_bus/jira_bus_server/write_spec.py
 
 
-CMD ["python", "/usr/src/app/jira_bus/jira_bus_server/server.py"]
+CMD ["uv", "run", "--project", "jira_bus", "python", "/usr/src/app/jira_bus/jira_bus_server/server.py"]

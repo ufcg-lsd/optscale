@@ -12,18 +12,18 @@ do
 
     echo "Pycodestyle tests>>>"
     docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG} bash -c \
-        "pycodestyle --max-line-length=120 insider"
+        "uv --project insider/${SERVICE} run pycodestyle --exclude=.venv --max-line-length=120 insider"
     echo "<<<Pycodestyle tests"
 
     echo "Pylint tests>>>"
     docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG} bash -c \
-        "pylint --rcfile=insider/.pylintrc --fail-under=9 --fail-on=E,F ./insider/${SERVICE}"
+        "uv --project insider/${SERVICE} run pylint --rcfile=insider/.pylintrc --fail-under=9 --fail-on=E,F ./insider/${SERVICE}"
     echo "<<<Pylint tests"
 
     if [[ "${SERVICE}" == "insider_api" ]]; then
         echo "Unit tests>>>"
         docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG}  bash -c \
-            "python3 -m unittest discover ./insider/insider_api/tests"
+            "uv --project insider/${SERVICE} run python -m unittest discover ./insider/insider_api/tests"
         echo "<<Unit tests"
     fi
 

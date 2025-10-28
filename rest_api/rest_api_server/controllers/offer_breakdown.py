@@ -10,7 +10,7 @@ from tools.optscale_data.clickhouse import ExternalDataConverter
 
 CH_DB_NAME = 'risp'
 LOG = logging.getLogger(__name__)
-SUPPORTED_CLOUD_TYPES = ['aws_cnr']
+SUPPORTED_CLOUD_TYPES = ['aws_cnr', 'azure_cnr']
 
 
 class OfferBreakdownController(RiBreakdownController):
@@ -58,7 +58,7 @@ class OfferBreakdownController(RiBreakdownController):
         _, cloud_accounts = self.get_organization_and_cloud_accs(
             organization_id)
         self.handle_filters(params, filters, organization_id)
-        aws_cloud_accs_map = {
+        cloud_accs_map = {
             x.id: {
                 'type': x.type.value,
                 'name': x.name
@@ -67,10 +67,10 @@ class OfferBreakdownController(RiBreakdownController):
         }
         cloud_account_ids = params.get('cloud_account_id')
         if not cloud_account_ids:
-            cloud_account_ids = list(aws_cloud_accs_map.keys())
+            cloud_account_ids = list(cloud_accs_map.keys())
         else:
             for cloud_account_id in cloud_account_ids:
-                if cloud_account_id not in aws_cloud_accs_map.keys():
+                if cloud_account_id not in cloud_accs_map.keys():
                     cloud_account_ids.remove(cloud_account_id)
         offer_usage = defaultdict(lambda: defaultdict(dict))
         cloud_account_offers = defaultdict(set)
@@ -113,7 +113,7 @@ class OfferBreakdownController(RiBreakdownController):
                         if field in meta:
                             res_dict[field] = meta.get(field)
                     res_dict.update(self.format_cloud_account(
-                        cloud_account_id, aws_cloud_accs_map))
+                        cloud_account_id, cloud_accs_map))
                     result[date_ts].append(res_dict)
         if cloud_account_ids:
             breakdown_dates = self.breakdown_dates(self.start_date,

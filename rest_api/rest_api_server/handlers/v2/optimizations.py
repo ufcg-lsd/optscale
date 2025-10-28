@@ -265,7 +265,6 @@ class OptimizationAsyncCollectionHandler(BaseAsyncItemHandler,
                 description: |
                     Wrong arguments:
                     - OE0212: Unexpected parameters
-                    - OE0217: Invalid type
                     - OE0216 Parameter is not provided
                     - OE0224: Wrong integer value
                     - OE0460: Status should be active, dismissed or excluded

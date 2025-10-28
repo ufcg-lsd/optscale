@@ -8,12 +8,12 @@ docker build -t ${TEST_IMAGE} --build-arg BUILDTAG=${BUILD_TAG} -f gemini/gemini
 
 echo "Pycodestyle tests>>>"
 docker run -i --rm ${TEST_IMAGE} \
-    bash -c "pycodestyle --max-line-length=120 gemini"
+    bash -c "uv --project gemini/gemini_worker run pycodestyle --exclude=.venv --max-line-length=120 gemini"
 echo "<<<Pycodestyle tests"
 
 echo "Pylint tests>>>"
 docker run -i --rm ${TEST_IMAGE} \
-    bash -c "pylint --rcfile=.pylintrc --fail-under=8 --fail-on=E,F ./gemini"
+    bash -c "uv --project gemini/gemini_worker run pylint --rcfile=gemini/.pylintrc --fail-under=8 --fail-on=E,F ./gemini"
 echo "<<<Pylint tests"
 
 docker rmi ${TEST_IMAGE}

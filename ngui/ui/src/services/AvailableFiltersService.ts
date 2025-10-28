@@ -28,30 +28,32 @@ import {
   FIRST_SEEN_FROM_FILTER,
   FIRST_SEEN_TO_FILTER,
   LAST_SEEN_FROM_FILTER,
-  LAST_SEEN_TO_FILTER
+  LAST_SEEN_TO_FILTER,
+  META_FILTER
 } from "utils/constants";
 
 export const mapAvailableFilterKeys = (params) => ({
-  pool_id: params[POOL_ID_FILTER],
   cloud_account_id: params[CLOUD_ACCOUNT_ID_FILTER],
+  pool_id: params[POOL_ID_FILTER],
   owner_id: params[OWNER_ID_FILTER],
-  service_name: params[SERVICE_NAME_FILTER],
   region: params[REGION_FILTER],
+  service_name: params[SERVICE_NAME_FILTER],
   resource_type: params[RESOURCE_TYPE_FILTER],
   active: params[ACTIVE_FILTER],
   recommendations: params[RECOMMENDATIONS_FILTER],
   constraint_violated: params[CONSTRAINT_VIOLATED_FILTER],
-  k8s_node: params[K8S_NODE_FILTER],
-  tag: params[TAG_FILTER],
-  without_tag: params[WITHOUT_TAG_FILTER],
-  k8s_namespace: params[K8S_NAMESPACE_FILTER],
-  k8s_service: params[K8S_SERVICE_FILTER],
-  traffic_from: params[NETWORK_TRAFFIC_FROM_FILTER],
-  traffic_to: params[NETWORK_TRAFFIC_TO_FILTER],
   first_seen_gte: params[FIRST_SEEN_FROM_FILTER],
   first_seen_lte: params[FIRST_SEEN_TO_FILTER],
   last_seen_gte: params[LAST_SEEN_FROM_FILTER],
-  last_seen_lte: params[LAST_SEEN_TO_FILTER]
+  last_seen_lte: params[LAST_SEEN_TO_FILTER],
+  tag: params[TAG_FILTER],
+  without_tag: params[WITHOUT_TAG_FILTER],
+  meta: params[META_FILTER],
+  traffic_from: params[NETWORK_TRAFFIC_FROM_FILTER],
+  traffic_to: params[NETWORK_TRAFFIC_TO_FILTER],
+  k8s_node: params[K8S_NODE_FILTER],
+  k8s_service: params[K8S_SERVICE_FILTER],
+  k8s_namespace: params[K8S_NAMESPACE_FILTER]
 });
 
 export const mapFiltersToApiParams = (filters) => {
@@ -68,22 +70,27 @@ export const mapFiltersToApiParams = (filters) => {
   };
 
   return {
-    pool_id: filters.pool?.map(getObjectValue("id")),
     cloud_account_id: filters.cloud_account?.map(getObjectValue("id")),
+    pool_id: filters.pool?.map(getObjectValue("id")),
     owner_id: filters.owner?.map(getObjectValue("id")),
-    service_name: filters.service_name?.map(getObjectValue("name")),
     region: filters.region?.map(getObjectValue("name")),
+    service_name: filters.service_name?.map(getObjectValue("name")),
     resource_type: filters.resource_type?.map(getObjectValue((obj) => `${obj.name}:${obj.type}`)),
     active: filters.active,
     recommendations: filters.recommendations,
     constraint_violated: filters.constraint_violated,
-    k8s_node: filters.k8s_node?.map(getObjectValue("name")),
+    first_seen_gte: filters.firstSeenFrom,
+    first_seen_lte: filters.firstSeenTo,
+    last_seen_gte: filters.lastSeenFrom,
+    last_seen_lte: filters.lastSeenTo,
     tag: filters.tag,
     without_tag: filters.without_tag,
-    k8s_namespace: filters.k8s_namespace?.map(getObjectValue("name")),
-    k8s_service: filters.k8s_service?.map(getObjectValue("name")),
+    meta: filters.meta,
     traffic_from: filters.traffic_from?.map(getObjectValue((obj) => `${obj.name}:${obj.cloud_type}`)),
-    traffic_to: filters.traffic_to?.map(getObjectValue((obj) => `${obj.name}:${obj.cloud_type}`))
+    traffic_to: filters.traffic_to?.map(getObjectValue((obj) => `${obj.name}:${obj.cloud_type}`)),
+    k8s_node: filters.k8s_node?.map(getObjectValue("name")),
+    k8s_service: filters.k8s_service?.map(getObjectValue("name")),
+    k8s_namespace: filters.k8s_namespace?.map(getObjectValue("name"))
   };
 };
 

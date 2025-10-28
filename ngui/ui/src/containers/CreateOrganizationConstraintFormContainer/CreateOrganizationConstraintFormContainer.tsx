@@ -5,7 +5,7 @@ import { TYPE_CORRELATION, TYPE_PROHIBITED, TYPE_REQUIRED } from "components/Cre
 import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import { mapAvailableFilterKeys } from "services/AvailableFiltersService";
 import OrganizationConstraintsService from "services/OrganizationConstraintsService";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   EMPTY_UUID,
   EXPENSE_ANOMALY,

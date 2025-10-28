@@ -294,6 +294,8 @@ export const TAG_FILTER = "tag";
 export const WITHOUT_TAG_BE_FILTER = "without_tag";
 export const WITHOUT_TAG_FILTER = "withoutTag";
 
+export const META_FILTER = "meta";
+
 export const ANY_NETWORK_TRAFFIC_LOCATION = "ANY";
 
 export const FIRST_SEEN_FROM_FILTER = "firstSeenFrom";
@@ -577,7 +579,7 @@ export const DEFAULT_LINE_CHART_HEIGHT = 50;
 
 export const DEFAULT_LINE_CHART_MARGIN = Object.freeze({ top: 20, right: 35, left: 75, bottom: 50 });
 
-export const CHART_LEGEND_WIDTH = 200;
+export const CHART_LEGEND_WIDTH = 220;
 
 export const CHART_LEGEND_LAYOUT_SETTINGS = {
   anchor: "top-right",
@@ -713,7 +715,8 @@ export const METADATA_FIELDS = Object.freeze({
   SOURCE_CLUSTER_ID: "metadata.sourceClusterId",
   PLATFORM_NAME: "metadata.platformName",
   RAM: "metadata.ram",
-  PLATFORM_ID: "metadata.platformId"
+  PLATFORM_ID: "metadata.platformId",
+  ARCHITECTURE: "metadata.architecture"
 });
 
 export const INSECURE_PORTS_MAP = Object.freeze({
@@ -787,7 +790,8 @@ export const EXPENSES_MAP_OBJECT_TYPES = Object.freeze({
   LOCATION: "location",
   FLOW: "flow",
   EXTERNAL_MARKER: "externalMarker",
-  INTER_REGION_MARKER: "interRegionMarker"
+  INTER_REGION_MARKER: "interRegionMarker",
+  INTER_CONTINENTAL_MARKER: "interContinentalMarker"
 });
 
 export const ARCHIVATION_REASON_MESSAGE_ID = Object.freeze({
@@ -811,7 +815,8 @@ export const ARCHIVATION_REASON_DESCRIPTION_MESSAGE_ID = Object.freeze({
 export const CLEAN_EXPENSES_BREAKDOWN_TYPES = Object.freeze({
   EXPENSES: "expenses",
   RESOURCE_COUNT: "resourceCount",
-  TAGS: "tags"
+  TAGS: "tags",
+  META: "meta"
 });
 
 export const CLEAN_EXPENSES_BREAKDOWN_TYPES_LIST = Object.values(CLEAN_EXPENSES_BREAKDOWN_TYPES);
@@ -1022,4 +1027,10 @@ export const AUTH_PROVIDERS = Object.freeze({
 export const POWER_SCHEDULE_ACTIONS = Object.freeze({
   POWER_ON: "power_on",
   POWER_OFF: "power_off"
+});
+
+// Different backend responses for not set values
+export const NOT_SET_BREAKDOWN_KEY = Object.freeze({
+  NOT_SET: "(not set)",
+  NULL: "null"
 });

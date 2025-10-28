@@ -4,7 +4,7 @@ import Mocked, { MESSAGE_TYPES } from "components/Mocked";
 import AssignmentRulePriorityService from "services/AssignmentRulePriorityService";
 import AssignmentRuleService from "services/AssignmentRuleService";
 import PoolsService from "services/PoolsService";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const GET_AVAILABLE_POOLS_PERMISSION = ["MANAGE_POOLS"];
 
@@ -28,7 +28,7 @@ const AssignmentRulesContainer = () => {
   return (
     <Mocked
       mock={<AssignmentRulesMocked />}
-      mockCondition={!isGetAssignmentRulesLoading && isEmpty(assignmentRules?.rules)}
+      mockCondition={!isGetAssignmentRulesLoading && isEmptyArray(assignmentRules?.rules)}
       backdropMessageType={MESSAGE_TYPES.ASSIGNMENT_RULES}
     >
       <AssignmentRules

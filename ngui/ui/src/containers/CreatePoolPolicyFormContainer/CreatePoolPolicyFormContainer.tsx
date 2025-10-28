@@ -10,7 +10,7 @@ import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import PoolPolicyService from "services/PoolPolicyService";
 import { RESOURCE_LIFECYCLE } from "urls";
 import { checkError } from "utils/api";
-import { getIntersection, isEmpty as isEmptyArray } from "utils/arrays";
+import { getIntersection, isEmptyArray } from "utils/arrays";
 
 const CreatePoolPolicyFormContainer = () => {
   const navigate = useNavigate();

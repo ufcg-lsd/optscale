@@ -47,6 +47,7 @@ class AzureImporterBase(BaseReportImporter):
             'virtualMachines': 'Instance',
             'snapshots': 'Snapshot',
             'loadBalancers': 'Load Balancer',
+            'reservations': 'Reserved Instances',
         }
         self.resource_type_map_lowered = {
             k.lower(): v for k, v in resource_type_map.items()
@@ -75,7 +76,7 @@ class AzureImporterBase(BaseReportImporter):
         filters.update({
             '$or': [
                 {'report_identity': {'$ne': self.report_identity}},
-                {'_rec_n': expense['_rec_n']}
+                {'_rec_n': expense.get('_rec_n')}
             ]
         })
         return filters
@@ -236,8 +237,11 @@ class AzureImporterBase(BaseReportImporter):
             else:
                 r_name = instance_id
                 r_type = expense.get('charge_type')
-            return self.resource_type_map_lowered.get(
-                r_type.lower(), r_type), r_name
+            r_type = self.resource_type_map_lowered.get(
+                r_type.lower(), r_type)
+            if r_type == 'Reserved Instances' and 'display_name' in expense:
+                r_name = expense['display_name']
+            return r_type, r_name
         else:
             raise Exception('Unable to parse type and name - empty '
                             'instance_id')
@@ -328,11 +332,71 @@ class AzureImporterBase(BaseReportImporter):
             'first_seen': int(first_seen.timestamp()),
             'last_seen': int(last_seen.timestamp())
         }
+
+        if r_type == 'Reserved Instances':
+            if 'benefit_start_time' in last_expense:
+                info['start'] = int(self.datetime_from_str(
+                    last_expense['benefit_start_time']).timestamp())
+            if 'expiry_date_time' in last_expense:
+                info['end'] = int(self.datetime_from_str(
+                    last_expense['expiry_date_time']).timestamp())
+            if 'term' in last_expense:
+                info['purchase_term'] = last_expense['term']
+            if 'sku' in last_expense:
+                info['instance_type'] = last_expense['sku'].get('name')
         LOG.debug('Detected resource info: %s', info)
         return info
 
+    def _get_cloud_extras(self, info):
+        extras = {'meta': {}}
+        for param in ['start', 'end', 'purchase_term', 'instance_type']:
+            val = info.get(param)
+            if val:
+                extras['meta'][param] = val
+        return extras
+
+    def generate_reservations_expenses(self, period_start):
+        chunk = []
+        now = opttime.utcnow()
+        orders = self.cloud_adapter.reservations.reservation_order.list()
+        for order in orders:
+            order_id = order.id.split('/')[-1]
+            reservations = self.cloud_adapter.reservations.reservation.list(
+                order_id)
+            for reservation in reservations:
+                # create reservations in subscription where it is billed
+                if reservation.properties.billing_scope_id.split(
+                        '/subscriptions/')[-1] == self.cloud_acc['account_id']:
+                    reservation = reservation.as_dict()
+                    reservation.update(reservation.pop('properties', None))
+                    reservation.pop('utilization', None)
+                    reservation['resource_id'] = reservation.pop('id').lower()
+                    reservation['cloud_account_id'] = self.cloud_acc_id
+                    reservation['report_identity'] = self.report_identity
+                    order_obj = self.cloud_adapter.reservations.reservation_order.get(
+                        order_id, expand="schedule")
+                    start = period_start.replace(tzinfo=timezone.utc).date()
+                    for transaction in order_obj.plan_information.transactions:
+                        if (transaction.status == 'Completed' and
+                                start <= transaction.payment_date <= now.date()):
+                            start_date = datetime.combine(
+                                transaction.payment_date, datetime.min.time(),
+                                tzinfo=timezone.utc)
+                            reservation.update({
+                                'cost': transaction.pricing_currency_total.amount,
+                                'start_date': start_date,
+                                'end_date': start_date.replace(
+                                    hour=23, minute=59, second=59),
+                            })
+                            chunk.append(reservation)
+        if chunk:
+            self.update_raw_records(chunk)
+
     def create_traffic_processing_tasks(self):
         self._create_traffic_processing_tasks()
+
+    def create_risp_processing_tasks(self):
+        self._create_risp_processing_tasks()
 
 
 class AzureApiImporter(AzureImporterBase):
@@ -386,6 +450,10 @@ class AzureApiImporter(AzureImporterBase):
         else:
             raise Exception('Unsupported expense import scheme: {}'.format(
                 import_scheme))
+        try:
+            self.generate_reservations_expenses(self.period_start)
+        except Exception as exc:
+            LOG.exception("Failed getting reservations info: %s", str(exc))
         self.clear_rudiments()
 
     @retry_backoff(AzureConsumptionException,

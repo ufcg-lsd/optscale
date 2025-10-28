@@ -15,9 +15,7 @@ const MetricChartTooltip = ({ slice }) => {
       {slice.points.map((point) => (
         <KeyValueLabel
           key={point.id}
-          keyText={
-            <CircleLabel figureColor={point.serieColor} label={<FormattedMessage id={point.serieId} />} textFirst={false} />
-          }
+          keyText={<CircleLabel figureColor={point.color} label={<FormattedMessage id={point.seriesId} />} textFirst={false} />}
           value={point.data.yFormatted}
         />
       ))}

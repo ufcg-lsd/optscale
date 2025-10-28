@@ -1,0 +1,35 @@
+[project]
+name = "bi-exporter"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "azure-storage-blob==12.25.0",
+    "boto3==1.34.7",
+    "clickhouse-connect==0.8.15",
+    "config-client",
+    "kombu==5.3.4",
+    "optscale-data",
+    "optscale-time",
+    "pymongo==4.6.3",
+    "restapi-client",
+]
+
+[tool.uv.sources]
+config-client = { path = "../optscale_client/config_client" }
+restapi-client = { path = "../optscale_client/rest_api_client" }
+optscale-data = { path = "../tools/optscale_data" }
+optscale-time = { path = "../tools/optscale_time" }
+
+[dependency-groups]
+dev = [
+    "concurrencytest==0.1.2",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ".."
+module-name = "bi_exporter"

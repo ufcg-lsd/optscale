@@ -9,7 +9,7 @@ import { mapFiltersToApiParams } from "services/AvailableFiltersService";
 import { DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME, DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME } from "urls";
 import { reformatBreakdown } from "utils/api";
 import { EXPENSE_ANOMALY, RESOURCE_COUNT_ANOMALY } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { getResourcesDateRange } from "utils/organizationConstraints/getResourcesDateRange";
 
 const ResourceCountBreakdownContainer = ({ constraint }) => {

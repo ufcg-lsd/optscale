@@ -7,7 +7,7 @@ import S3DuplicatesBucketsList from "components/S3DuplicatesBucketsList";
 import Table from "components/Table";
 import TableLoader from "components/TableLoader";
 import { resourceLocation } from "utils/columns";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { getCloudResourceIdentifier } from "utils/resources";
 import { FIELD_NAMES } from "../constants";
 import { FormValues } from "../types";

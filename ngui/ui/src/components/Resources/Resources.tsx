@@ -8,20 +8,19 @@ import ActionBar from "components/ActionBar";
 import CopyText from "components/CopyText";
 import { getBasicRangesSet } from "components/DateRangePicker/defaults";
 import PageContentWrapper from "components/PageContentWrapper";
+import TagsBreakdownContainer from "components/Resources/containers/TagsBreakdownContainer";
 import { ApplyResourcePerspectiveModal, CreateResourcePerspectiveModal } from "components/SideModalManager/SideModals";
 import TabsWrapper from "components/TabsWrapper";
 import Tooltip from "components/Tooltip";
 import TypographyLoader from "components/TypographyLoader";
-import CleanExpensesBreakdownContainer from "containers/CleanExpensesBreakdownContainer";
 import ExpensesSummaryContainer from "containers/ExpensesSummaryContainer";
 import RangePickerFormContainer from "containers/RangePickerFormContainer";
-import ResourceCountBreakdownContainer from "containers/ResourceCountBreakdownContainer";
-import TagsBreakdownContainer from "containers/TagsBreakdownContainer";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import {
   CLUSTER_TYPES,
   DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME,
+  DAILY_META_BREAKDOWN_BY_PARAMETER_NAME,
   DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME,
   getResourcesExpensesUrl,
   RESOURCES_BREAKDOWN_BY_QUERY_PARAMETER_NAME,
@@ -30,8 +29,10 @@ import {
 import { CLEAN_EXPENSES_BREAKDOWN_TYPES, DATE_RANGE_TYPE } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 import { getSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { sliceByLimitWithEllipsis } from "utils/strings";
+import { MetaTabContent } from "./components";
+import { CleanExpensesBreakdownContainer, ResourceCountBreakdownContainer } from "./containers";
 import Filters from "./Filters";
 
 const MAX_PERSPECTIVE_NAME_LENGTH = 60;
@@ -139,11 +140,19 @@ const Resources = ({
                 }
               };
             }
+
             if (activeBreakdown === CLEAN_EXPENSES_BREAKDOWN_TYPES.RESOURCE_COUNT) {
               return {
                 breakdownBy: searchParams[DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME]
               };
             }
+
+            if (activeBreakdown === CLEAN_EXPENSES_BREAKDOWN_TYPES.META) {
+              return {
+                breakdownBy: searchParams[DAILY_META_BREAKDOWN_BY_PARAMETER_NAME]
+              };
+            }
+
             return {};
           };
 
@@ -168,27 +177,26 @@ const Resources = ({
     ]
   };
 
-  const renderExpensesBreakdown = () => <CleanExpensesBreakdownContainer requestParams={requestParams} />;
-
-  const renderResourcesCountBreakdown = () => <ResourceCountBreakdownContainer requestParams={requestParams} />;
-
-  const renderTagsBreakdown = () => <TagsBreakdownContainer requestParams={requestParams} />;
-
   const tabs = [
     {
       title: CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES,
       dataTestId: "tab_expenses",
-      node: renderExpensesBreakdown()
+      node: <CleanExpensesBreakdownContainer requestParams={requestParams} />
     },
     {
       title: CLEAN_EXPENSES_BREAKDOWN_TYPES.RESOURCE_COUNT,
       dataTestId: "tab_counts",
-      node: renderResourcesCountBreakdown()
+      node: <ResourceCountBreakdownContainer requestParams={requestParams} />
     },
     {
       title: CLEAN_EXPENSES_BREAKDOWN_TYPES.TAGS,
       dataTestId: "tab_tags",
-      node: renderTagsBreakdown()
+      node: <TagsBreakdownContainer requestParams={requestParams} />
+    },
+    {
+      title: CLEAN_EXPENSES_BREAKDOWN_TYPES.META,
+      dataTestId: "tab_meta",
+      node: <MetaTabContent requestParams={requestParams} metaNames={filterValues.meta ?? []} />
     }
   ];
 
@@ -218,6 +226,7 @@ const Resources = ({
           </Box>
           <Box>
             <TabsWrapper
+              isLoading={isFilterValuesLoading}
               tabsProps={{
                 tabs,
                 activeTab: activeBreakdown,

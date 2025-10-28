@@ -1,6 +1,6 @@
 import GoalLabel from "components/GoalLabel";
 import MlRunHistoryChart from "components/MlRunHistoryChart";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const LastTaskRunGoals = ({ lastRunMetrics, taskReachedGoals }) =>
   Object.entries(taskReachedGoals).map(([key, { id, name, tendency, value, target_value: targetValue, reached, unit }]) => {

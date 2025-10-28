@@ -9,7 +9,7 @@ import MlTasksService from "services/MlTasksService";
 import { getMlTaskDetailsUrl } from "urls";
 import { ML_TASK_DETAILS_TAB_NAME } from "utils/constants";
 import { getSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const MlEditTaskLeaderboardTemplateContainer = ({ leaderboardTemplate, task }) => {
   const navigate = useNavigate();

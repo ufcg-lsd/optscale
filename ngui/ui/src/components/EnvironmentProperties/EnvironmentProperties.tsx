@@ -6,7 +6,7 @@ import SubTitle from "components/SubTitle";
 import DownloadHistoryDropdownContainer from "containers/DonwloadHistoryDropdownContainer";
 import { useIsAllowedToCUDEnvironmentProperties } from "hooks/useIsAllowedToCUDEnvironmentProperties";
 import { useIsUpMediaQuery } from "hooks/useMediaQueries";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const EnvironmentProperties = ({ environmentId, properties }) => {
   const isUpLg = useIsUpMediaQuery("lg");

@@ -82,6 +82,9 @@ etcd:
     port: {{ .Values.rest_api.service.externalPort }}
     demo:
       multiplier: {{ .Values.demo.multiplier }}
+    report_imports:
+      not_processed_threshold_secs: {{ .Values.import_reports.not_processed_threshold_secs }}
+      message_expiration_secs: {{ .Values.import_reports.message_expiration_secs }}
   auth:
     host: {{ .Values.auth.service.name }}
     port: {{ .Values.auth.service.externalPort }}
@@ -253,4 +256,6 @@ etcd:
     min_special_chars: {{ .Values.password_strength_settings.min_special_chars }}
   demo_org_cleanup:
     demo_org_lifetime_hrs: {{ .Values.demo_org_cleanup.demo_org_lifetime_hrs }}
+  diworker:
+    max_report_imports_workers: {{ .Values.import_reports.max_workers }}
 {{- end }}

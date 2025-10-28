@@ -1,18 +1,40 @@
 import { FormControl } from "@mui/material";
+import { useFormContext } from "react-hook-form";
 import { FormattedMessage } from "react-intl";
 import { DropzoneArea } from "components/Dropzone";
-import { TextInput } from "components/forms/common/fields";
+import { Switch, TextInput } from "components/forms/common/fields";
 import QuestionMark from "components/QuestionMark";
+import { ObjectValues } from "utils/types";
 
 export const FIELD_NAMES = Object.freeze({
+  CREDENTIALS: "credentials",
   BILLING_DATA_DATASET: "billingDataDatasetName",
   BILLING_DATA_TABLE: "billingDataTableName",
-  PROJECT_ID: "projectId",
-  CREDENTIALS: "credentials"
+  BILLING_DATA_PROJECT_ID: "billingDataProjectId",
+  AUTOMATICALLY_DETECT_PRICING_DATA: "automaticallyDetectPricingData",
+  PRICING_DATA_DATASET: "pricingDataDatasetName",
+  PRICING_DATA_TABLE: "pricingDataTableName",
+  PRICING_DATA_PROJECT_ID: "pricingDataProjectId"
 });
 
-const GcpCredentials = ({ hidden = [] }) => {
-  const isHidden = (fieldName) => hidden.includes(fieldName);
+type FieldName = ObjectValues<typeof FIELD_NAMES>;
+
+type GcpCredentialsProps = {
+  hidden?: FieldName[];
+};
+
+const GcpCredentials = ({ hidden = [] }: GcpCredentialsProps) => {
+  const isHidden = (fieldName: FieldName) => hidden.includes(fieldName);
+
+  const anyPricingDataFieldVisible = [
+    FIELD_NAMES.PRICING_DATA_DATASET,
+    FIELD_NAMES.PRICING_DATA_TABLE,
+    FIELD_NAMES.PRICING_DATA_PROJECT_ID
+  ].some((fieldName) => !isHidden(fieldName));
+
+  const { watch } = useFormContext();
+
+  const automaticallyDetectPricingData = watch(FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA) ?? true;
 
   return (
     <>
@@ -51,9 +73,9 @@ const GcpCredentials = ({ hidden = [] }) => {
           autoComplete="off"
         />
       )}
-      {!isHidden(FIELD_NAMES.PROJECT_ID) && (
+      {!isHidden(FIELD_NAMES.BILLING_DATA_PROJECT_ID) && (
         <TextInput
-          name={FIELD_NAMES.PROJECT_ID}
+          name={FIELD_NAMES.BILLING_DATA_PROJECT_ID}
           dataTestId="input_billing_data_project_id"
           InputProps={{
             endAdornment: <QuestionMark messageId="billingDataProjectIdTooltip" dataTestId="qmark_billing_data_project_id" />
@@ -61,6 +83,68 @@ const GcpCredentials = ({ hidden = [] }) => {
           label={<FormattedMessage id="billingDataProjectId" />}
           autoComplete="off"
         />
+      )}
+      {anyPricingDataFieldVisible && (
+        <Switch
+          name={FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA}
+          label={<FormattedMessage id="automaticallyDetectPricingData" />}
+          // eslint-disable-next-line react/jsx-boolean-value
+          defaultValue={true}
+          adornment={
+            <QuestionMark
+              messageId="automaticallyDetectPricingDataDescription"
+              messageValues={{
+                break: <br />
+              }}
+              dataTestId="qmark_automatically_detect_pricing_data"
+            />
+          }
+        />
+      )}
+      {automaticallyDetectPricingData ? null : (
+        <>
+          {!isHidden(FIELD_NAMES.PRICING_DATA_DATASET) && (
+            <TextInput
+              required
+              dataTestId="input_pricing_data_dataset_name"
+              name={FIELD_NAMES.PRICING_DATA_DATASET}
+              InputProps={{
+                endAdornment: (
+                  <QuestionMark messageId="pricingDataDatasetNameTooltip" dataTestId="qmark_pricing_data_dataset_name" />
+                )
+              }}
+              label={<FormattedMessage id="pricingDataDatasetName" />}
+              autoComplete="off"
+            />
+          )}
+          {!isHidden(FIELD_NAMES.PRICING_DATA_TABLE) && (
+            <TextInput
+              required
+              dataTestId="input_pricing_data_table_name"
+              name={FIELD_NAMES.PRICING_DATA_TABLE}
+              InputProps={{
+                endAdornment: (
+                  <QuestionMark messageId="pricingDataTableNameTooltip" dataTestId="qmark_pricing_data_table_name" />
+                )
+              }}
+              label={<FormattedMessage id="pricingDataTableName" />}
+              autoComplete="off"
+            />
+          )}
+          {!isHidden(FIELD_NAMES.PRICING_DATA_PROJECT_ID) && (
+            <TextInput
+              name={FIELD_NAMES.PRICING_DATA_PROJECT_ID}
+              dataTestId="input_pricing_data_project_id"
+              InputProps={{
+                endAdornment: (
+                  <QuestionMark messageId="pricingDataProjectIdTooltip" dataTestId="qmark_pricing_data_project_id" />
+                )
+              }}
+              label={<FormattedMessage id="pricingDataProjectId" />}
+              autoComplete="off"
+            />
+          )}
+        </>
       )}
     </>
   );
