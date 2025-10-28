@@ -104,8 +104,8 @@ class TestCloudAccountApi(TestApiBase):
             }
         }
         self.default_kubernetes_cost_model = {
-            'cpu_hourly_cost': 0.002,
-            'memory_hourly_cost': 0.001
+            'cpu_hourly_cost': 0.02,
+            'memory_hourly_cost': 0.01
         }
         self.valid_kubernetes_response = deepcopy(self.valid_kubernetes_cloud_acc)
         self.valid_kubernetes_response['config'].update(
