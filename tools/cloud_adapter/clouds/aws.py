@@ -2218,7 +2218,7 @@ class Aws(S3CloudMixin):
             raise
         
 
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=90):
         """
         Build LogGroupResource objects for all CloudWatch Log Groups in a region.
 
