@@ -1,7 +1,7 @@
 import { FormattedMessage } from "react-intl";
 import HeaderHelperCell from "components/HeaderHelperCell";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const RightsizingCpuUsageHeaderCell = ({ options = {} }) =>
   isEmptyObject ? (

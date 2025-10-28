@@ -236,6 +236,7 @@ class AvailableFiltersController(CleanExpenseController):
                     '$divide': ['$first_seen', DAY_IN_SECONDS]}},
             },
             'tags': {'$addToSet': '$tags.k'},
+            'meta': {'$addToSet': '$meta.k'},
             'cloud_resource_ids': {'$addToSet': '$cloud_resource_id'},
         })
         return self.resources_collection.aggregate([
@@ -243,6 +244,11 @@ class AvailableFiltersController(CleanExpenseController):
             {'$addFields': {'tags': {'$objectToArray': "$tags"}}},
             {'$unwind': {
                 'path': "$tags",
+                'preserveNullAndEmptyArrays': True
+            }},
+            {'$addFields': {'meta': {'$objectToArray': "$meta"}}},
+            {'$unwind': {
+                'path': "$meta",
                 'preserveNullAndEmptyArrays': True
             }},
             {'$group': group_stage}

@@ -19,7 +19,7 @@ import {
   QUOTA_AND_BUDGET_CREATE,
   TAGGING_POLICY_CREATE
 } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import useStyles from "./BannerContent.styles";
 
 const CONNECT_DATA_SOURCE = "connectDataSource";

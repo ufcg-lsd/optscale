@@ -3,7 +3,7 @@ import { FormattedMessage } from "react-intl";
 import ExpensesBreakdownTable from "components/ExpensesBreakdown/Table";
 import IconButton from "components/IconButton";
 import Tooltip from "components/Tooltip";
-import { isEmpty, sortObjects } from "utils/arrays";
+import { isEmptyArray, sortObjects } from "utils/arrays";
 import { EXPENSES_FILTERBY_TYPES } from "utils/constants";
 import { percentXofY } from "utils/math";
 
@@ -88,7 +88,7 @@ const ExpensesBreakdownTableWidget = ({
   return (
     <>
       {title}
-      {!isEmpty(filteredBreakdown) ? (
+      {!isEmptyArray(filteredBreakdown) ? (
         <Tooltip title={<FormattedMessage id="showResources" />}>
           <IconButton icon={<ListAltOutlinedIcon />} isLoading={isLoading} onClick={onTitleButtonClick} />
         </Tooltip>

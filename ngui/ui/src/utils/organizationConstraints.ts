@@ -1,5 +1,5 @@
 import { ANOMALY_TYPES, QUOTAS_AND_BUDGETS_TYPES, TAGGING_POLICY_TYPES } from "./constants";
-import { isEmpty as isEmptyObject } from "./objects";
+import { isEmptyObject } from "./objects";
 
 export const hasStatusInformation = (constraint) =>
   constraint.last_run !== 0 && constraint.last_run_result && !isEmptyObject(constraint.last_run_result);

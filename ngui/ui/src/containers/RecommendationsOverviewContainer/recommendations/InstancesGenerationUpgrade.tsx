@@ -1,13 +1,13 @@
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel";
 import { ALIBABA_ECS, AWS_EC2, AWS_RDS, AZURE_COMPUTE } from "hooks/useRecommendationServices";
 import { detectedAt, resourceLocation, resource, savings, text } from "utils/columns";
-import { ALIBABA_CNR, AWS_CNR, AZURE_CNR, METADATA_FIELDS } from "utils/constants";
+import { ALIBABA_CNR, AWS_CNR, AZURE_CNR } from "utils/constants";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
 const columns = [
   resource({ headerDataTestId: "lbl_igu_resource" }),
   resourceLocation({ headerDataTestId: "lbl_igu_location" }),
-  text({ headerMessageId: METADATA_FIELDS.SIZE, headerDataTestId: "lbl_igu_flavor", accessorKey: "flavor" }),
+  text({ headerMessageId: "size", headerDataTestId: "lbl_igu_flavor", accessorKey: "flavor" }),
   text({
     headerMessageId: "recommendedSize",
     headerDataTestId: "lbl_igu_recommended_flavor",

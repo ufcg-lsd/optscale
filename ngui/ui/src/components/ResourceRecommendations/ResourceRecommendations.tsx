@@ -10,7 +10,7 @@ import TextWithDataTestId from "components/TextWithDataTestId";
 import WidgetTitle from "components/WidgetTitle";
 import { useIsAllowed } from "hooks/useAllowedActions";
 import { useAllRecommendations } from "hooks/useAllRecommendations";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { RESOURCE_VISIBILITY_ACTIONS, FORMATTED_MONEY_TYPES, SCOPE_TYPES } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 

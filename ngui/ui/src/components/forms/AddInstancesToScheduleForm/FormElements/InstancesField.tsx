@@ -6,7 +6,7 @@ import FormContentDescription from "components/FormContentDescription";
 import Table from "components/Table";
 import TableLoader from "components/TableLoader";
 import { powerScheduleInstance, resourceLocation, resourcePoolOwner, size, tags } from "utils/columns";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { FormValues } from "../types";
 
 export const FIELD_NAME = "instances";

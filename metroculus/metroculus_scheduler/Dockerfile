@@ -1,14 +1,16 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
+COPY optscale_client optscale_client
 
-COPY metroculus/metroculus_scheduler/requirements.txt metroculus/metroculus_scheduler/requirements.txt
-RUN pip install --no-cache-dir -r metroculus/metroculus_scheduler/requirements.txt
+COPY metroculus/__init__.py metroculus/
+COPY metroculus/metroculus_scheduler/pyproject.toml metroculus/metroculus_scheduler/
+COPY metroculus/metroculus_scheduler/uv.lock metroculus/metroculus_scheduler/
 COPY metroculus/metroculus_scheduler/*.py ./metroculus/metroculus_scheduler/
 
-CMD ["python", "-u","/usr/src/app/metroculus/metroculus_scheduler/main.py"]
+RUN uv --project metroculus/metroculus_scheduler sync --locked --no-dev
+
+CMD ["uv", "run", "--project", "metroculus/metroculus_scheduler", "python", "-u","/usr/src/app/metroculus/metroculus_scheduler/main.py"]

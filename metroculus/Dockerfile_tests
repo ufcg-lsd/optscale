@@ -1,9 +1,12 @@
 ARG BUILDTAG=build
 ARG IMAGE=metroculus_api
 FROM ${IMAGE}:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
+COPY tools tools
 COPY optscale_client/metroculus_client optscale_client/metroculus_client
-COPY metroculus/test-requirements.txt metroculus/.pylintrc metroculus/.coveragerc ./metroculus/
-RUN pip install --no-cache-dir -r metroculus/test-requirements.txt
+COPY metroculus/.pylintrc metroculus/.coveragerc ./metroculus/
+COPY metroculus/metroculus_api/pyproject.toml metroculus/metroculus_api/uv.lock ./metroculus/metroculus_api/
+RUN uv --project metroculus/metroculus_api sync --locked
 COPY metroculus/metroculus_api/tests metroculus/metroculus_api/tests

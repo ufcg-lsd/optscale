@@ -217,6 +217,8 @@ export const GROUP_BY_PARAM_NAME = "groupBy";
 export const DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME = "categorizedBy";
 export const DAILY_EXPENSES_SPLIT_PARAMETER_NAME = "expenses";
 export const DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME = "resourceCountBreakdownBy";
+export const DAILY_META_BREAKDOWN_BY_PARAMETER_NAME = "metaBreakdownBy";
+export const DAILY_META_BREAKDOWN_TYPE_PARAMETER_NAME = "metaBreakdownType";
 export const SHOW_EXPENSES_DAILY_BREAKDOWN_PARAMETER_NAME = "showExpensesDailyBreakdown";
 export const RESOURCES_PERSPECTIVE_PARAMETER_NAME = "perspective";
 export const RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME = "selectedPerspective";
@@ -621,3 +623,5 @@ export const USER_EMAIL_QUERY_PARAMETER_NAME = "userEmail";
 export const OPTSCALE_CAPABILITY_QUERY_PARAMETER_NAME = "capability";
 
 export const NEXT_QUERY_PARAMETER_NAME = "next";
+
+export const WITH_LEGEND_QUERY_PARAMETER_NAME = "withLegend";

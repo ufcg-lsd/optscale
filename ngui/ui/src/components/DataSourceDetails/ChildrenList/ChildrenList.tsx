@@ -3,7 +3,7 @@ import { FormattedMessage } from "react-intl";
 import CloudLabel from "components/CloudLabel";
 import SubTitle from "components/SubTitle";
 import { useAllDataSources } from "hooks/coreData/useAllDataSources";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const ChildrenList = ({ parentId }) => {
   const dataSources = useAllDataSources();
@@ -15,7 +15,7 @@ const ChildrenList = ({ parentId }) => {
       <SubTitle>
         <FormattedMessage id="childDataSources" />
       </SubTitle>
-      {isEmpty(childDataSources) ? (
+      {isEmptyArray(childDataSources) ? (
         <Typography>
           <FormattedMessage id="noChildDataSourcesDiscovered" />
         </Typography>

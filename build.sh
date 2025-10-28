@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# ./build.sh [component] [tag] [-r registry] [-u username] [-p password] [--use-nerdctl]
+# ./build.sh [component] [tag] [-r registry] [-u username] [-p password] [--no-cache] [--use-nerdctl]
 # leave registry empty if default registry [docker.io] used
 
 # Initialize default values
@@ -10,6 +10,8 @@ LOGIN=""
 PASSWORD=""
 COMPONENT=""
 INPUT_TAG=""
+FLAGS=""
+NO_CACHE=false
 USE_NERDCTL=false
 BUILD_TOOL="docker"
 
@@ -19,6 +21,7 @@ while [[ "$#" -gt 0 ]]; do
         -r) REGISTRY="$2"; shift ;;
         -u) LOGIN="$2"; shift ;;
         -p) PASSWORD="$2"; shift ;;
+        --no-cache) NO_CACHE=true ;;
         --use-nerdctl) USE_NERDCTL=true ;;
         *)
             # Check if COMPONENT is empty
@@ -36,6 +39,11 @@ done
 # Set build tool based on flag
 if [[ "$USE_NERDCTL" == true ]]; then
     BUILD_TOOL="nerdctl"
+fi
+
+# Set --no-cache flag
+if [[ "$NO_CACHE" == true ]]; then
+    FLAGS="--no-cache"
 fi
 
 COMMIT_ID=$(git rev-parse --verify HEAD)
@@ -101,7 +109,7 @@ do
       echo "component $COMPONENT re-tagged $COMMIT_ID -> $BUILD_TAG"
     else
       echo "Building image for ${COMPONENT}, build tag: ${BUILD_TAG}"
-      $BUILD_TOOL build -t ${COMPONENT}:${BUILD_TAG} -f ${DOCKERFILE} .
+      $BUILD_TOOL build $FLAGS -t ${COMPONENT}:${BUILD_TAG} -f ${DOCKERFILE} .
     fi
 
     if use_registry; then

@@ -1,0 +1,44 @@
+[project]
+name = "bumiworker"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "boto3==1.34.7",
+    "clickhouse-connect==0.8.15",
+    "cloud-adapter",
+    "config-client",
+    "herald-client",
+    "insider-client",
+    "kombu==5.3.4",
+    "metroculus-client",
+    "optscale-data",
+    "optscale-time",
+    "pymongo==4.6.3",
+    "restapi-client",
+]
+
+[tool.uv.sources]
+cloud-adapter = { path = "../tools/cloud_adapter" }
+optscale-data = { path = "../tools/optscale_data" }
+optscale-time = { path = "../tools/optscale_time" }
+config-client = { path = "../optscale_client/config_client" }
+herald-client = { path = "../optscale_client/herald_client" }
+insider-client = { path = "../optscale_client/insider_client" }
+metroculus-client = { path = "../optscale_client/metroculus_client" }
+restapi-client = { path = "../optscale_client/rest_api_client" }
+
+[dependency-groups]
+dev = [
+    "coverage==4.2",
+    "freezegun==0.3.8",
+    "mongomock==3.19.0",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ".."
+module-name = "bumiworker"

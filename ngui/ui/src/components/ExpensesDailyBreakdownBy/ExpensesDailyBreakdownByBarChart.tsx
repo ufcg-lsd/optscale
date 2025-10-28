@@ -4,8 +4,8 @@ import BreakdownLabel, { getBreakdownLabelText } from "components/BreakdownLabel
 import CanvasBarChart from "components/CanvasBarChart";
 import { useMoneyFormatter } from "components/FormattedMoney";
 import KeyValueChartTooltipBody from "components/KeyValueChartTooltipBody";
-import { isEmpty as isEmptyArray, splitIntoTwoChunks } from "utils/arrays";
-import { AXIS_FORMATS, getColorsMap, truncateCanvasText } from "utils/charts";
+import { isEmptyArray, splitIntoTwoChunks } from "utils/arrays";
+import { AXIS_FORMATS, getBreakdownChartLegendLabel, getColorsMap } from "utils/charts";
 import { EXPENSES_SPLIT_PERIODS, FORMATTED_MONEY_TYPES } from "utils/constants";
 import { getResourceExpensesSplits } from "utils/getResourceExpensesSplits";
 
@@ -77,6 +77,19 @@ const ExpensesDailyBreakdownByBarChart = ({
 
   const colorsMap = getColorsMap(keys.toReversed(), theme.palette.chart);
 
+  const legendLabel = getBreakdownChartLegendLabel({
+    getLabel: (legendItem) => {
+      if (legendItem.id === OTHER_EXPENSES_NAME) {
+        return intl.formatMessage({ id: "other" });
+      }
+      return getBreakdownLabelText({
+        id: legendItem.id,
+        ...counts[legendItem.id]
+      });
+    },
+    getTotalLabel: (legendItem) => moneyFormatter(FORMATTED_MONEY_TYPES.COMPACT, totals[legendItem.id])
+  });
+
   return (
     <CanvasBarChart
       dataTestId={dataTestId}
@@ -105,27 +118,7 @@ const ExpensesDailyBreakdownByBarChart = ({
       isLoading={isLoading}
       axisFormat={AXIS_FORMATS.MONEY}
       withLegend={showLegend}
-      legendLabel={(legendItem, ctx: CanvasRenderingContext2D, { maxWidth }) => {
-        const details = {
-          id: legendItem.id,
-          ...counts[legendItem.id]
-        };
-
-        const breakdownLabel =
-          legendItem.id === OTHER_EXPENSES_NAME ? intl.formatMessage({ id: "other" }) : getBreakdownLabelText(details);
-
-        const totalExpenses = moneyFormatter(FORMATTED_MONEY_TYPES.COMPACT, totals[legendItem.id]);
-
-        const endString = ` - ${totalExpenses}`;
-
-        // Truncate the main label if needed to fit within maxWidth minus the expenses string width
-        const truncatedLabel = truncateCanvasText(ctx, breakdownLabel, maxWidth - ctx.measureText(endString).width);
-
-        return {
-          label: `${truncatedLabel}${endString}`,
-          shouldTruncate: false
-        };
-      }}
+      legendLabel={legendLabel}
     />
   );
 };

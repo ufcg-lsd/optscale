@@ -519,19 +519,40 @@ class CloudAccountController(BaseController, ClickHouseMixin):
             self.session, self._config)
         old_config = cloud_acc_obj.decoded_config
         config = kwargs.pop('config', {})
+        if 'linked' in config:
+            linked = config['linked']
+            if linked != old_config.get('linked', False):
+                raise WrongArgumentsException(Err.OE0211, ['linked'])
+        # linked not in config, take linked from the old config
+        # to address handle_config -> validate_credentials for the assumed acc
+        else:
+            # set config properties only in case if config has been passed
+            # to pass requests as update import time
+            if config and 'linked' in old_config:
+                config['linked'] = old_config['linked']
+
         LOG.info('Editing cloud account %s. Input: %s. Config: %s', item_id,
                  kwargs, bool(config))
         if cloud_acc_obj.parent_id and config:
             raise WrongArgumentsException(Err.OE0211, ['config'])
         if cloud_acc_type in [CloudTypes.AWS_CNR.value]:
             role_account_id = old_config.get('assume_role_account_id')
+            old_role = old_config.get('assume_role_name')
             if role_account_id:
                 new_role_acc = config.get('assume_role_account_id')
                 if new_role_acc and (new_role_acc != role_account_id):
                     raise WrongArgumentsException(Err.OE0211, [
                         'assume_role_account_id'])
-                role = config.get('assume_role_name',
-                                  old_config.get('assume_role_name'))
+                role = config.get('assume_role_name')
+                if new_role_acc:
+                    if not role:
+                        raise WrongArgumentsException(Err.OE0548, [
+                            'assume_role_name'])
+                unexpected = ['access_key_id', 'secret_access_key']
+                for i in unexpected:
+                    if config.get(i):
+                        raise WrongArgumentsException(Err.OE0212, [i])
+
                 if config:
                     service_creds = self._get_aws_service_creds()
                     config["access_key_id"] = service_creds.get(
@@ -539,8 +560,30 @@ class CloudAccountController(BaseController, ClickHouseMixin):
                     config["secret_access_key"] = service_creds.get(
                         "secret_access_key", "")
                     config["assume_role_account_id"] = role_account_id
-                    config["assume_role_name"] = role
+                    config["assume_role_name"] = role or old_role
+            # non-assumed
+            else:
 
+                access_key_id = config.get('access_key_id')
+                secret_access_key = config.get('secret_access_key')
+                if bool(access_key_id) ^ bool(secret_access_key):
+                    if not access_key_id:
+                        raise WrongArgumentsException(
+                            Err.OE0548, [
+                                'access_key_id'
+                            ]
+                        )
+                    if not secret_access_key:
+                        raise WrongArgumentsException(
+                            Err.OE0548, [
+                                'secret_access_key'
+                            ]
+                        )
+                # valid keys, but unexpected for non-assumed roles
+                unexpected = ['assume_role_account_id', 'assume_role_name']
+                for i in unexpected:
+                    if i in config:
+                        raise WrongArgumentsException(Err.OE0212, [i])
         organization = OrganizationController(
             self.session, self._config, self.token).get(
             cloud_acc_obj.organization_id)

@@ -19,7 +19,7 @@ import { useApiState } from "hooks/useApiState";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { intl } from "translations/react-intl-config";
 import { getCreateAssignmentRuleUrl } from "urls";
-import { isEmpty, isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { resourcePoolOwner, tags } from "utils/columns";
 import { CLEAN_EXPENSES_TABLE_QUERY_PARAM_PREFIX, DOWNLOAD_FILE_FORMATS } from "utils/constants";
 import { MetadataNodes } from "utils/metadata";
@@ -225,7 +225,7 @@ const CleanExpensesTable = ({
             <CloudLabel dataTestId={`resource_location_${id}`} id={cloudId} name={cloudName} type={cloudType} />
           );
 
-          if (isEmpty(locationCaptionNodes)) {
+          if (isEmptyArray(locationCaptionNodes)) {
             return cloudLabel;
           }
 

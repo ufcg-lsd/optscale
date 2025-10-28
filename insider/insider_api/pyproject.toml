@@ -1,0 +1,41 @@
+[project]
+name = "insider-api"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "apispec==6.3.1",
+    "cloud-adapter",
+    "config-client",
+    "optscale-exceptions",
+    "optscale-time",
+    "pymongo==4.6.3",
+    "pyyaml==6.0.1",
+    "restapi-client",
+    "tornado==6.5",
+]
+
+[tool.uv.sources]
+config-client = { path = "../../optscale_client/config_client" }
+restapi-client = { path = "../../optscale_client/rest_api_client" }
+cloud-adapter = { path = "../../tools/cloud_adapter" }
+optscale-exceptions = { path = "../../tools/optscale_exceptions" }
+optscale-time = { path = "../../tools/optscale_time" }
+insider-client = { path = "../../optscale_client/insider_client" }
+
+[dependency-groups]
+dev = [
+    "concurrencytest==0.1.2",
+    "coverage==6.4.2",
+    "freezegun==0.3.8",
+    "insider-client",
+    "mongomock==3.22.1",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "../.."
+module-name = "insider"

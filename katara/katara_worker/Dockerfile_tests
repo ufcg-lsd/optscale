@@ -1,11 +1,11 @@
 ARG BUILDTAG=build
 FROM katara_worker:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
 
-
-COPY katara/katara_worker/test-requirements.txt katara/test-requirements.txt
+COPY katara/katara_worker/pyproject.toml katara/katara_worker/uv.lock ./katara/katara_worker/
 COPY katara/.pylintrc katara/.coveragerc ./katara/katara_worker/
 
-RUN pip install --no-cache-dir -r katara/test-requirements.txt
+RUN uv --project katara/katara_worker sync --locked

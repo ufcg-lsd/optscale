@@ -11,7 +11,7 @@ import { useGetIsRecommendationsDownloadAvailable } from "hooks/useGetIsRecommen
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import OrganizationOptionsService from "services/OrganizationOptionsService";
 import { RECOMMENDATIONS_LIMIT_FILTER } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const MlTaskRecommendations = ({ taskId, recommendations, isLoading }) => {
   const { classes } = useStyles();

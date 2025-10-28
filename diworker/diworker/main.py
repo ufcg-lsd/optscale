@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 import os
 import time
+import logging
 
 import urllib3
-from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock, Thread
 from etcd import Lock as EtcdLock
 from kombu import Exchange, Queue, Connection as QConnection
 from kombu.pools import producers
-from kombu.log import get_logger
 from kombu.mixins import ConsumerMixin
-from kombu.utils.debug import setup_logging
 from pymongo import MongoClient
 from urllib3.exceptions import InsecureRequestWarning
 import clickhouse_connect
@@ -35,52 +35,70 @@ task_queue = Queue(
     queue_arguments=ARGUMENTS
 )
 
-LOG = get_logger(__name__)
+LOG = logging.getLogger(__name__)
 ENVIRONMENT_CLOUD_TYPE = 'environment'
 HEARTBEAT_INTERVAL = 300
+DEFAULT_MAX_WORKERS = 4
 
 
 class DIWorker(ConsumerMixin):
-    def __init__(self, connection, config_cl):
+    def __init__(self, connection, rabbitmq_conn_str, diworker_settings,
+                 config_params):
         self.connection = connection
-        self.config_cl = config_cl
-        self._rest_cl = None
-        self._mongo_cl = None
-        self._clickhouse_cl = None
-        self.report_import_id = None
-        self.thread = Thread(target=self.heartbeat)
+        self.rabbitmq_conn_str = rabbitmq_conn_str
+        self.diworker_settings = diworker_settings
+        self.config_cl_params = config_params
+        self.active_report_import_ids = set()
+        self.active_reports_lock = Lock()
+        self.running = True
+        self.thread = Thread(
+            target=self.heartbeat, args=(self.config_cl_params,))
         self.thread.start()
+        self.executor = ThreadPoolExecutor(
+            max_workers=int(
+                self.diworker_settings.get(
+                    'max_report_imports_workers',
+                    DEFAULT_MAX_WORKERS
+                )
+            )
+        )
 
-    def heartbeat(self):
-        while True:
-            if self.report_import_id:
-                self.rest_cl.report_import_update(self.report_import_id, {})
+    def heartbeat(self, config_params):
+        config_cl = self.get_config_cl(config_params)
+        rest_cl = self.get_rest_cl(config_cl)
+        while self.running:
+            with self.active_reports_lock:
+                report_import_ids = list(self.active_report_import_ids)
+            for report_import_id in report_import_ids:
+                try:
+                    rest_cl.report_import_update(report_import_id, {})
+                except Exception as e:
+                    LOG.warning("Heartbeat update failed for %s: %s", report_import_id, e)
             time.sleep(HEARTBEAT_INTERVAL)
+        rest_cl.close()
 
-    @property
-    def rest_cl(self):
-        if self._rest_cl is None:
-            self._rest_cl = RestClient(
-                url=self.config_cl.restapi_url(), verify=False)
-            self._rest_cl.secret = self.config_cl.cluster_secret()
-        return self._rest_cl
+    @staticmethod
+    def get_config_cl(config_params):
+        return ConfigClient(**config_params)
 
-    @property
-    def mongo_cl(self):
-        if self._mongo_cl is None:
-            mongo_params = self.config_cl.mongo_params()
-            self._mongo_cl = MongoClient(mongo_params[0])
-        return self._mongo_cl
+    @staticmethod
+    def get_rest_cl(config_cl):
+        url = config_cl.restapi_url()
+        secret = config_cl.cluster_secret()
+        return RestClient(url=url, verify=False, secret=secret)
 
-    @property
-    def clickhouse_cl(self):
-        if not self._clickhouse_cl:
-            user, password, host, db_name, port, secure = (
-                self.config_cl.clickhouse_params())
-            self._clickhouse_cl = clickhouse_connect.get_client(
-                host=host, password=password, database=db_name, user=user,
-                port=port, secure=secure)
-        return self._clickhouse_cl
+    @staticmethod
+    def get_mongo_cl(config_cl):
+        mongo_params = config_cl.mongo_params()
+        return MongoClient(mongo_params[0])
+
+    @staticmethod
+    def get_clickhouse_cl(config_cl):
+        user, password, host, db_name, port, secure = (
+            config_cl.clickhouse_params())
+        return clickhouse_connect.get_client(
+            host=host, password=password, database=db_name, user=user,
+            port=port, secure=secure)
 
     def publish_activities_task(self, organization_id, object_id, object_type,
                                 action, routing_key, meta=None):
@@ -91,8 +109,7 @@ class DIWorker(ConsumerMixin):
             'action': action,
             'meta': meta
         }
-        queue_conn = QConnection('amqp://{user}:{pass}@{host}:{port}'.format(
-            **self.config_cl.read_branch('/rabbit')))
+        queue_conn = QConnection(self.rabbitmq_conn_str)
         task_exchange = Exchange(ACTIVITIES_EXCHANGE_NAME, type='topic')
         with producers[queue_conn].acquire(block=True) as producer:
             producer.publish(
@@ -109,54 +126,63 @@ class DIWorker(ConsumerMixin):
             queues=[task_queue],
             accept=['json'],
             callbacks=[self.process_task],
-            prefetch_count=1,
+            prefetch_count=int(
+                self.diworker_settings.get(
+                    'max_report_imports_workers',
+                    DEFAULT_MAX_WORKERS
+                )
+            ),
         )]
 
-    def report_import(self, task):
-        self.report_import_id = task.get('report_import_id')
-        if not self.report_import_id:
+    def report_import(self, task, config_cl, rest_cl, mongo_cl, clickhouse_cl):
+        report_import_id = task.get('report_import_id')
+        if not report_import_id:
             raise Exception('invalid task received: {}'.format(task))
 
-        _, import_dict = self.rest_cl.report_import_get(self.report_import_id)
+        with self.active_reports_lock:
+            self.active_report_import_ids.add(report_import_id)
+
+        _, import_dict = rest_cl.report_import_get(report_import_id)
         cloud_acc_id = import_dict.get('cloud_account_id')
-        _, resp = self.rest_cl.report_import_list(cloud_acc_id, show_active=True)
+        _, resp = rest_cl.report_import_list(cloud_acc_id, show_active=True)
         imports = list(filter(
-            lambda x: x['id'] != self.report_import_id, resp['report_imports']))
+            lambda x: x['id'] != report_import_id, resp['report_imports']))
         if imports:
             reason = 'Import cancelled due another import: %s' % imports[0]['id']
-            self.rest_cl.report_import_update(
-                self.report_import_id, {'state': 'failed',
-                                        'state_reason': reason})
+            rest_cl.report_import_update(
+                report_import_id,
+                {'state': 'failed', 'state_reason': reason}
+            )
             return
         is_recalculation = import_dict.get('is_recalculation', False)
         LOG.info('Starting processing for task: %s, purpose %s',
                  task, 'recalculation ' if is_recalculation else 'import')
-        self.rest_cl.report_import_update(self.report_import_id,
-                                          {'state': 'in_progress'})
+        rest_cl.report_import_update(report_import_id, {'state': 'in_progress'})
 
         importer_params = {
             'cloud_account_id': cloud_acc_id,
-            'rest_cl': self.rest_cl,
-            'config_cl': self.config_cl,
-            'mongo_raw': self.mongo_cl.restapi['raw_expenses'],
-            'mongo_resources': self.mongo_cl.restapi['resources'],
-            'clickhouse_cl': self.clickhouse_cl,
+            'rest_cl': rest_cl,
+            'config_cl': config_cl,
+            'mongo_raw': mongo_cl.restapi['raw_expenses'],
+            'mongo_resources': mongo_cl.restapi['resources'],
+            'clickhouse_cl': clickhouse_cl,
             'import_file': import_dict.get('import_file'),
             'recalculate': is_recalculation}
         importer = None
         ca = None
         previous_attempt_ts = 0
         try:
-            _, ca = self.rest_cl.cloud_account_get(
+            _, ca = rest_cl.cloud_account_get(
                 importer_params.get('cloud_account_id'))
             organization_id = ca.get('organization_id')
-            _, org = self.rest_cl.organization_get(organization_id)
+            _, org = rest_cl.organization_get(organization_id)
             if org.get('disabled'):
                 reason = ('Import cancelled due to disabled '
-                          'organization: %s') % self.report_import_id
-                self.rest_cl.report_import_update(
-                    self.report_import_id, {'state': 'failed',
-                                            'state_reason': reason})
+                          'organization: %s') % report_import_id
+                rest_cl.report_import_update(
+                    report_import_id,
+                    {'state': 'failed', 'state_reason': reason}
+                )
                 return
             start_last_import_ts = ca.get('last_import_at', 0)
             previous_attempt_ts = ca.get('last_import_attempt_at', 0)
@@ -165,11 +191,11 @@ class DIWorker(ConsumerMixin):
             importer = get_importer_class(cc_type, export_scheme)(
                 **importer_params)
             importer.import_report()
-            self.rest_cl.report_import_update(
-                self.report_import_id, {'state': 'completed'})
+            rest_cl.report_import_update(
+                report_import_id, {'state': 'completed'})
             if start_last_import_ts == 0 and cc_type != ENVIRONMENT_CLOUD_TYPE:
                 all_reports_finished = True
-                _, resp = self.rest_cl.cloud_account_list(organization_id)
+                _, resp = rest_cl.cloud_account_list(organization_id)
                 for acc in resp['cloud_accounts']:
                     if (acc['type'] != ENVIRONMENT_CLOUD_TYPE and
                             acc['last_import_at'] == 0):
@@ -185,8 +211,8 @@ class DIWorker(ConsumerMixin):
                 # pylint: disable=E1101
                 LOG.error('Mongo exception details: %s', exc.details)
             reason = str(exc)
-            self.rest_cl.report_import_update(
-                self.report_import_id,
+            rest_cl.report_import_update(
+                report_import_id,
                 {'state': 'failed', 'state_reason': reason}
             )
             now = int(time.time())
@@ -215,22 +241,39 @@ class DIWorker(ConsumerMixin):
             'organization.report_import.failed')
 
     def process_task(self, body, message):
+        self.executor.submit(self._process_task, body, message)
+
+    def _process_task(self, body, message):
+        config_cl = self.get_config_cl(self.config_cl_params)
+        rest_cl = self.get_rest_cl(config_cl)
+        mongo_cl = self.get_mongo_cl(config_cl)
+        clickhouse_cl = self.get_clickhouse_cl(config_cl)
         try:
-            self.report_import(body)
+            self.report_import(body, config_cl=config_cl, rest_cl=rest_cl,
+                               mongo_cl=mongo_cl, clickhouse_cl=clickhouse_cl)
         except Exception as exc:
             LOG.exception('Data import failed: %s', str(exc))
-        self.report_import_id = None
+        finally:
+            mongo_cl.close()
+            clickhouse_cl.close()
+            rest_cl.close()
+            with self.active_reports_lock:
+                self.active_report_import_ids.discard(body.get('report_import_id'))
         message.ack()
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(InsecureRequestWarning)
-    setup_logging(loglevel='INFO', loggers=[''])
-
-    config_cl = ConfigClient(
-        host=os.environ.get('HX_ETCD_HOST'),
-        port=int(os.environ.get('HX_ETCD_PORT')),
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(threadName)s] %(levelname)s: %(message)s'
     )
+
+    config_cl_params = {
+        'host': os.environ.get('HX_ETCD_HOST'),
+        'port': int(os.environ.get('HX_ETCD_PORT'))
+    }
+    config_cl = ConfigClient(**config_cl_params)
     config_cl.wait_configured()
     migrator = Migrator(config_cl, 'restapi', 'diworker/diworker/migrations')
     # Use lock to avoid migration problems with several diworkers
@@ -240,9 +283,13 @@ if __name__ == '__main__':
     LOG.info("starting worker")
     conn_str = 'amqp://{user}:{pass}@{host}:{port}'.format(
         **config_cl.read_branch('/rabbit'))
+    dw_settings = config_cl.diworker_settings()
     with QConnection(conn_str) as conn:
         try:
-            worker = DIWorker(conn, config_cl)
+            worker = DIWorker(conn, conn_str, dw_settings, config_cl_params)
             worker.run()
         except KeyboardInterrupt:
-            print('bye bye')
+            worker.running = False
+            worker.executor.shutdown(wait=True)
+            worker.thread.join()
+            LOG.info("Shutdown worker")

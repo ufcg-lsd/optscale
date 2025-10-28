@@ -1,44 +1,76 @@
 import { useMemo } from "react";
+import type { InferY, InferX, Point, ComputedSeries, LineSeries, PointColorContext, SliceData } from "@nivo/line";
 
-export const usePoints = ({ series, getPointColor, getPointBorderColor, formatX, formatY }) =>
+export const usePoints = <Series extends LineSeries>({
+  series,
+  getPointColor,
+  getPointBorderColor,
+  formatX,
+  formatY
+}: {
+  series: ComputedSeries<Series>[];
+  getPointColor: (context: PointColorContext<Series>) => string;
+  getPointBorderColor: (point: Omit<Point<Series>, "borderColor">) => string;
+  formatX: (x: InferX<Series>) => string;
+  formatY: (y: InferY<Series>) => string;
+}) =>
   useMemo(
     () =>
       series.reduce(
-        (acc, serie) => [
+        (acc, seriesItem, seriesIndex) => [
           ...acc,
-          ...serie.data
-            .filter(({ position: { x, y } }) => x !== null && y !== null)
-            .map((datum, i) => {
-              const point = {
-                id: `${serie.id}.${i}`,
-                index: acc.length + i,
-                serieId: serie.id,
-                serieColor: serie.color,
+          ...seriesItem.data
+            .filter((datum) => datum.position.x !== null && datum.position.y !== null)
+            .map((datum, indexInSeries) => {
+              const point: Omit<Point<Series>, "color" | "borderColor"> & {
+                color?: string;
+                borderColor?: string;
+              } = {
+                id: `${seriesItem.id}.${indexInSeries}`,
+                indexInSeries,
+                absIndex: acc.length + indexInSeries,
+                seriesIndex,
+                seriesId: seriesItem.id,
+                seriesColor: seriesItem.color,
                 x: datum.position.x,
-                y: datum.position.y
+                y: datum.position.y,
+                data: {
+                  ...datum.data,
+                  xFormatted: formatX(datum.data.x as InferX<Series>),
+                  yFormatted: formatY(datum.data.y as InferY<Series>)
+                }
               };
-              point.color = getPointColor(serie);
-              point.borderColor = getPointBorderColor(point);
-              point.data = {
-                ...datum.data,
-                xFormatted: formatX(datum.data.x),
-                yFormatted: formatY(datum.data.y)
-              };
+              point.color = getPointColor({
+                series: seriesItem,
+                point: point as Omit<Point<Series>, "color" | "borderColor">
+              });
+              point.borderColor = getPointBorderColor(point as Omit<Point<Series>, "borderColor">);
 
-              return point;
+              return point as Point<Series>;
             })
         ],
-        []
+        [] as Point<Series>[]
       ),
     [series, getPointColor, getPointBorderColor, formatX, formatY]
   );
 
-export const useSlices = ({ enableSlices, points, width, height }) =>
+export const useSlices = <Series extends LineSeries>({
+  enableSlices,
+  points,
+  width,
+  height
+}: {
+  enableSlices: boolean;
+  points: Point<Series>[];
+  width: number;
+  height: number;
+}) =>
   useMemo(() => {
-    if (enableSlices === false) return [];
+    if (enableSlices === false) {
+      return [];
+    }
 
     const map = new Map();
-
     points.forEach((point) => {
       if (point.data.x === null || point.data.y === null) {
         return;
@@ -79,6 +111,6 @@ export const useSlices = ({ enableSlices, points, width, height }) =>
           width: sliceWidth,
           height,
           points: slicePoints.reverse()
-        };
+        } as SliceData<Series>;
       });
   }, [enableSlices, height, points, width]);

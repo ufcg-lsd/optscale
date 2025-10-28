@@ -4,7 +4,7 @@ import FormattedMoney from "components/FormattedMoney";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import ResourceUsageFormattedNumber from "components/ResourceUsageFormattedNumber";
 import { intl } from "translations/react-intl-config";
-import { getLength, isEmpty, splitIntoTwoChunks } from "utils/arrays";
+import { getLength, isEmptyArray, splitIntoTwoChunks } from "utils/arrays";
 import { FORMATTED_MONEY_TYPES, ONE_CENT } from "utils/constants";
 
 const DISPLAYED_TOOLTIP_ITEMS = 10;
@@ -25,7 +25,7 @@ const ResourceRawExpensesChartTooltipBody = ({ slice, stacked }) => {
       {points.map((point) => (
         <KeyValueLabel
           key={point.id}
-          keyText={<CircleLabel figureColor={point.serieColor} label={point.serieId} textFirst={false} />}
+          keyText={<CircleLabel figureColor={point.seriesColor} label={point.seriesId} textFirst={false} />}
           value={
             <>
               <FormattedMoney value={point.data?.y} type={FORMATTED_MONEY_TYPES.COMMON} />
@@ -45,7 +45,7 @@ const ResourceRawExpensesChartTooltipBody = ({ slice, stacked }) => {
           gutterBottom
         />
       ))}
-      {!isEmpty(limitExceededPoints) && (
+      {!isEmptyArray(limitExceededPoints) && (
         <KeyValueLabel
           keyText={intl.formatMessage({ id: "otherCategories" })}
           value={

@@ -3,9 +3,9 @@
 
 import { common } from "@mui/material/colors";
 import { createTheme, alpha, darken, lighten } from "@mui/material/styles";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { customResponsiveFontSizes } from "utils/fonts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const getLighten = (color, lightenAlpha = 0.2) => lighten(color, lightenAlpha);
 const getDarken = (color, darkenAlpha = 0.3) => darken(color, darkenAlpha);

@@ -18,7 +18,9 @@ import {
   QueryEmployeeEmailsArgs,
   QueryRelevantFlavorsArgs,
   QueryCleanExpensesArgs,
-  QueryCloudPoliciesArgs
+  QueryCloudPoliciesArgs,
+  QueryMetaBreakdownArgs,
+  QueryAvailableFiltersArgs
 } from "../../graphql/__generated__/types/restapi";
 import { getParams } from "../../utils/getParams.js";
 
@@ -282,6 +284,16 @@ class RestApiClient extends BaseClient {
     return resourceCountBreakdown;
   }
 
+  async getMetaBreakdown(organizationId: QueryMetaBreakdownArgs["organizationId"], params: QueryMetaBreakdownArgs["params"]) {
+    const path = `organizations/${organizationId}/breakdown_meta`;
+
+    const metaBreakdown = await this.get(path, {
+      params: getParams(params)
+    });
+
+    return metaBreakdown;
+  }
+
   async getExpensesDailyBreakdown(
     organizationId: QueryExpensesDailyBreakdownArgs["organizationId"],
     params: QueryExpensesDailyBreakdownArgs["params"]
@@ -341,6 +353,19 @@ class RestApiClient extends BaseClient {
     });
 
     return cloudPolicies;
+  }
+
+  async getAvailableFilters(
+    organizationId: QueryAvailableFiltersArgs["organizationId"],
+    params: QueryAvailableFiltersArgs["params"]
+  ) {
+    const path = `organizations/${organizationId}/available_filters`;
+
+    const availableFilters = await this.get(path, {
+      params: getParams(params)
+    });
+
+    return availableFilters.filter_values;
   }
 }
 

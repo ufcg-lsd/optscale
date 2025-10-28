@@ -8,22 +8,22 @@ docker build -t ${TEST_IMAGE} --build-arg BUILDTAG=${BUILD_TAG} -f jira_bus/Dock
 
 echo "Pycodestyle tests>>>"
 docker run -i --rm ${TEST_IMAGE} \
-    bash -c "pycodestyle --max-line-length=120 jira_bus"
+    bash -c "uv --project jira_bus run pycodestyle --exclude=.venv --max-line-length=120 jira_bus"
 echo "<<<Pycodestyle tests"
 
 echo "Pylint tests>>>"
 docker run -i --rm ${TEST_IMAGE} bash -c \
-    "pylint --rcfile=jira_bus/.pylintrc --fail-under=9 --fail-on=E,F ./jira_bus"
+    "uv --project jira_bus run pylint --rcfile=jira_bus/.pylintrc --fail-under=9 --fail-on=E,F ./jira_bus"
 echo "<<Pylint tests"
 
 echo "Alembic down revision tests>>>"
 docker run -i --rm ${TEST_IMAGE} bash -c \
-    "tools/check_alembic_down_revisions/check_alembic_down_revisions.py --alembic_versions_path jira_bus/jira_bus_server/alembic/versions"
+    "uv --project jira_bus run tools/check_alembic_down_revisions/check_alembic_down_revisions.py --alembic_versions_path jira_bus/jira_bus_server/alembic/versions"
 echo "<<Alembic down revision tests"
 
 echo "Unit tests>>>"
 docker run -i --rm ${TEST_IMAGE} \
-    bash -c "python3 -m unittest discover ./jira_bus/jira_bus_server/tests"
+    bash -c "uv --project jira_bus run python -m unittest discover ./jira_bus/jira_bus_server/tests"
 echo "<<<Unit tests"
 
 docker rmi ${TEST_IMAGE}

@@ -15,7 +15,7 @@ import {
   DOCS_HYSTAX_CLUSTERS,
   DOCS_HYSTAX_CLEANUP_SCRIPTS
 } from "urls";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 export default {
   component: ExternalLinks
@@ -112,7 +112,7 @@ export const basic = () => {
       accessorKey: "usages",
       enableSorting: false,
       cell: ({ row: { original } }) =>
-        !isEmpty(original.usages) && (
+        !isEmptyArray(original.usages) && (
           <ul>
             {original.usages.map((usage) => (
               <li>{usage}</li>

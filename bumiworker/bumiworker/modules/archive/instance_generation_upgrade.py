@@ -47,6 +47,9 @@ class InstanceGenerationUpgrade(ArchiveBase,
                 generation_params['preinstalled'] = preinstalled
         if meter_id and cloud_type == 'azure_cnr':
             generation_params['meter_id'] = meter_id
+        if cloud_type == 'alibaba_cnr':
+            generation_params['cloud_account_id'] = instance[
+                'cloud_account_id']
         currency = self.get_organization_currency()
         current_daily_cost = self.get_current_daily_cost(raw_info)
         try:

@@ -17,7 +17,7 @@ import { useIsAllowed } from "hooks/useAllowedActions";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
 import { getCreateAssignmentRuleUrl, getEditAssignmentRuleUrl } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { conditions, name, poolOwner, priority } from "./columns";
 import prepareData from "./utils/prepareData";
 
