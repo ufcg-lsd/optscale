@@ -159,8 +159,6 @@ class ResourceFormatMixin:
             resource['meta']['cloud_console_link'] = None
         resource['tags'] = encoded_tags(resource.get('tags'), True)
         resource['env_properties'] = encoded_map(resource.get('env_properties'), True)
-        if resource.get('meta', {}).get('name') and not resource.get('name'):
-            resource['name'] = resource['meta']['name']
 
         if last_run_ts is None and not is_report_import:
             if resource.get('cloud_account_id'):
