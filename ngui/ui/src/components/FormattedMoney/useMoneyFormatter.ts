@@ -37,7 +37,7 @@ const formatCompact =
     if (absoluteValue >= COMPACT_VALUE_THRESHOLD) {
       return formatCompactMoney(formatter)({ value, format });
     }
-    return absoluteValue < ONE_DOLLAR ? formatLessThanOne(formatter)({ format }) : formatter(value, { format });
+    return absoluteValue < ONE_CENT ? formatApproximatelyZero(formatter)({ format }) : formatter(value, { format });
   };
 
 const formatTiny =
