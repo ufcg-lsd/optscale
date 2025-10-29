@@ -9,7 +9,7 @@ dependencies = [
     "config-client",
     "herald-client",
     "insider-client",
-    "kombu==5.3.4",
+    "kombu==5.5.4",
     "metroculus-client",
     "optscale-data",
     "optscale-time",

@@ -2,7 +2,7 @@
 name = "trapper-scheduler"
 version = "0.1.0"
 requires-python = ">=3.12.11,<3.13"
-dependencies = ["config-client", "kombu==5.3.4", "restapi-client"]
+dependencies = ["config-client", "kombu==5.5.4", "restapi-client"]
 
 [tool.uv.sources]
 config-client = { path = "../../optscale_client/config_client" }

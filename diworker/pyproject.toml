@@ -9,7 +9,7 @@ dependencies = [
     "config-client",
     "herald-client",
     "insider-client",
-    "kombu==5.4.2",
+    "kombu==5.5.4",
     "mongodb-migrations==0.7.0",
     "optscale-data",
     "optscale-time",
