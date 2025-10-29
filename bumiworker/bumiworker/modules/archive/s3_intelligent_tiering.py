@@ -7,6 +7,8 @@ from bumiworker.bumiworker.modules.recommendations.constants import (
 from bumiworker.bumiworker.modules.recommendations.s3_intelligent_tiering import (
     S3IntelligentTiering as S3IntelligentTieringRecommendation,
 )
+
+
 class S3IntelligentTiering(ArchiveBase, S3IntelligentTieringRecommendation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -16,9 +18,11 @@ class S3IntelligentTiering(ArchiveBase, S3IntelligentTieringRecommendation):
         self.reason_description_map[
             ArchiveReason.RECOMMENDATION_IRRELEVANT
         ] = "bucket no longer matches intelligent-tiering criteria"
+
     @property
     def supported_cloud_types(self):
         return list(self.SUPPORTED_CLOUD_TYPES)
+
     def _is_it_enabled(self, doc: Dict) -> bool:
         status = doc.get("it_status_bucket")
         if status is None:
@@ -26,8 +30,8 @@ class S3IntelligentTiering(ArchiveBase, S3IntelligentTieringRecommendation):
         if status is None:
             return False
         return str(status).lower() in IT_POSITIVE_STATUS
-    def _get(self, previous_options, optimizations, cloud_accounts_map,
-             **kwargs):
+
+    def _get(self, previous_options, optimizations, cloud_accounts_map, **kwargs):
         current_options = self.get_options()
         current_excluded_pools = set(
             (current_options.get("excluded_pools") or {}).keys()
@@ -88,6 +92,8 @@ class S3IntelligentTiering(ArchiveBase, S3IntelligentTieringRecommendation):
             self._set_reason_properties(optimization, reason)
             result.append(optimization)
         return result
+
+
 def main(organization_id, config_client, created_at, **kwargs):
     return S3IntelligentTiering(
         organization_id, config_client, created_at
