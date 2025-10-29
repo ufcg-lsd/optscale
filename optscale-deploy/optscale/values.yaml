@@ -2,9 +2,17 @@
 
 tag: &tag local
 
+global:
+  storageclass:
+
 etcd:
   name: &etcd_name etcd
   replicaCount: 1
+  pod:
+    busyboxImage: "busybox:1.30.0"
+  job:
+    containers:
+      image: configurator:local
   image:
     id:
     repository: *etcd_name
@@ -42,6 +50,10 @@ mongo:
   name: &mongo_name mongo
   replicaCount: 1
   cache_size: 1.0
+  statefulSet:
+    spec:
+      initContainers:
+        image: "busybox:1.30.0"
   image:
     id:
     repository: *mongo_name
@@ -63,6 +75,12 @@ rabbitmq:
   replicaCount: 1
   mnesiaSize: 10Gi
   memory_limit: 512
+  statefulSet:
+    spec:
+      initContainers:
+        image: "busybox:1.30.0"
+      containers:
+        image: "rabbitmq:3.8.2-management-alpine"
   image:
     id:
     pullPolicy: IfNotPresent
@@ -725,6 +743,10 @@ thanos_receive:
   memory_limit: 8192
   cpu_limit: 2
   maxConcurrency: 20
+  statefulSet:
+    spec:
+      containers:
+        image: "thanosio/thanos:v0.39.1"
   image:
     id:
     pullPolicy: IfNotPresent
@@ -742,6 +764,10 @@ thanos_storegateway:
   replicaCount: 1
   # should be half of compactor deleteDelay
   ignoreDeletionMarksDelay: "3h"
+  statefulSet:
+    spec:
+      containers:
+        image: "thanosio/thanos:v0.39.1"
   image:
     id:
     pullPolicy: IfNotPresent
@@ -754,6 +780,11 @@ thanos_storegateway:
 thanos_query:
   name: &thanos_query_name thanos-query
   replicaCount: 1
+  deployment:
+    spec:
+      template:
+        containers:
+          image: "thanosio/thanos:v0.39.1"
   image:
     id:
     pullPolicy: IfNotPresent
@@ -781,6 +812,10 @@ thanos_compactor:
     successfulJobsHistoryLimit: 1
     failedJobsHistoryLimit: 2
     backoffLimit: 0
+  job:
+    spec:
+      containers:
+        image: "thanosio/thanos:v0.39.1"
   image:
     id:
     pullPolicy: IfNotPresent
@@ -793,6 +828,10 @@ thanos_web:
   name: &thanos_web_name thanos-web
   refreshInterval: 10m
   httpPort: &thanos_web_http_port 10902
+  statefulSet:
+    spec:
+      containers:
+        image: "thanosio/thanos:v0.39.1"
   image:
     id:
     pullPolicy: IfNotPresent

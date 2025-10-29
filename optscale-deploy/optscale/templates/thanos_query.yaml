@@ -67,7 +67,7 @@ spec:
 {{ include "wait_for_thanos_service" .Values.thanos_storegateway | indent 6 }}
       containers:
         - name: query
-          image: "thanosio/thanos:v0.39.1"
+          image: {{ $config.deployment.spec.template.containers.image | quote }}
           imagePullPolicy: "{{ $config.image.pullPolicy }}"
           command:
             - thanos

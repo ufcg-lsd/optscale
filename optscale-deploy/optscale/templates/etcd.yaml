@@ -1,5 +1,8 @@
 {{- $config := .Values.etcd }}
 {{- if .Values.ha }}
+{{- $sc := default "" .Values.global.storageclass }}
+
+{{- if not $sc }}
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -9,6 +12,7 @@ metadata:
   name: local-storage
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
+{{- end }}
 
 {{- range $index, $name := .Values.nodes }}
 ---
@@ -20,7 +24,7 @@ metadata:
     type: local
 spec:
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: {{ default "local-storage" $sc }}
   volumeMode: Filesystem
   capacity:
     storage: 10Gi
@@ -47,7 +51,7 @@ spec:
   repository: "etcd"
   version: "local"
   pod:
-    busyboxImage: "busybox:1.30.0"
+    busyboxImage: {{ $config.pod.busyboxImage | quote }}
     etcdEnv:
       - name: ETCD_HEARTBEAT_INTERVAL
         value: {{ $config.hb_interval | quote }}
@@ -192,7 +196,7 @@ spec:
     spec:
       containers:
       - name: configurator
-        image: configurator:local
+        image: {{ $config.job.containers.image }}
         volumeMounts:
         - name: config-volume
           mountPath: /config
