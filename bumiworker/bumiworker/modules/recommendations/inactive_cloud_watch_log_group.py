@@ -11,9 +11,10 @@ SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
 LOG = logging.getLogger(__name__)
 
-BYTES_PER_GIB = 1024 ** 3  
+BYTES_PER_GIB = 1024 ** 3
 RECENT_WINDOW_DAYS_DEFAULT = 30
 DEAD_RESOURCE_DAYS_DEFAULT = 30
+
 
 class MetricKey(str, Enum):
     INGESTION = "IngestionBytes"
@@ -25,6 +26,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
     """
     Identify inactive CloudWatch Log Groups and estimate potential savings.
     """
+
     def __init__(self, organization_id, config_client, created_at):
         super().__init__(organization_id, config_client, created_at)
         self.option_ordered_map = OrderedDict({
@@ -36,7 +38,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             'skip_cloud_accounts': {'default': []}
         })
 
-
     def _utc_now(self) -> datetime:
         return datetime.now(timezone.utc)
 
@@ -47,7 +48,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             if isinstance(ts, (int, float)):
                 return datetime.fromtimestamp(float(ts), tz=timezone.utc)
             s = str(ts)
-            if s.endswith("Z"): 
+            if s.endswith("Z"):
                 s = s.replace("Z", "+00:00")
             dt = datetime.fromisoformat(s)
             return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
@@ -96,54 +97,63 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         Check if the log group is inactive.
 
         Log group is inactive if:
-            - No lifecycle rules AND 
+            - No lifecycle rules AND
             - No recent ingestion, OR
             - Dead resource detected
         """
         try:
-            retention_days = self._get_from_resource(resource, 'retention_in_days')
+            retention_days = self._get_from_resource(
+                resource, 'retention_in_days')
             has_lifecycle_rules = retention_days is not None
 
-            last_collected_at_raw = self._get_from_resource(resource, 'last_collected_at')
+            last_collected_at_raw = self._get_from_resource(
+                resource, 'last_collected_at')
             last_collection = self._parse_ts(last_collected_at_raw)
             is_dead_resource = False
             if last_collection is not None:
-                is_dead_resource = (self._utc_now() - last_collection).days > dead_resource_days
+                is_dead_resource = (
+                    self._utc_now() -
+                    last_collection).days > dead_resource_days
 
             metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(MetricKey.INGESTION.value, []) or []
+            ingestion_metrics = metrics.get(
+                MetricKey.INGESTION.value, []) or []
             incoming_events = metrics.get(MetricKey.EVENTS.value, []) or []
 
             recent_ingestion = self._sum_metrics_last_month(ingestion_metrics)
             recent_events = self._sum_metrics_last_month(incoming_events)
-            no_recent_ingestion = (recent_ingestion == 0 and recent_events == 0)
+            no_recent_ingestion = (
+                recent_ingestion == 0 and recent_events == 0)
 
-            return (not has_lifecycle_rules and (no_recent_ingestion or is_dead_resource))
+            return (
+                not has_lifecycle_rules and (
+                    no_recent_ingestion or is_dead_resource))
 
         except Exception:
             return False
 
     def _estimate_saving(self, resource: Dict) -> float:
-
         """
         Calculate potential monthly savings for an inactive log group based on AWS pricing,
         without considering lifecycle policy changes.
-        
+
         Uses three components:
         - Ingestion (IngestionBytes): USD 0.50 per GB (last 30 days)
         - Storage (stored_bytes): USD 0.03 per GB-month compressed (apply 0.15 compression factor)
         - Query (QueryBytes): USD 0.005 per GB scanned (last 30 days)
         """
-        
+
         try:
-            stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
+            stored_bytes = self._get_from_resource(
+                resource, 'stored_bytes', 0) or 0
 
             uncompressed_gb = stored_bytes / BYTES_PER_GIB
             compressed_gb = uncompressed_gb * CWL_PRICING.compression_factor
             storage_monthly_cost = compressed_gb * CWL_PRICING.storage_usd_per_gb_month
 
             metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(MetricKey.INGESTION.value, []) or []
+            ingestion_metrics = metrics.get(
+                MetricKey.INGESTION.value, []) or []
             query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
 
             ingestion_bytes = self._sum_metrics_last_month(ingestion_metrics)
@@ -159,8 +169,9 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return round(total, 2)
         except Exception:
             return 0.0
-    
-    def _aggregate_resources(self, cloud_account_id: str) -> List[Dict[str, Any]]:
+
+    def _aggregate_resources(
+            self, cloud_account_id: str) -> List[Dict[str, Any]]:
         """
         Pull log group docs for the given cloud account with only the fields we need
         for candidate selection and saving computation.
@@ -203,17 +214,19 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         Get the inactive log groups.
         """
         (dead_resource_days,
-         excluded_pools, 
+         excluded_pools,
          skip_cloud_accounts) = self.get_options_values()
 
-        ca_map = self.get_cloud_accounts(SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
+        ca_map = self.get_cloud_accounts(
+            SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
 
         result: List[Dict[str, Any]] = []
 
         for ca in ca_map:
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
-                LOG.warning("Skipping cloud account with unknown structure: %r", ca)
+                LOG.warning(
+                    "Skipping cloud account with unknown structure: %r", ca)
                 continue
             if ca_id in skip_cloud_accounts:
                 continue
@@ -231,12 +244,14 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 ca_info = ca_map.get(r['cloud_account_id'], {})
 
                 metrics = self._get_metrics(r)
-                ingestion_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.INGESTION.value, []))
-                query_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.QUERY.value, []))
+                ingestion_bytes_30d = self._sum_metrics_last_month(
+                    metrics.get(MetricKey.INGESTION.value, []))
+                query_bytes_30d = self._sum_metrics_last_month(
+                    metrics.get(MetricKey.QUERY.value, []))
 
                 result.append({
                     'cloud_resource_id': r.get('resource_id'),
-                    'resource_id': r.get('resource_id'),  
+                    'resource_id': r.get('resource_id'),
                     'resource_name': r.get('name'),
                     'log_group_name': r.get('log_group_name'),
                     'cloud_account_id': r.get('cloud_account_id'),
