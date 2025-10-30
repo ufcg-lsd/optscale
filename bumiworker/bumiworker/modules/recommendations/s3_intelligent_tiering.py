@@ -16,6 +16,7 @@ from .constants import (
 
 LOG = logging.getLogger(__name__)
 
+
 def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
     """
     Normalize 'tiers' into [{'name': <tier_name>, 'gb': <float>}].

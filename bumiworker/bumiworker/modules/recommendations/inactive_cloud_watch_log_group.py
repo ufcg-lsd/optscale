@@ -234,10 +234,9 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 ingestion_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.INGESTION.value, []))
                 query_bytes_30d = self._sum_metrics_last_month(metrics.get(MetricKey.QUERY.value, []))
 
-
                 result.append({
                     'cloud_resource_id': r.get('resource_id'),
-                    'resource_id': r.get('resource_id'),    
+                    'resource_id': r.get('resource_id'),  
                     'resource_name': r.get('name'),
                     'log_group_name': r.get('log_group_name'),
                     'cloud_account_id': r.get('cloud_account_id'),
