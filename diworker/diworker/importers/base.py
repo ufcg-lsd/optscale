@@ -93,7 +93,8 @@ class BaseReportImporter:
     @property
     def need_extend_report_interval(self):
         # decided not to consider the beginning of the month because we always
-        # take a period of at least three months in the case of the first report
+        # take a period of at least three months in the case of the first
+        # report
         if self.cloud_acc['last_import_at'] != 0:
             return False
         return True
@@ -360,14 +361,14 @@ class BaseReportImporter:
         if additional:
             grp_stage.update(additional)
         return self.mongo_raw.aggregate([
-                {'$match': {
-                    '$and': filters,
-                }},
-                {'$group': {
-                    '_id': grp_stage,
-                    'expenses': {'$push': '$$ROOT'}
-                }},
-            ], allowDiskUse=True)
+            {'$match': {
+                '$and': filters,
+            }},
+            {'$group': {
+                '_id': grp_stage,
+                'expenses': {'$push': '$$ROOT'}
+            }},
+        ], allowDiskUse=True)
 
     def _get_billing_period_filters(self, period_start):
         return {'start_date': {'$gte': period_start}}
@@ -541,7 +542,7 @@ class BaseReportImporter:
         r = self.mongo_raw.delete_many(query)
         LOG.info('Raw expenses for cloud account %s since %s were '
                  'deleted: %s' % (
-                    cloud_account_id, self.period_start, r.raw_result))
+                     cloud_account_id, self.period_start, r.raw_result))
 
     def create_traffic_processing_tasks(self):
         return
@@ -673,7 +674,7 @@ class CSVBaseReportImporter(BaseReportImporter):
         new_report_path = os.path.basename(report_path)
         if new_report_path.endswith(GZIP_ENDING):
             new_report_path = new_report_path[
-                              :len(new_report_path) - len(GZIP_ENDING)]
+                :len(new_report_path) - len(GZIP_ENDING)]
         else:
             new_report_path = str(uuid.uuid4())
         new_report_path = os.path.join(dest_dir, new_report_path)
@@ -749,7 +750,8 @@ class CSVBaseReportImporter(BaseReportImporter):
             super().data_import()
 
     def load_raw_data(self):
-        account_id_ca_id_map = {self.cloud_acc['account_id']: self.cloud_acc_id}
+        account_id_ca_id_map = {
+            self.cloud_acc['account_id']: self.cloud_acc_id}
         report_files = []
         for r in self.report_files.values():
             report_files.extend(r)
@@ -769,7 +771,8 @@ class CSVBaseReportImporter(BaseReportImporter):
         for cc_id in self.detected_cloud_accounts:
             for billing_period in sorted(billing_periods, reverse=True):
                 resource_ids = self.get_resource_ids(cc_id, billing_period)
-                self._generate_clean_records(resource_ids, cc_id, billing_period)
+                self._generate_clean_records(
+                    resource_ids, cc_id, billing_period)
 
     def cleanup(self):
         shutil.rmtree(self.reports_dir, ignore_errors=True)
