@@ -11,7 +11,7 @@ SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
 LOG = logging.getLogger(__name__)
 
-BYTES_PER_GIB = 1024 ** 3  
+BYTES_PER_GIB = 1024 ** 3
 RECENT_WINDOW_DAYS = 30
 DEFAULT_DAYS_THRESHOLD = 7
 
@@ -72,7 +72,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return metrics
         return (resource.get('meta', {}) or {}).get('metrics', {}) or {}
 
-    def _has_recent_metrics(self, series: List[Dict], days_threshold: int = DEFAULT_DAYS_THRESHOLD) -> bool:
+    def _has_recent_metrics(
+            self,
+            series: List[Dict],
+            days_threshold: int = DEFAULT_DAYS_THRESHOLD) -> bool:
         """
         Check if the metric series has a timestamp within the recent window.
         """
@@ -89,7 +92,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             if t >= cutoff_recent_window:
                 return True
         return False
-    
+
     def _sum_metrics_last_month(self, series: List[Dict]) -> float:
         """
         Sum metric values within the recent window (RECENT_WINDOW_DAYS).
@@ -118,17 +121,22 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         """
         try:
 
-            retention_days = self._get_from_resource(resource, 'retention_in_days')
+            retention_days = self._get_from_resource(
+                resource, 'retention_in_days')
             has_lifecycle_rules = retention_days is not None
 
             metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(MetricKey.INGESTION.value, []) or []
+            ingestion_metrics = metrics.get(
+                MetricKey.INGESTION.value, []) or []
             query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
 
-            has_recent_ingestion = self._has_recent_metrics(ingestion_metrics, days_threshold)
-            has_recent_query = self._has_recent_metrics(query_metrics, days_threshold)
+            has_recent_ingestion = self._has_recent_metrics(
+                ingestion_metrics, days_threshold)
+            has_recent_query = self._has_recent_metrics(
+                query_metrics, days_threshold)
 
-            return not (has_lifecycle_rules or has_recent_ingestion or has_recent_query)
+            return not (
+                has_lifecycle_rules or has_recent_ingestion or has_recent_query)
 
         except Exception:
             return False
@@ -209,8 +217,11 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         if isinstance(ca, dict):
             return ca.get("id") or ca.get("_id")
         return ""
-    
-    def _count_occurrences(self, series: List[Dict], days_threshold: int) -> int:
+
+    def _count_occurrences(
+            self,
+            series: List[Dict],
+            days_threshold: int) -> int:
         """
         Count the occurrences of the metric.
         """
@@ -233,7 +244,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         Get the inactive log groups.
         """
         (days_threshold,
-         excluded_pools, 
+         excluded_pools,
          skip_cloud_accounts) = self.get_options_values()
 
         ca_map = self.get_cloud_accounts(
@@ -264,8 +275,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
 
                 metrics = self._get_metrics(r)
 
-                ingestion_occurrences = self._count_occurrences(metrics.get(MetricKey.INGESTION.value, []), days_threshold)
-                query_occurrences = self._count_occurrences(metrics.get(MetricKey.QUERY.value, []), days_threshold)
+                ingestion_occurrences = self._count_occurrences(
+                    metrics.get(MetricKey.INGESTION.value, []), days_threshold)
+                query_occurrences = self._count_occurrences(
+                    metrics.get(MetricKey.QUERY.value, []), days_threshold)
 
                 result.append({
                     'cloud_resource_id': r.get('resource_id'),
