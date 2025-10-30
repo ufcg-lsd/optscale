@@ -15,6 +15,7 @@ BYTES_PER_GIB = 1024 ** 3
 RECENT_WINDOW_DAYS = 30
 DEFAULT_DAYS_THRESHOLD = 7
 
+
 class MetricKey(str, Enum):
     INGESTION = "ingestion"
     QUERY = "query"
@@ -24,6 +25,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
     """
     Identify inactive CloudWatch Log Groups and estimate potential savings.
     """
+
     def __init__(self, organization_id, config_client, created_at):
         super().__init__(organization_id, config_client, created_at)
         self.option_ordered_map = OrderedDict({
@@ -35,7 +37,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             'skip_cloud_accounts': {'default': []}
         })
 
-
     def _utc_now(self) -> datetime:
         return datetime.now(timezone.utc)
 
@@ -46,7 +47,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             if isinstance(ts, (int, float)):
                 return datetime.fromtimestamp(float(ts), tz=timezone.utc)
             s = str(ts)
-            if s.endswith("Z"): 
+            if s.endswith("Z"):
                 s = s.replace("Z", "+00:00")
             dt = datetime.fromisoformat(s)
             return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
@@ -133,26 +134,27 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return False
 
     def _estimate_saving(self, resource: Dict) -> float:
-
         """
         Calculate potential monthly savings for an inactive log group based on AWS pricing,
         without considering lifecycle policy changes.
-        
+
         Uses three components:
         - Ingestion (IngestionBytes): USD 0.50 per GB (last 30 days)
         - Storage (stored_bytes): USD 0.03 per GB-month compressed (apply 0.15 compression factor)
         - Query (QueryBytes): USD 0.005 per GB scanned (last 30 days)
         """
-        
+
         try:
-            stored_bytes = self._get_from_resource(resource, 'stored_bytes', 0) or 0
+            stored_bytes = self._get_from_resource(
+                resource, 'stored_bytes', 0) or 0
 
             uncompressed_gb = stored_bytes / BYTES_PER_GIB
             compressed_gb = uncompressed_gb * CWL_PRICING.compression_factor
             storage_monthly_cost = compressed_gb * CWL_PRICING.storage_usd_per_gb_month
 
             metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(MetricKey.INGESTION.value, []) or []
+            ingestion_metrics = metrics.get(
+                MetricKey.INGESTION.value, []) or []
             query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
 
             ingestion_bytes = self._sum_metrics_last_month(ingestion_metrics)
@@ -165,11 +167,12 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             query_cost = query_gb * CWL_PRICING.query_usd_per_gb
 
             total = storage_monthly_cost + ingestion_cost + query_cost
-            return float(total)
+            return round(total, 2)
         except Exception:
             return 0.0
-    
-    def _aggregate_resources(self, cloud_account_id: str) -> List[Dict[str, Any]]:
+
+    def _aggregate_resources(
+            self, cloud_account_id: str) -> List[Dict[str, Any]]:
         """
         Pull log group docs for the given cloud account with only the fields we need
         for candidate selection and saving computation.
@@ -185,8 +188,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 "_id": 0,
                 "resource_id": "$_id",
                 "cloud_account_id": 1,
-                "name": "$meta.name",
-                "log_group_name": "$meta.name",
+                "name": "$name",
+                "log_group_name": "$name",
                 "stored_bytes": "$meta.stored_bytes",
                 "metrics": "$meta.metrics",
                 "retention_in_days": "$meta.retention_in_days",
@@ -233,14 +236,16 @@ class InactiveCloudWatchLogGroup(ModuleBase):
          excluded_pools, 
          skip_cloud_accounts) = self.get_options_values()
 
-        ca_map = self.get_cloud_accounts(SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
+        ca_map = self.get_cloud_accounts(
+            SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
 
         result: List[Dict[str, Any]] = []
 
         for ca in ca_map:
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
-                LOG.warning("Skipping cloud account with unknown structure: %r", ca)
+                LOG.warning(
+                    "Skipping cloud account with unknown structure: %r", ca)
                 continue
             if ca_id in skip_cloud_accounts:
                 continue
@@ -264,7 +269,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
 
                 result.append({
                     'cloud_resource_id': r.get('resource_id'),
-                    'resource_id': r.get('resource_id'),    
+                    'resource_id': r.get('resource_id'),
                     'resource_name': r.get('name'),
                     'log_group_name': r.get('log_group_name'),
                     'cloud_account_id': r.get('cloud_account_id'),
