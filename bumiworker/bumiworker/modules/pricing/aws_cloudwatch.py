@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 
+
 @dataclass(frozen=True)
 class CloudWatchLogsPricing:
     storage_usd_per_gb_month: float
