@@ -479,12 +479,14 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_log_groups, (r,))
                 for r in self.list_regions()]
 
-    def _handle_specific_error(self, exc, error_code):
+    def _handle_specific_error(self, exc, error_code, additional_allowed=None):
         exc_error_code = exc.response['Error'].get('Code')
-        if exc_error_code == error_code:
+        allowed = {error_code}
+        if additional_allowed:
+            allowed.update(additional_allowed)
+        if exc_error_code in allowed:
             return
-        else:
-            raise exc
+        raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
       
@@ -513,11 +515,11 @@ class Aws(S3CloudMixin):
             public_access_block = bucket_s3.get_public_access_block(
                 Bucket=bucket_name)
         except ClientError as exc:
-            # We get this type of exception if we don't change any public
-            # access settings. So it's normal situation if config is
-            # not found
-            self._handle_specific_error(
-                exc, 'NoSuchPublicAccessBlockConfiguration')
+            allowed = {'NoSuchPublicAccessBlockConfiguration', 'AccessDenied', 'AllAccessDisabled'}
+            self._handle_specific_error(exc, 'NoSuchPublicAccessBlockConfiguration', allowed)
+            if exc.response['Error'].get('Code') in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning("[IT] Unable to read public access block for bucket %s due to %s",
+                            bucket_name, exc.response['Error'].get('Code'))
             
         access_block_config = public_access_block.get(
             'PublicAccessBlockConfiguration', {})
@@ -539,14 +541,24 @@ class Aws(S3CloudMixin):
                     'PolicyStatus', {}).get('IsPublic')
             except ClientError as exc:
                 # Bucket could be created without any bucket policy
-                self._handle_specific_error(exc, 'NoSuchBucketPolicy')
+                allowed = {'NoSuchBucketPolicy', 'AccessDenied', 'AllAccessDisabled'}
+                self._handle_specific_error(exc, 'NoSuchBucketPolicy', allowed)
+                if exc.response['Error'].get('Code') in {'AccessDenied', 'AllAccessDisabled'}:
+                    LOG.warning("[IT] Unable to read bucket policy status for %s due to %s",
+                                bucket_name, exc.response['Error'].get('Code'))
 
         if block_public_acls is False:
             try:
                 alc_map = bucket_s3.get_bucket_acl(Bucket=bucket_name)
             except ClientError as exc:
-                LOG.error(str(exc))
-                raise
+                err_code = exc.response['Error'].get('Code')
+                if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                    LOG.warning("[IT] Unable to read ACLs for bucket %s due to %s",
+                                bucket_name, err_code)
+                    alc_map = {'Grants': []}
+                else:
+                    LOG.error(str(exc))
+                    raise
             grants = alc_map.get('Grants', [])
             for grant in grants:
                 grantee = grant.get('Grantee', {})
@@ -614,19 +626,19 @@ class Aws(S3CloudMixin):
         """
 
         metadata = {
-        'intelligent_tiering_enabled': False,
-        'intelligent_tiering_configs': [],
-        'lifecycle_rules': [],
-        'has_lifecycle': False,
-        'storage_class_analysis': [],
-        'metrics_configurations': [],
-        'total_size_bytes': None,
-        'object_count': None,
-        'access_pattern': None,
-        'it_status_bucket': None,
-        'tiers': [],
-        'last_checked': []
-    }
+            'intelligent_tiering_enabled': False,
+            'intelligent_tiering_configs': [],
+            'lifecycle_rules': [],
+            'has_lifecycle': False,
+            'storage_class_analysis': [],
+            'metrics_configurations': [],
+            'total_size_bytes': None,
+            'object_count': None,
+            'access_pattern': None,
+            'it_status_bucket': 'unknown',
+            'tiers': [],
+            'last_checked': []
+        }
         try:
             it_configs = s3_client.list_bucket_intelligent_tiering_configurations(
                 Bucket=bucket_name
@@ -634,6 +646,7 @@ class Aws(S3CloudMixin):
             configs_list = it_configs.get('IntelligentTieringConfigurationList', [])
             metadata['intelligent_tiering_enabled'] = bool(configs_list)
             metadata['intelligent_tiering_configs'] = configs_list
+            LOG.debug('it_api configs_ok')
             # Check if IT applies to entire bucket (no filter or empty prefix)
             full_bucket = False
             for cfg in configs_list:
@@ -651,7 +664,14 @@ class Aws(S3CloudMixin):
                     break
             metadata['it_status_bucket'] = 'enabled' if (metadata['intelligent_tiering_enabled'] and full_bucket) else 'disabled'
         except ClientError as exc:
-            if exc.response['Error'].get('Code') != 'NoSuchConfiguration':
+            err_code = exc.response['Error'].get('Code')
+            if err_code != 'NoSuchConfiguration':
+                LOG.warning('it_api configs_err: %s', err_code)
+            else:
+                LOG.debug('it_api configs_err: %s', err_code)
+            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(f"[IT] Unable to read Intelligent-Tiering config for bucket {bucket_name} due to %s", err_code)
+            elif err_code != 'NoSuchConfiguration':
                 LOG.warning(f"[IT] Failed to get Intelligent-Tiering config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -660,8 +680,13 @@ class Aws(S3CloudMixin):
             )
             metadata['lifecycle_rules'] = lifecycle.get('Rules', [])
             metadata['has_lifecycle'] = True
+            LOG.debug('it_api lifecycle_ok')
         except ClientError as exc:
-            if exc.response['Error'].get('Code') != 'NoSuchLifecycleConfiguration':
+            err_code = exc.response['Error'].get('Code')
+            LOG.warning('it_api lifecycle_err: %s', err_code)
+            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(f"[IT] Unable to read lifecycle config for bucket %s due to %s", bucket_name, err_code)
+            elif err_code != 'NoSuchLifecycleConfiguration':
                 LOG.warning(f"[IT] Failed to get lifecycle config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -671,8 +696,14 @@ class Aws(S3CloudMixin):
             metadata['storage_class_analysis'] = analytics.get(
                 'AnalyticsConfigurationList', []
             )
+            LOG.debug('it_api analytics_ok')
         except ClientError as exc:
-            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchAnalyticsConfiguration']:
+            err_code = exc.response['Error'].get('Code')
+            allowed = {'NoSuchConfiguration', 'NoSuchAnalyticsConfiguration'}
+            LOG.warning('it_api analytics_err: %s', err_code)
+            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(f"[IT] Unable to read analytics config for bucket %s due to %s", bucket_name, err_code)
+            elif err_code not in allowed:
                 LOG.warning(f"[IT] Failed to get analytics config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -683,8 +714,12 @@ class Aws(S3CloudMixin):
                 'MetricsConfigurationList', []
             )
         except ClientError as exc:
-            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchMetricsConfiguration']:
-                LOG.warning(f"[IT] Failed to get metrics config for bucket {bucket_name}: {str(exc)}") 
+            err_code = exc.response['Error'].get('Code')
+            allowed = {'NoSuchConfiguration', 'NoSuchMetricsConfiguration'}
+            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(f"[IT] Unable to read metrics config for bucket %s due to %s", bucket_name, err_code)
+            elif err_code not in allowed:
+                LOG.warning(f"[IT] Failed to get metrics config for bucket {bucket_name}: {str(exc)}")
 
         # Get bucket size and object count via CloudWatch
         try:
@@ -924,8 +959,23 @@ class Aws(S3CloudMixin):
         return region
 
     def discover_bucket_info(self, bucket_name):
-        region_info = self.s3.get_bucket_location(Bucket=bucket_name)
-        region = self.get_region_from_location(region_info)
+        try:
+            region_info = self.s3.get_bucket_location(Bucket=bucket_name)
+            region = self.get_region_from_location(region_info)
+        except ClientError as exc:
+            err_code = exc.response['Error'].get('Code')
+            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(
+                    "[IT] Unable to get location for bucket %s due to %s; using default region fallback",
+                    bucket_name, err_code)
+                region = self.config.get('region_name', self.DEFAULT_S3_REGION_NAME) or 'us-east-1'
+            else:
+                raise
+        except Exception as exc:
+            LOG.warning(
+                "[IT] Unexpected error getting location for bucket %s: %s; using default region fallback",
+                bucket_name, str(exc))
+            region = self.config.get('region_name', self.DEFAULT_S3_REGION_NAME) or 'us-east-1'
 
         # get_bucket_tagging fails for eu-south-1 if region is not set
         # explicitly, so we find region first and initialize client for
@@ -940,15 +990,39 @@ class Aws(S3CloudMixin):
             tags = s3.get_bucket_tagging(Bucket=bucket_name)
         except ClientError as exc:
             err_code = exc.response['Error'].get('Code')
-            if err_code and err_code == 'NoSuchTagSet':
+            if err_code == 'NoSuchTagSet':
+                tags = {}
+            elif err_code in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning(
+                    "[IT] Unable to fetch tags for bucket %s due to %s",
+                    bucket_name, err_code)
                 tags = {}
             else:
                 raise
 
-        it_metadata = self._get_bucket_intelligent_tiering_metadata(
-            s3_client=s3,
-            bucket_name=bucket_name
-        )
+        try:
+            it_metadata = self._get_bucket_intelligent_tiering_metadata(
+                s3_client=s3,
+                bucket_name=bucket_name
+            )
+        except Exception as exc:
+            LOG.warning(
+                "[IT] Failed to collect intelligent-tiering metadata for bucket %s: %s",
+                bucket_name, str(exc))
+            it_metadata = {
+                'intelligent_tiering_enabled': False,
+                'intelligent_tiering_configs': [],
+                'lifecycle_rules': [],
+                'has_lifecycle': False,
+                'storage_class_analysis': [],
+                'metrics_configurations': [],
+                'total_size_bytes': None,
+                'object_count': None,
+                'access_pattern': None,
+                'it_status_bucket': 'unknown',
+                'tiers': [],
+                'last_checked': []
+            }
 
         bucket_resource = BucketResource(
             cloud_resource_id=bucket_name,
@@ -2297,7 +2371,7 @@ class Aws(S3CloudMixin):
                         'Dimensions': [{'Name': 'LogGroupName', 'Value': lg_name}],
                         'StartTime': start_time,
                         'EndTime': end_time,
-                        'Period': _ensure_period(metric_config['Period']),
+                        'Period': metric_config['Period'],
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }

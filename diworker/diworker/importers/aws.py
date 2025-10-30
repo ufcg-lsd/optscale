@@ -114,7 +114,15 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     @staticmethod
     def short_resource_id(resource_id):
-        return resource_id[resource_id.find('/') + 1:]
+        if not resource_id:
+            return resource_id
+        slash_pos = resource_id.find('/')
+        if slash_pos != -1:
+            short_id = resource_id[slash_pos + 1:]
+            return short_id or resource_id
+        if resource_id.startswith('arn:aws:s3:::'):
+            return resource_id.split(':::')[-1]
+        return resource_id
 
     @staticmethod
     def unzip_report(report_path, dest_dir):
@@ -1003,6 +1011,7 @@ class AWSReportImporter(CSVBaseReportImporter):
         :yield: LogGroupResource instances
         """
         log_groups = self.cloud_adapter.create_log_group_resources(region)
+        LOG.debug('cw_log_groups fetch_ok')
         for log_group in log_groups:
             # Process metrics before yielding the resource
             self.process_log_group_metrics(log_group)
@@ -1067,9 +1076,12 @@ class AWSReportImporter(CSVBaseReportImporter):
             try:
                 self.mongo_cloudwatch.insert_many(raw_docs)
             except Exception as exc:
-                LOG.warning('Failed to insert raw CloudWatch docs into Mongo: %s', str(exc))
+                LOG.warning('cw_metrics mongo_error: %s', str(exc))
+            else:
+                LOG.debug('cw_metrics mongo_ok')
 
         # Process summary metrics for ClickHouse
         metrics_data = self._prepare_summary_metrics(log_group_resource)
         if metrics_data:
             self.save_cloudwatch_metrics(metrics_data)
+            LOG.debug('cw_metrics clickhouse_ok')
