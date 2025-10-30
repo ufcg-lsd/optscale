@@ -16,6 +16,7 @@ RECENT_WINDOW_DAYS_DEFAULT = 30
 DEAD_RESOURCE_DAYS_DEFAULT = 30
 
 
+
 class MetricKey(str, Enum):
     INGESTION = "IngestionBytes"
     EVENTS = "IncomingLogEvents"
