@@ -23,6 +23,7 @@ import FormattedMoney from "components/FormattedMoney";
 
 const columns = [
     resource({
+<<<<<<< HEAD
         headerDataTestId: "lbl_iclw_resource"
     }),
     {
@@ -33,6 +34,10 @@ const columns = [
         ),
         accessorKey: "log_group_name"
     },
+=======
+        headerDataTestId: "lbl_iclw_log_group_name"
+    }),
+>>>>>>> c4000b67 (feat: add module frontend ICWLG)
     resourceLocation({
         headerDataTestId: "lbl_iclw_location"
     }),
@@ -88,9 +93,20 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
     categories = [CATEGORY.COST];
 
     static resourceDescriptionMessageId = "inactiveCloudWatchLogGroupResourceRecommendation";
+<<<<<<< HEAD
     
     columns = columns;
     
+=======
+
+    get descriptionMessageValues() {
+        const { days_threshold: daysThreshold } = this.options;
+        return { daysThreshold };
+      }
+
+    columns = columns;
+
+>>>>>>> c4000b67 (feat: add module frontend ICWLG)
     get previewItems() {
         return this.items.map((item) => [
             {
@@ -105,4 +121,8 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
     }   
 }
 
+<<<<<<< HEAD
 export default InactiveCloudWatchLogGroup;
+=======
+export default InactiveCloudWatchLogGroup;
+>>>>>>> c4000b67 (feat: add module frontend ICWLG)
