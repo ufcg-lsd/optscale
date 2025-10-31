@@ -12,14 +12,13 @@ SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 LOG = logging.getLogger(__name__)
 
 BYTES_PER_GIB = 1024 ** 3
-RECENT_WINDOW_DAYS_DEFAULT = 30
-DEAD_RESOURCE_DAYS_DEFAULT = 30
+RECENT_WINDOW_DAYS = 30
+DEFAULT_DAYS_THRESHOLD = 7
 
 
 class MetricKey(str, Enum):
-    INGESTION = "IngestionBytes"
-    EVENTS = "IncomingLogEvents"
-    QUERY = "QueryBytes"
+    INGESTION = "ingestion"
+    QUERY = "query"
 
 
 class InactiveCloudWatchLogGroup(ModuleBase):
@@ -30,7 +29,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
     def __init__(self, organization_id, config_client, created_at):
         super().__init__(organization_id, config_client, created_at)
         self.option_ordered_map = OrderedDict({
-            'dead_resource_days': {'default': DEAD_RESOURCE_DAYS_DEFAULT},
+            'days_threshold': {'default': DEFAULT_DAYS_THRESHOLD},
             'excluded_pools': {
                 'default': {},
                 'clean_func': self.clean_excluded_pools,
@@ -73,12 +72,31 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return metrics
         return (resource.get('meta', {}) or {}).get('metrics', {}) or {}
 
+    def _has_recent_metrics(
+            self, series: List[Dict], days_threshold: int = DEFAULT_DAYS_THRESHOLD) -> bool:
+        """
+        Check if the metric series has a timestamp within the recent window.
+        """
+        cutoff_recent_window = self._utc_now() - timedelta(days=days_threshold)
+        for m in series or []:
+            ts = m.get('timestamp')
+            if not ts:
+                continue
+            try:
+                t = self._parse_ts(ts)
+            except Exception:
+                continue
+
+            if t >= cutoff_recent_window:
+                return True
+        return False
+
     def _sum_metrics_last_month(self, series: List[Dict]) -> float:
         """
-        Sum metric values within the recent window (RECENT_WINDOW_DAYS_DEFAULT).
+        Sum metric values within the recent window (RECENT_WINDOW_DAYS).
         Values are assumed to be in bytes for ingestion/query metrics.
         """
-        cutoff_recent_window = self._utc_now() - timedelta(days=RECENT_WINDOW_DAYS_DEFAULT)
+        cutoff_recent_window = self._utc_now() - timedelta(days=RECENT_WINDOW_DAYS)
         total = 0
         for m in series or []:
             ts = m.get('timestamp')
@@ -92,42 +110,30 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 total += m.get('value', 0) or 0
         return total
 
-    def _is_inactive(self, resource: Dict, dead_resource_days: int) -> bool:
+    def _is_inactive(self, resource: Dict, days_threshold: int) -> bool:
         """
         Check if the log group is inactive.
-
         Log group is inactive if:
-            - No lifecycle rules AND
-            - No recent ingestion, OR
-            - Dead resource detected
+            No lifecycle rules AND No recent ingestion AND No recent query
         """
         try:
+
             retention_days = self._get_from_resource(
                 resource, 'retention_in_days')
             has_lifecycle_rules = retention_days is not None
 
-            last_collected_at_raw = self._get_from_resource(
-                resource, 'last_collected_at')
-            last_collection = self._parse_ts(last_collected_at_raw)
-            is_dead_resource = False
-            if last_collection is not None:
-                is_dead_resource = (
-                    self._utc_now() -
-                    last_collection).days > dead_resource_days
-
             metrics = self._get_metrics(resource)
             ingestion_metrics = metrics.get(
                 MetricKey.INGESTION.value, []) or []
-            incoming_events = metrics.get(MetricKey.EVENTS.value, []) or []
+            query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
 
-            recent_ingestion = self._sum_metrics_last_month(ingestion_metrics)
-            recent_events = self._sum_metrics_last_month(incoming_events)
-            no_recent_ingestion = (
-                recent_ingestion == 0 and recent_events == 0)
+            has_recent_ingestion = self._has_recent_metrics(
+                ingestion_metrics, days_threshold)
+            has_recent_query = self._has_recent_metrics(
+                query_metrics, days_threshold)
 
-            return (
-                not has_lifecycle_rules and (
-                    no_recent_ingestion or is_dead_resource))
+            return not (
+                has_lifecycle_rules or has_recent_ingestion or has_recent_query)
 
         except Exception:
             return False
@@ -166,7 +172,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             query_cost = query_gb * CWL_PRICING.query_usd_per_gb
 
             total = storage_monthly_cost + ingestion_cost + query_cost
-            return round(total, 2)
+            return float(total)
         except Exception:
             return 0.0
 
@@ -180,17 +186,17 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             {"$match": {
                 "resource_type": "Log Group",
                 "cloud_account_id": cloud_account_id,
-                "deleted_at": 0
+                "deleted_at": 0,
+                "active": True
             }},
             {"$project": {
                 "_id": 0,
                 "resource_id": "$_id",
                 "cloud_account_id": 1,
-                "name": "$name",
-                "log_group_name": "$name",
+                "name": "$meta.name",
+                "log_group_name": "$meta.name",
                 "stored_bytes": "$meta.stored_bytes",
                 "metrics": "$meta.metrics",
-                "last_collected_at": "$meta.last_collected_at",
                 "retention_in_days": "$meta.retention_in_days",
                 "region": 1,
                 "owner_id": 1,
@@ -209,11 +215,30 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return ca.get("id") or ca.get("_id")
         return ""
 
+    def _count_occurrences(
+            self, series: List[Dict], days_threshold: int) -> int:
+        """
+        Count the occurrences of the metric.
+        """
+        cutoff_recent_window = self._utc_now() - timedelta(days=days_threshold)
+        total = 0
+        for m in series or []:
+            ts = m.get('timestamp')
+            if not ts:
+                continue
+            try:
+                t = self._parse_ts(ts)
+                if t >= cutoff_recent_window:
+                    total += 1
+            except Exception:
+                continue
+        return total
+
     def _get(self):
         """
         Get the inactive log groups.
         """
-        (dead_resource_days,
+        (days_threshold,
          excluded_pools,
          skip_cloud_accounts) = self.get_options_values()
 
@@ -237,17 +262,18 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                     is_excluded = True
                 else:
                     is_excluded = False
-                if not self._is_inactive(r, dead_resource_days):
+                if not self._is_inactive(r, days_threshold):
                     continue
 
                 saving = self._estimate_saving(r)
                 ca_info = ca_map.get(r['cloud_account_id'], {})
 
                 metrics = self._get_metrics(r)
-                ingestion_bytes_30d = self._sum_metrics_last_month(
-                    metrics.get(MetricKey.INGESTION.value, []))
-                query_bytes_30d = self._sum_metrics_last_month(
-                    metrics.get(MetricKey.QUERY.value, []))
+
+                ingestion_occurrences = self._count_occurrences(
+                    metrics.get(MetricKey.INGESTION.value, []), days_threshold)
+                query_occurrences = self._count_occurrences(
+                    metrics.get(MetricKey.QUERY.value, []), days_threshold)
 
                 result.append({
                     'cloud_resource_id': r.get('resource_id'),
@@ -265,8 +291,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                     'stored_bytes': int(r.get('stored_bytes', 0) or 0),
                     'detected_at': self.created_at,
                     'storage': int(r.get('stored_bytes', 0) or 0),
-                    'ingestion': int(ingestion_bytes_30d),
-                    'query': int(query_bytes_30d),
+                    'ingestion': int(ingestion_occurrences),
+                    'query': int(query_occurrences),
                     'saving': saving,
                 })
 
