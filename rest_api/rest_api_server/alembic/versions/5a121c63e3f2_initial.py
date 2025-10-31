@@ -274,7 +274,7 @@ def upgrade():
         sa.Column('cloud_account_id', Uuid(length=36), nullable=False),
         sa.Column('resource_type', sa.Enum(
             'instance', 'volume', 'snapshot', 'bucket', 'k8s_pod',
-            'snapshot_chain', 'rds_instance', 'ip_address'), nullable=False),
+            'snapshot_chain', 'rds_instance', 'ip_address', 'log_group'), nullable=False),
         sa.Column('observe_time', NullableInt(), nullable=False),
         sa.Column('last_discovery_at', NullableInt(), nullable=False),
         sa.Column('last_error_at', NullableInt(), nullable=False),
