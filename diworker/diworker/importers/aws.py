@@ -65,7 +65,13 @@ class CloudWatchUtils:
     @staticmethod
     def datapoint_value(dp: dict):
         """Extract numeric value from CloudWatch datapoint"""
-        for k in ('Sum', 'Maximum', 'Average', 'Minimum', 'SampleCount', 'Value'):
+        for k in (
+            'Sum',
+            'Maximum',
+            'Average',
+            'Minimum',
+            'SampleCount',
+                'Value'):
             if k in dp:
                 return dp[k]
         for k, v in dp.items():
@@ -79,6 +85,7 @@ class CloudWatchUtils:
         if isinstance(ts, datetime):
             return ts.astimezone(timezone.utc)
         return ts
+
 
 class AWSReportImporter(CSVBaseReportImporter):
     ITEM_TYPE_ID_FIELDS = {
@@ -166,7 +173,8 @@ class AWSReportImporter(CSVBaseReportImporter):
     def get_unique_field_list(include_date=True):
         # todo: if this is not enough, we may lose data on raw import
         # we need functional testing. at least verify count of records after
-        # import. also total sum from CSV must match total sum for clean records
+        # import. also total sum from CSV must match total sum for clean
+        # records
         unique_list = [
             'lineItem/LineItemDescription',
             'lineItem/LineItemType',
@@ -298,10 +306,11 @@ class AWSReportImporter(CSVBaseReportImporter):
         if billing_period:
             self.billing_periods.add(billing_period)
         if len(skipped_accounts) > 0:
-            LOG.warning('Import skipped for following accounts: %s. Looks like '
-                        'credentials for them weren\'t added or added '
-                        'incorrectly or they are not marked as linked',
-                        skipped_accounts)
+            LOG.warning(
+                'Import skipped for following accounts: %s. Looks like '
+                'credentials for them weren\'t added or added '
+                'incorrectly or they are not marked as linked',
+                skipped_accounts)
 
     def update_raw_records(self, chunk):
         for row in chunk:
@@ -538,7 +547,8 @@ class AWSReportImporter(CSVBaseReportImporter):
                         chunk[expense_num]['end_date'] = self._datetime_from_value(
                             value)
                     elif field_name == 'lineItem/BlendedCost':
-                        chunk[expense_num]['cost'] = float(value) if value else 0
+                        chunk[expense_num]['cost'] = float(
+                            value) if value else 0
                     elif field_name in EDP_DISCOUNTS:
                         if self.use_edp_discount:
                             chunk[expense_num]['cost'] += float(value or 0)
@@ -555,7 +565,8 @@ class AWSReportImporter(CSVBaseReportImporter):
             expenses = [x for x in chunk
                         if chunk.index(x) not in skipped_rows and
                         x.get('cloud_account_id') is not None and
-                        # RIFee is created once a month and is updated every day
+                        # RIFee is created once a month and is updated every
+                        # day
                         (x['start_date'] >= self.min_date_import_threshold or
                          x['lineItem/LineItemType'] == 'RIFee')]
             for expense in expenses:
@@ -640,7 +651,8 @@ class AWSReportImporter(CSVBaseReportImporter):
                 last_seen = end_date
 
             product = e.get('lineItem/ProductCode')
-            if product and any(k in product.lower() for k in ['aws', 'amazon']):
+            if product and any(k in product.lower()
+                               for k in ['aws', 'amazon']):
                 service_name = product
             elif service_name is None:
                 service_name = e.get('bill/BillingEntity')
@@ -807,10 +819,10 @@ class AWSReportImporter(CSVBaseReportImporter):
                             ('BoxUsage' in usage_type or instance_type in
                              operation)),
             snapshot_type: usage_type and operation and (
-                    snapshot_type in usage_type or snapshot_type in operation),
+                snapshot_type in usage_type or snapshot_type in operation),
             volume_type: usage_type and volume_type in usage_type,
             'Bucket': product and 'AmazonS3' in product and (
-                    bool(resource_id) and bucket_type in operation),
+                bool(resource_id) and bucket_type in operation),
             ip_address_type: (extract_type_by_product_type(ip_address_type) or
                               usage_type and 'PublicIP' in usage_type),
             sp_type: bool(sp_id) and 'SavingsPlan' in item_type,
@@ -929,15 +941,15 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def get_raw_expenses_by_filters(self, filters):
         return self.mongo_raw.aggregate([
-                {'$match': {
-                    '$and': filters,
-                }},
-                {'$group': self._get_group_by_day_pipeline()},
-                {'$replaceRoot': {'newRoot': {
-                    '$mergeObjects': ["$root", "$$ROOT"]}
-                }},
-                {'$project': {"root": 0}}
-            ], allowDiskUse=True)
+            {'$match': {
+                '$and': filters,
+            }},
+            {'$group': self._get_group_by_day_pipeline()},
+            {'$replaceRoot': {'newRoot': {
+                '$mergeObjects': ["$root", "$$ROOT"]}
+            }},
+            {'$project': {"root": 0}}
+        ], allowDiskUse=True)
 
     def _get_billing_period_filters(self, billing_period):
         return {
@@ -973,9 +985,18 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def _get_cloud_extras(self, info):
         res = defaultdict(dict)
-        for k in ['os', 'preinstalled', 'payment_option', 'offering_type',
-                  'purchase_term', 'applied_region', 'start', 'end', 'platform',
-                  'instance_type', 'zone']:
+        for k in [
+            'os',
+            'preinstalled',
+            'payment_option',
+            'offering_type',
+            'purchase_term',
+            'applied_region',
+            'start',
+            'end',
+            'platform',
+            'instance_type',
+                'zone']:
             val = info.get(k)
             if val:
                 res['meta'][k] = val
@@ -996,7 +1017,6 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def create_risp_processing_tasks(self):
         self._create_risp_processing_tasks()
-
 
     def discover_region_log_groups(self, region):
         """
