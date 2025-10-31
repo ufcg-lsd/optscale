@@ -1,7 +1,8 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pymongo import MongoClient, UpdateOne
+from requests.exceptions import HTTPError
 
 from insider.insider_api.controllers.base import (
     BaseController, BaseAsyncControllerWrapper)
@@ -317,8 +318,11 @@ class AlibabaProvider(BaseProvider):
             config = self._config_cl.read_branch(
                 '/service_credentials/alibaba')
             if self.cloud_account_id:
-                _, cloud_acc = self.rest_client.cloud_account_get(
-                    self.cloud_account_id)
+                try:
+                    _, cloud_acc = self.rest_client.cloud_account_get(
+                        self.cloud_account_id)
+                except HTTPError:
+                    raise WrongArgumentsException(Err.OI0008, ['cloud_account_id'])
                 config = cloud_acc['config']
             self._cloud_adapter = Alibaba(config)
         return self._cloud_adapter
@@ -337,6 +341,8 @@ class AlibabaProvider(BaseProvider):
         }
         price_infos = list(self.prices_collection.find(query))
         if not price_infos:
+            if region not in self.cloud_adapter.get_regions_coordinates():
+                raise WrongArgumentsException(Err.OI0012, [region])
             prices = self.cloud_adapter.get_flavor_prices(
                 [flavor], region, os_type=os_type,
                 billing_method=billing_method, quantity=quantity,
@@ -386,8 +392,11 @@ class GcpProvider(BaseProvider):
         if self._cloud_adapter is None:
             config = self._config_cl.read_branch('/service_credentials/gcp')
             if self.cloud_account_id:
-                _, cloud_acc = self.rest_client.cloud_account_get(
-                    self.cloud_account_id)
+                try:
+                    _, cloud_acc = self.rest_client.cloud_account_get(
+                        self.cloud_account_id)
+                except HTTPError:
+                    raise WrongArgumentsException(Err.OI0008, ['cloud_account_id'])
                 if 'pricing_data' in cloud_acc['config']:
                     config = cloud_acc['config']
             self._cloud_adapter = Gcp(config)
@@ -396,6 +405,8 @@ class GcpProvider(BaseProvider):
     def _load_flavor_prices(
             self, region, flavor, currency_conversion_rate=None, **_kwargs):
         now = utcnow()
+        if region not in self.cloud_adapter.get_regions_coordinates():
+            raise WrongArgumentsException(Err.OI0008, ['region'])
         query = {
             'region': region,
             'flavor': flavor,
@@ -487,6 +498,10 @@ class FlavorPriceController(BaseController):
         cloud_type = params.get('cloud_type')
         if cloud_type not in self.supported_cloud_types:
             raise WrongArgumentsException(Err.OI0010, [cloud_type])
+        if cloud_type == 'alibaba':
+            for p in ['quantity', 'billing_method']:
+                if params.get(p) is None:
+                    raise WrongArgumentsException(Err.OI0011, [p])
 
     def get(self, **kwargs):
         self.validate_parameters(**kwargs)

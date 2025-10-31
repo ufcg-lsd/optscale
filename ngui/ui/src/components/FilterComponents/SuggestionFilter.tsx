@@ -3,7 +3,7 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import { Box, Button, Popover, Typography, Checkbox, FormControlLabel, FormGroup } from "@mui/material";
 import Divider from "@mui/material/Divider";
 import { FormattedMessage } from "react-intl";
-import { isEmpty as isEmptyArray, isLastItem } from "utils/arrays";
+import { isEmptyArray, isLastItem } from "utils/arrays";
 
 export type FilterItem = {
   value: string;

@@ -1,4 +1,0 @@
-kombu==5.3.4
-pyyaml==6.0.1
-# OptScale packages
--e optscale_client/config_client

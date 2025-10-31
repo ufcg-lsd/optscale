@@ -1,6 +1,0 @@
-coverage==4.2
-pycodestyle==2.11.1
-pylint==3.0.2
-freezegun==0.3.8
-concurrencytest==0.1.2
-

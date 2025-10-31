@@ -11,7 +11,7 @@ import SummaryList from "components/SummaryList";
 import { useIsOptScaleCapabilityEnabled } from "hooks/useIsOptScaleCapabilityEnabled";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { ML_RUNSET_ABORT_CONDITION_TYPES, OPTSCALE_CAPABILITY } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const InputParameters = ({ runset, isLoading = false }) => {
   const isFinOpsEnabled = useIsOptScaleCapabilityEnabled(OPTSCALE_CAPABILITY.FINOPS);

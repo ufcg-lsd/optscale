@@ -23,11 +23,6 @@ class VerifyEmailAsyncCollectionHandler(RestorePasswordAsyncCollectionHandler):
             schema:
                 type: object
                 properties:
-                    email:
-                        type: string
-                        description: Contact email
-                        required: true
-                        example: example@mail.com
                     link_params:
                         type: object
                         description: Query parameters added to link
@@ -41,7 +36,6 @@ class VerifyEmailAsyncCollectionHandler(RestorePasswordAsyncCollectionHandler):
                     type: object
                     example:
                         status: ok
-                        email: example@email.com
             400:
                 description: |
                     Wrong arguments:

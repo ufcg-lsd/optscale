@@ -2,6 +2,7 @@ import AppsOutlinedIcon from "@mui/icons-material/AppsOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
@@ -19,7 +20,7 @@ import PoolLabel from "components/PoolLabel";
 import ResourceTypeLabel from "components/ResourceTypeLabel";
 import { intl } from "translations/react-intl-config";
 import { isPoolIdWithSubPools } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   EMPTY_UUID,
   OPTSCALE_RESOURCE_TYPES,
@@ -28,6 +29,7 @@ import {
   POOL_TYPES_LIST
 } from "utils/constants";
 import { EN_FORMAT, formatUTC, millisecondsToSeconds, moveDateToUTC, secondsToMilliseconds } from "utils/datetime";
+import { getMetaFormattedName } from "utils/metadata";
 import { getSearchParams } from "utils/network";
 import { isNumber } from "utils/validation";
 
@@ -65,17 +67,18 @@ export const FILTER_CONFIGS = {
     apiName: "cloud_account",
     type: "selection",
     label: <FormattedMessage id="dataSource" />,
+    labelString: intl.formatMessage({ id: "dataSource" }),
     icon: <CloudOutlinedIcon />,
     renderItem: (item) => <CloudLabel id={item.id} name={item.name} type={item.type} disableLink />,
     renderSelectedItem: (item) => item.name,
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => filterValue.id === appliedValue);
 
       if (!item) {
         return appliedValue;
       }
 
-      return <CloudLabel id={item.id} name={item.name} type={item.type} />;
+      return stringify ? item.name : <CloudLabel id={item.id} name={item.name} type={item.type} />;
     },
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
     getValuesFromSearchParams: () => ({
@@ -145,11 +148,12 @@ export const FILTER_CONFIGS = {
     apiName: "pool",
     type: "selection",
     label: <FormattedMessage id="pool" />,
+    labelString: intl.formatMessage({ id: "pool" }),
     icon: <FolderOutlinedIcon />,
     renderItem: (item) => <PoolLabel name={item.name} type={item.purpose} disableLink id={item.id} label={item.name} />,
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const withSubpools = isPoolIdWithSubPools(appliedValue);
 
       const item = filterValues.find(
@@ -162,6 +166,10 @@ export const FILTER_CONFIGS = {
         }
 
         return appliedValue;
+      }
+
+      if (stringify) {
+        return `${item.name}${withSubpools ? ` ${intl.formatMessage({ id: "(withSubPools)" })}` : ""}`;
       }
 
       return <PoolLabel name={item.name} type={item.purpose} id={item.id} withSubpools={withSubpools} />;
@@ -251,6 +259,7 @@ export const FILTER_CONFIGS = {
     apiName: "owner",
     type: "selection",
     label: <FormattedMessage id="owner" />,
+    labelString: intl.formatMessage({ id: "owner" }),
     icon: <PersonOutlineOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -318,6 +327,7 @@ export const FILTER_CONFIGS = {
     apiName: "region",
     type: "selection",
     label: <FormattedMessage id="region" />,
+    labelString: intl.formatMessage({ id: "region" }),
     icon: <LocationOnOutlinedIcon />,
     renderItem: (item) => {
       if (item.value === EMPTY_UUID) {
@@ -327,7 +337,7 @@ export const FILTER_CONFIGS = {
     },
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === null) {
           return appliedValue === EMPTY_UUID;
@@ -344,7 +354,7 @@ export const FILTER_CONFIGS = {
         return intl.formatMessage({ id: "notSet" });
       }
 
-      return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
+      return stringify ? item.name : <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
     },
     getValuesFromSearchParams: () => ({
       values: getSelectionAppliedValuesFromSearchParams("region")
@@ -416,6 +426,7 @@ export const FILTER_CONFIGS = {
     apiName: "service_name",
     type: "selection",
     label: <FormattedMessage id="service" />,
+    labelString: intl.formatMessage({ id: "service" }),
     icon: <MiscellaneousServicesOutlinedIcon />,
     renderItem: (item) => {
       if (item.value === EMPTY_UUID) {
@@ -425,7 +436,7 @@ export const FILTER_CONFIGS = {
     },
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === null) {
           return appliedValue === EMPTY_UUID;
@@ -442,7 +453,7 @@ export const FILTER_CONFIGS = {
         return intl.formatMessage({ id: "notSet" });
       }
 
-      return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
+      return stringify ? item.name : <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
     },
     getValuesFromSearchParams: () => ({
       values: getSelectionAppliedValuesFromSearchParams("serviceName")
@@ -514,6 +525,7 @@ export const FILTER_CONFIGS = {
     apiName: "resource_type",
     type: "selection",
     label: <FormattedMessage id="resourceType" />,
+    labelString: intl.formatMessage({ id: "resourceType" }),
     icon: <CategoryOutlinedIcon />,
     renderItem: (item) => (
       <ResourceTypeLabel
@@ -526,11 +538,15 @@ export const FILTER_CONFIGS = {
     ),
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => `${filterValue.name}:${filterValue.type}` === appliedValue);
 
       if (!item) {
         return appliedValue;
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return (
@@ -598,6 +614,7 @@ export const FILTER_CONFIGS = {
     apiName: "active",
     type: "selection",
     label: <FormattedMessage id="activity" />,
+    labelString: intl.formatMessage({ id: "activity" }),
     icon: <ToggleOnOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -655,6 +672,7 @@ export const FILTER_CONFIGS = {
     apiName: "recommendations",
     type: "selection",
     label: <FormattedMessage id="recommendations" />,
+    labelString: intl.formatMessage({ id: "recommendations" }),
     icon: <RecommendOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -714,6 +732,7 @@ export const FILTER_CONFIGS = {
     apiName: "constraint_violated",
     type: "selection",
     label: <FormattedMessage id="constraintViolations" />,
+    labelString: intl.formatMessage({ id: "constraintViolations" }),
     icon: <ErrorOutlineOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -775,6 +794,7 @@ export const FILTER_CONFIGS = {
     toApiName: "first_seen_lte",
     type: "range",
     label: <FormattedMessage id="firstSeen" />,
+    labelString: intl.formatMessage({ id: "firstSeen" }),
     renderPerspectiveItem: (appliedValue) => {
       const { from, to } = appliedValue;
 
@@ -830,6 +850,7 @@ export const FILTER_CONFIGS = {
     toApiName: "last_seen_lte",
     type: "range",
     label: <FormattedMessage id="lastSeen" />,
+    labelString: intl.formatMessage({ id: "lastSeen" }),
     renderPerspectiveItem: (appliedValue) => {
       const { from, to } = appliedValue;
 
@@ -881,6 +902,7 @@ export const FILTER_CONFIGS = {
     apiName: "tag",
     type: "selection",
     label: <FormattedMessage id="tag" />,
+    labelString: intl.formatMessage({ id: "tag" }),
     icon: <LocalOfferOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -933,11 +955,70 @@ export const FILTER_CONFIGS = {
       }
     }
   },
+  meta: {
+    id: "meta",
+    apiName: "meta",
+    type: "selection",
+    label: <FormattedMessage id="meta" />,
+    labelString: intl.formatMessage({ id: "meta" }),
+    icon: <DescriptionOutlinedIcon />,
+    renderItem: (item) => getMetaFormattedName(item.name),
+    renderSelectedItem: (item) => getMetaFormattedName(item.name),
+    searchPredicate: (item, query) => getMetaFormattedName(item.name).toLowerCase().includes(query.toLowerCase()),
+    renderPerspectiveItem: (appliedValue, filterValues) => {
+      const item = filterValues.find((filterValue) => filterValue === appliedValue);
+
+      if (item === undefined) {
+        return appliedValue;
+      }
+
+      return getMetaFormattedName(item);
+    },
+    getValuesFromSearchParams: () => ({
+      values: getSelectionAppliedValuesFromSearchParams("meta")
+    }),
+    getDefaultValue: () => ({
+      values: []
+    }),
+    isApplied: (appliedFilter) => !isEmptyArray(appliedFilter.values),
+    transformers: {
+      getItems: (metaKeys) =>
+        metaKeys?.map((meta) => ({
+          name: meta,
+          value: meta
+        })) ?? [],
+      getValue: (item) => item,
+      toApi: (appliedFilter) => ({
+        meta: appliedFilter.values
+      }),
+      filterFilterValuesByAppliedFilters: (filterValues, appliedFilters) =>
+        filterValues.filter((filterValue) => appliedFilters.includes(filterValue))
+    },
+    schema: {
+      filterValues: {
+        meta: {
+          type: "array",
+          items: {
+            type: "string"
+          }
+        }
+      },
+      appliedFilter: {
+        meta: {
+          type: "array",
+          items: {
+            type: "string"
+          }
+        }
+      }
+    }
+  },
   withoutTag: {
     id: "withoutTag",
     apiName: "without_tag",
     type: "selection",
     label: <FormattedMessage id="withoutTag" />,
+    labelString: intl.formatMessage({ id: "withoutTag" }),
     icon: <BlockOutlinedIcon />,
     renderItem: (item) => item.name,
     renderSelectedItem: (item) => item.name,
@@ -995,6 +1076,7 @@ export const FILTER_CONFIGS = {
     apiName: "traffic_from",
     type: "selection",
     label: <FormattedMessage id="paidNetworkTrafficFrom" />,
+    labelString: intl.formatMessage({ id: "paidNetworkTrafficFrom" }),
     icon: <SwapHorizOutlinedIcon />,
     renderItem: (item) => {
       if (item.value === ANY_NETWORK_TRAFFIC_LOCATION) {
@@ -1004,7 +1086,7 @@ export const FILTER_CONFIGS = {
     },
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === ANY_NETWORK_TRAFFIC_LOCATION) {
           return appliedValue === ANY_NETWORK_TRAFFIC_LOCATION;
@@ -1019,6 +1101,10 @@ export const FILTER_CONFIGS = {
 
       if (item === ANY_NETWORK_TRAFFIC_LOCATION) {
         return intl.formatMessage({ id: "any" });
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
@@ -1102,6 +1188,7 @@ export const FILTER_CONFIGS = {
     apiName: "traffic_to",
     type: "selection",
     label: <FormattedMessage id="paidNetworkTrafficTo" />,
+    labelString: intl.formatMessage({ id: "paidNetworkTrafficTo" }),
     icon: <SwapHorizOutlinedIcon />,
     renderItem: (item) => {
       if (item.value === ANY_NETWORK_TRAFFIC_LOCATION) {
@@ -1111,7 +1198,7 @@ export const FILTER_CONFIGS = {
     },
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === ANY_NETWORK_TRAFFIC_LOCATION) {
           return appliedValue === ANY_NETWORK_TRAFFIC_LOCATION;
@@ -1126,6 +1213,10 @@ export const FILTER_CONFIGS = {
 
       if (item === ANY_NETWORK_TRAFFIC_LOCATION) {
         return intl.formatMessage({ id: "any" });
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
@@ -1208,11 +1299,12 @@ export const FILTER_CONFIGS = {
     apiName: "k8s_node",
     type: "selection",
     label: <FormattedMessage id="k8sNode" />,
+    labelString: intl.formatMessage({ id: "k8sNode" }),
     icon: <DnsOutlinedIcon />,
     renderItem: (item) => <CloudLabel name={item.name} type={item.cloud_type} disableLink />,
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === null) {
           return appliedValue === EMPTY_UUID;
@@ -1227,6 +1319,10 @@ export const FILTER_CONFIGS = {
 
       if (item === null) {
         return intl.formatMessage({ id: "notSet" });
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
@@ -1302,11 +1398,12 @@ export const FILTER_CONFIGS = {
     apiName: "k8s_service",
     type: "selection",
     label: <FormattedMessage id="k8sService" />,
+    labelString: intl.formatMessage({ id: "k8sService" }),
     icon: <AppsOutlinedIcon />,
     renderItem: (item) => <CloudLabel name={item.name} type={item.cloud_type} disableLink />,
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === null) {
           return appliedValue === EMPTY_UUID;
@@ -1321,6 +1418,10 @@ export const FILTER_CONFIGS = {
 
       if (item === null) {
         return intl.formatMessage({ id: "notSet" });
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;
@@ -1396,11 +1497,12 @@ export const FILTER_CONFIGS = {
     apiName: "k8s_namespace",
     type: "selection",
     label: <FormattedMessage id="k8sNamespace" />,
+    labelString: intl.formatMessage({ id: "k8sNamespace" }),
     icon: <FolderCopyOutlinedIcon />,
     renderItem: (item) => <CloudLabel name={item.name} type={item.cloud_type} disableLink />,
     renderSelectedItem: (item) => item.name,
     searchPredicate: (item, query) => item.name.toLowerCase().includes(query.toLowerCase()),
-    renderPerspectiveItem: (appliedValue, filterValues) => {
+    renderPerspectiveItem: (appliedValue, filterValues, { stringify = false } = {}) => {
       const item = filterValues.find((filterValue) => {
         if (filterValue === null) {
           return appliedValue === EMPTY_UUID;
@@ -1415,6 +1517,10 @@ export const FILTER_CONFIGS = {
 
       if (item === null) {
         return intl.formatMessage({ id: "notSet" });
+      }
+
+      if (stringify) {
+        return item.name;
       }
 
       return <CloudLabel name={item.name} type={item.cloud_type} disableLink />;

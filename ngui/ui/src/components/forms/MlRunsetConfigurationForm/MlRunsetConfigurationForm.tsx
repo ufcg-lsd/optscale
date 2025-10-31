@@ -12,7 +12,7 @@ import TypographyLoader from "components/TypographyLoader";
 import { isLastItem } from "utils/arrays";
 import { ML_RUNSET_ABORT_CONDITION_TYPES } from "utils/constants";
 import { convertMinutesToSeconds, convertSecondsToMinutes } from "utils/datetime";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { FIELD_NAMES } from "./constants";
 import {
   AbortConditionsFields,

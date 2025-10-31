@@ -12,7 +12,7 @@ import TableCellActions from "components/TableCellActions";
 import TableLoader from "components/TableLoader";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import TextWithDate from "components/TextWithDate";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const AVERAGE_APPROXIMATE_ZERO_THRESHOLD = 0.5;
 

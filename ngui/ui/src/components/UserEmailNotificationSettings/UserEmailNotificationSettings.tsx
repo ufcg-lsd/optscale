@@ -6,7 +6,7 @@ import KeyValueLabel from "components/KeyValueLabel";
 import PanelLoader from "components/PanelLoader";
 import SubTitle from "components/SubTitle";
 import { useUpdateEmployeeEmailMutation, useUpdateEmployeeEmailsMutation } from "graphql/__generated__/hooks/restapi";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SPACING_2 } from "utils/layouts";
 import { ObjectKeys } from "utils/types";
 import {

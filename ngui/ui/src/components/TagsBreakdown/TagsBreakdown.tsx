@@ -2,7 +2,7 @@ import { Grid, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { FormattedMessage } from "react-intl";
 import ResourceCountBreakdownLineChart from "components/ResourceCountBreakdown/ResourceCountBreakdownLineChart";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { format, secondsToMilliseconds } from "utils/datetime";
 import { SPACING_1 } from "utils/layouts";
 import TagsBreakdownTable from "./TagsBreakdownTable";
@@ -12,7 +12,7 @@ export const BREAKDOWN_COUNT_KEY = "null";
 
 const useLineData = (breakdown = {}) => {
   const allDates = Object.keys(breakdown);
-  if (isEmpty(allDates)) {
+  if (isEmptyArray(allDates)) {
     return [];
   }
 

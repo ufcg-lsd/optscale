@@ -2,7 +2,7 @@ import { Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import UpcomingBooking from "components/UpcomingBooking";
 import BookEnvironmentFormContainer from "containers/BookEnvironmentFormContainer";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import BaseSideModal from "./BaseSideModal";
 
 class BookEnvironmentModal extends BaseSideModal {
@@ -38,7 +38,7 @@ class BookEnvironmentModal extends BaseSideModal {
             isSshRequired={bookEnvironmentProps.isSshRequired}
           />
         </div>
-        {!isEmpty(bookEnvironmentProps.upcomingBookings) && (
+        {!isEmptyArray(bookEnvironmentProps.upcomingBookings) && (
           <>
             <Typography gutterBottom>
               <FormattedMessage id="upcomingBookings" />

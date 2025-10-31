@@ -1,7 +1,8 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useInheritedColor } from "@nivo/colors";
-import { useTheme, useValueFormatter } from "@nivo/core";
+import { useValueFormatter } from "@nivo/core";
 import { ChartsTooltipContext } from "contexts/ChartsTooltipContext";
+import { useChartTheme } from "hooks/useChartTheme";
 import { usePoints, useSlices } from "./hooks";
 import SliceTooltip, { TOOLTIP_ANCHOR } from "./SliceTooltip";
 
@@ -38,10 +39,11 @@ export const SliceTooltipLayer = ({
   layerProps
 }) => {
   const { outerHeight, outerWidth, linesAreaRectangle } = layerProps;
-  const theme = useTheme();
+  const theme = useChartTheme();
 
   const getPointColor = useInheritedColor(pointColor, theme);
   const getPointBorderColor = useInheritedColor(pointBorderColor, theme);
+
   const formatX = useValueFormatter(xFormat);
   const formatY = useValueFormatter(yFormat);
 

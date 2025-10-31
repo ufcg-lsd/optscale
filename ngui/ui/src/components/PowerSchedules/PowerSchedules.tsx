@@ -20,7 +20,7 @@ import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
 import { type PowerScheduleResponse } from "services/PowerScheduleService";
 import { CREATE_POWER_SCHEDULE } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { powerScheduleLastRun, powerScheduleName, powerScheduleValidityPeriod, text } from "utils/columns";
 import { POWER_SCHEDULE_ACTIONS } from "utils/constants";
 import { EN_TIME_FORMAT, EN_TIME_FORMAT_24_HOURS_CLOCK_HH_MM, formatTimeString, parse } from "utils/datetime";

@@ -10,26 +10,26 @@ from optscale_client.rest_api_client.client_v2 import Client as RestClient
 LOG = logging.getLogger(__name__)
 RETRY_POLICY = {'max_retries': 15, 'interval_start': 0,
                 'interval_step': 1, 'interval_max': 3}
-SUPPORTED_CLOUD_TYPES = {'aws_cnr'}
+SUPPORTED_CLOUD_TYPES = {'aws_cnr', 'azure_cnr'}
 TASK_EXCHANGE = Exchange('risp-tasks', type='direct')
 
 
 def get_cloud_accounts(config_cl):
-    cloud_accounts_list = []
+    cloud_accounts_map = {}
     rest_cl = RestClient(url=config_cl.restapi_url(), verify=False)
     rest_cl.secret = config_cl.cluster_secret()
     _, response = rest_cl.organization_list({'disabled': False})
     for org in response['organizations']:
         try:
             _, cloud_accounts = rest_cl.cloud_account_list(org['id'])
-            cloud_accounts_list.extend(
-                [x['id'] for x in cloud_accounts['cloud_accounts']
-                 if x['type'] in SUPPORTED_CLOUD_TYPES])
+            cloud_accounts_map.update({
+                x['id']: x['type'] for x in cloud_accounts['cloud_accounts']
+                if x['type'] in SUPPORTED_CLOUD_TYPES})
         except requests.exceptions.HTTPError as ex:
             LOG.error('Failed to publish tasks for org %s: %s',
                       org['id'], str(ex))
             continue
-    return cloud_accounts_list
+    return cloud_accounts_map
 
 
 def publish_tasks(config_cl):
@@ -39,9 +39,10 @@ def publish_tasks(config_cl):
     cloud_accounts = get_cloud_accounts(config_cl)
     if cloud_accounts:
         with producers[queue_conn].acquire(block=True) as producer:
-            for cloud_account_id in cloud_accounts:
+            for cloud_account_id, cloud_type in cloud_accounts.items():
                 producer.publish(
-                    {'cloud_account_id': cloud_account_id},
+                    {'cloud_account_id': cloud_account_id,
+                     'cloud_type': cloud_type},
                     serializer='json',
                     exchange=TASK_EXCHANGE,
                     declare=[TASK_EXCHANGE],

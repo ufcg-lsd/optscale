@@ -1,0 +1,39 @@
+[project]
+name = "risp-worker"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "boto3==1.34.7",
+    "clickhouse-connect==0.8.15",
+    "cloud-adapter",
+    "config-client",
+    "cryptography==44.0.1",
+    "kombu==5.5.4",
+    "optscale-exceptions",
+    "pymongo==4.6.3",
+    "pyyaml==6.0.1",
+    "restapi-client",
+    "insider-client",
+]
+
+[tool.uv.sources]
+config-client = { path = "../../optscale_client/config_client" }
+insider-client = { path = "../../optscale_client/insider_client" }
+restapi-client = { path = "../../optscale_client/rest_api_client" }
+cloud-adapter = { path = "../../tools/cloud_adapter" }
+optscale-exceptions = { path = "../../tools/optscale_exceptions" }
+
+[dependency-groups]
+dev = [
+    "concurrencytest==0.1.2",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+    "pyyaml==6.0.1",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "../.."
+module-name = "risp"

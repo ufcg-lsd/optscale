@@ -1,8 +1,11 @@
 ARG BUILDTAG=build
 ARG IMAGE=risp_worker
 FROM ${IMAGE}:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
+COPY tools tools
 ADD risp/risp_worker/tests risp/risp_worker/tests
-COPY risp/test-requirements.txt risp/.pylintrc risp/run_tests.py risp/run_test.sh ./risp/
-RUN pip install --no-cache-dir -r risp/test-requirements.txt
+COPY risp/.pylintrc risp/run_tests.py risp/run_test.sh ./risp/
+COPY risp/risp_worker/pyproject.toml risp/risp_worker/uv.lock ./risp/risp_worker/
+RUN uv --project risp/risp_worker sync --locked

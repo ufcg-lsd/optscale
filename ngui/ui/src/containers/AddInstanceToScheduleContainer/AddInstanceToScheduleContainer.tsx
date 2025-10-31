@@ -8,7 +8,7 @@ import { getDefaultValue } from "components/forms/AddInstancesToScheduleForm/uti
 import AvailableFiltersService from "services/AvailableFiltersService";
 import CleanExpensesService from "services/CleanExpensesService";
 import PowerScheduleService from "services/PowerScheduleService";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   ACTIVE_FILTER,
   CLOUD_ACCOUNT_ID_FILTER,

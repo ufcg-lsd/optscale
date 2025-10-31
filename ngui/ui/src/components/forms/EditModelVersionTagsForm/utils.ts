@@ -1,4 +1,4 @@
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { FIELD_NAMES } from "./constants";
 import { FormValues, Tags } from "./types";
 

@@ -7,7 +7,7 @@ import PoolLabel from "components/PoolLabel";
 import Expander from "components/Table/components/Expander";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import Tooltip from "components/Tooltip";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const poolName = ({ onExpensesExportClick, onConstraintsClick }) => ({
   header: <TextWithDataTestId dataTestId="lbl_name" messageId="name" />,

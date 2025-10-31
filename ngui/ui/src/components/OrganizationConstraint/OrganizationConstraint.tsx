@@ -30,7 +30,7 @@ import {
 } from "utils/constants";
 import { EN_FULL_FORMAT, format, secondsToMilliseconds } from "utils/datetime";
 import { SPACING_1 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { getResourcesLink } from "utils/organizationConstraints/getResourcesLink";
 import SlicedText from "../SlicedText";
 import BreakdownChart from "./BreakdownChart";

@@ -8,7 +8,7 @@ import Chip from "components/Chip";
 import Input from "components/Input";
 import InputLoader from "components/InputLoader";
 import Tooltip from "components/Tooltip";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { RUNSET_TEMPLATE_INSTANCE_GROUP_TYPE, RUNSET_TEMPLATE_INSTANCE_TYPES } from "utils/constants";
 import { FIELD_NAMES } from "../constants";
 

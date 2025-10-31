@@ -4,7 +4,7 @@ import DatasetName from "components/DatasetName/DatasetName";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import LabelChip from "components/LabelChip";
 import SlicedText from "components/SlicedText";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EN_FULL_FORMAT, format, secondsToMilliseconds } from "utils/datetime";
 
 const DatasetTimespan = ({ timespanFrom, timespanTo }) => {

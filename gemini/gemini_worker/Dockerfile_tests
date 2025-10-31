@@ -1,9 +1,10 @@
 ARG BUILDTAG=build
 FROM gemini_worker:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /usr/src/app/
 
-COPY gemini/gemini_worker/test-requirements.txt ./test-requirements.txt
-COPY gemini/.pylintrc gemini/.coveragerc ./
+COPY gemini/.pylintrc gemini/.coveragerc ./gemini/
+COPY gemini/gemini_worker/pyproject.toml gemini/gemini_worker/uv.lock ./gemini/gemini_worker/
 
-RUN pip install --no-cache-dir -r test-requirements.txt
+RUN uv --project gemini/gemini_worker sync --locked

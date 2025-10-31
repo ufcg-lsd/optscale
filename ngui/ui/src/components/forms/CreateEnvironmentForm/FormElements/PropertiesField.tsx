@@ -8,7 +8,7 @@ import Button from "components/Button";
 import { TextInput } from "components/forms/common/fields";
 import IconButton from "components/IconButton";
 import PropertyLayout from "components/PropertyLayout";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { DEFAULT_MAX_TEXTAREA_LENGTH, ENVIRONMENT_PROPERTY_NAME_MAX_INPUT_LENGTH } from "utils/constants";
 import { FIELD_NAMES } from "../constants";
 

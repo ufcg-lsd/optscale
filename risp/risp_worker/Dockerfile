@@ -1,17 +1,19 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY tools/optscale_exceptions tools/optscale_exceptions
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
+COPY tools tools
+COPY optscale_client optscale_client
 
-ADD risp/risp_worker/migrations risp/risp_worker/migrations
-COPY risp/risp_worker/requirements.txt risp/risp_worker/requirements.txt
-RUN pip install --no-cache-dir -r risp/risp_worker/requirements.txt
 COPY risp/__init__.py ./risp/
+ADD risp/risp_worker/migrations risp/risp_worker/migrations
+COPY risp/risp_worker/pyproject.toml risp/risp_worker/
+COPY risp/risp_worker/uv.lock risp/risp_worker/
 COPY risp/risp_worker/*.py ./risp/risp_worker/
+COPY risp/risp_worker/processors/*.py ./risp/risp_worker/processors/
 
-CMD ["python", "-u", "/usr/src/app/risp/risp_worker/worker.py"]
+RUN uv --project risp/risp_worker sync --locked --no-dev
+
+CMD ["uv", "run", "--project", "risp/risp_worker", "python", "-u", "/usr/src/app/risp/risp_worker/worker.py"]

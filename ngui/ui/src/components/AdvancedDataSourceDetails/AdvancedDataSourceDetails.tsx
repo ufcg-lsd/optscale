@@ -9,7 +9,7 @@ import SlicedText from "components/SlicedText";
 import SubTitle from "components/SubTitle";
 import SummaryList from "components/SummaryList";
 import Table from "components/Table";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { discoveryStatus, lastTimeLocal, resourceType } from "utils/columns";
 import { DISCOVERY_STATUS } from "utils/columns/discoveryStatus";
 import { BILLING_IMPORT_STATUS, getBillingImportStatus } from "utils/dataSources";

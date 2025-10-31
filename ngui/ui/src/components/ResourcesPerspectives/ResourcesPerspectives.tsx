@@ -4,11 +4,11 @@ import PriorityHighOutlinedIcon from "@mui/icons-material/PriorityHighOutlined";
 import { Link } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Link as RouterLink } from "react-router-dom";
-import Filters from "components/Filters";
-import { RESOURCE_FILTERS } from "components/Filters/constants";
+import { FILTER_TYPE } from "components/FilterComponents/constants";
 import IconLabel from "components/IconLabel";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import PageContentDescription from "components/PageContentDescription";
+import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import DeletePerspectiveSideModal from "components/SideModalManager/SideModals/DeletePerspectiveSideModal";
 import Table from "components/Table";
 import TableCellActions from "components/TableCellActions";
@@ -19,7 +19,8 @@ import { useIsAllowed } from "hooks/useAllowedActions";
 import { breakdowns } from "hooks/useBreakdownBy";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { getResourcesExpensesUrl } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
+import { CELL_EMPTY_VALUE } from "utils/tables";
 
 const ResourcesPerspectives = () => {
   const isAllowedToDeletePerspectives = useIsAllowed({ requiredActions: ["EDIT_PARTNER"] });
@@ -118,9 +119,13 @@ const ResourcesPerspectives = () => {
         cell: ({ row: { original } }) => {
           const { filters } = original;
           return isEmptyArray(filters)
-            ? "-"
-            : filters.map(({ name: filterName, displayedName, displayedValue }) => (
-                <KeyValueLabel key={filterName} keyText={displayedName} value={displayedValue} />
+            ? CELL_EMPTY_VALUE
+            : filters.map(({ displayedName, displayedValue, displayedNameString, displayedValueString }) => (
+                <KeyValueLabel
+                  key={`${displayedNameString}-${displayedValueString}`}
+                  keyText={displayedName}
+                  value={displayedValue}
+                />
               ));
         }
       },
@@ -158,7 +163,7 @@ const ResourcesPerspectives = () => {
     [isAllowedToDeletePerspectives, openSideModal]
   );
 
-  const data = useMemo(() => {
+  const tableData = useMemo(() => {
     const validPerspectivesToTableData = () => {
       const getGroupByString = (groupBy) => {
         if (!groupBy.groupType) {
@@ -180,22 +185,69 @@ const ResourcesPerspectives = () => {
             filters: { filterValues, appliedFilters }
           }
         ]) => {
-          const filters = new Filters({
-            filters: RESOURCE_FILTERS,
-            filterValues,
-            appliedFilters
+          const perspectiveFilters = Object.values(FILTER_CONFIGS).flatMap((filterConfig) => {
+            if (filterConfig.type === FILTER_TYPE.SELECTION) {
+              const appliedFilterValues = appliedFilters[filterConfig.id];
+
+              if (isEmptyArray(appliedFilterValues)) {
+                return [];
+              }
+
+              return appliedFilterValues.map((appliedFilterValue) => ({
+                displayedName: filterConfig.label,
+                displayedValue: filterConfig.renderPerspectiveItem(appliedFilterValue, filterValues[filterConfig.apiName]),
+                displayedNameString: filterConfig.labelString,
+                displayedValueString: filterConfig.renderPerspectiveItem(
+                  appliedFilterValue,
+                  filterValues[filterConfig.apiName],
+                  { stringify: true }
+                )
+              }));
+            }
+            if (filterConfig.type === FILTER_TYPE.RANGE) {
+              const from = appliedFilters[filterConfig.fromName];
+              const to = appliedFilters[filterConfig.toName];
+
+              if (!from && !to) {
+                return [];
+              }
+
+              return [
+                {
+                  displayedName: filterConfig.label,
+                  displayedValue: filterConfig.renderPerspectiveItem({
+                    from,
+                    to
+                  }),
+                  displayedNameString: filterConfig.labelString,
+                  displayedValueString: filterConfig.renderPerspectiveItem({
+                    from,
+                    to
+                  })
+                }
+              ];
+            }
+            return [];
           });
 
-          const appliedFilterValues = filters.getAppliedValues();
+          const getCategorizeBy = () => {
+            const breakdownDefinition = breakdowns.find((breakdown) => breakdown.value === categorizeBy);
+
+            if (breakdownDefinition) {
+              return breakdownDefinition.name;
+            }
+
+            return intl.formatMessage({ id: categorizeBy });
+          };
 
           return {
             name: perspectiveName,
-            filters: filters.getAppliedValues(),
-            filtersString: appliedFilterValues
+            filters: perspectiveFilters,
+            filtersString: perspectiveFilters
               .map(({ displayedNameString, displayedValueString }) => `${displayedNameString}: ${displayedValueString}`)
               .join(" "),
             breakdownBy: intl.formatMessage({ id: breakdownBy }),
-            categorizeBy: breakdowns.find((breakdown) => breakdown.value === categorizeBy)?.name ?? undefined,
+            categorizeBy: categorizeBy ? getCategorizeBy() : undefined,
             groupBy,
             groupByString: groupBy ? getGroupByString(groupBy) : undefined
           };
@@ -216,7 +268,7 @@ const ResourcesPerspectives = () => {
     <>
       <Table
         columns={columns}
-        data={data}
+        data={tableData}
         localization={{
           emptyMessageId: "noPerspectives"
         }}

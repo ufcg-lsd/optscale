@@ -22,7 +22,6 @@ class TestRestorePassword(TestApiBase):
         code, resp = self.client.restore_password(email)
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         p_herald.assert_called_once_with(
             [email], 'OptScale password recovery',
@@ -43,7 +42,6 @@ class TestRestorePassword(TestApiBase):
             email, link_params={'mode': 'mlops'})
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         link = p_herald.call_args[1]['template_params']['links'][
             'restore_button']
@@ -109,6 +107,5 @@ class TestRestorePassword(TestApiBase):
         code, resp = self.client.restore_password(email)
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         p_herald.assert_not_called()

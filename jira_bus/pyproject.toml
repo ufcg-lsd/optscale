@@ -1,0 +1,45 @@
+[project]
+name = "jira-bus"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "alembic==1.13.1",
+    "apispec[yaml]==6.3.1",
+    "atlassian-jwt==1.9.0",
+    "auth-client",
+    "config-client",
+    "mysql-connector==2.2.9",
+    "optscale-exceptions",
+    "pydevd-pycharm==201.5616.27",
+    "pyjwt[crypto]==2.4.0",
+    "requests==2.32.4",
+    "restapi-client",
+    "sqlalchemy==1.4.23",
+    "tornado==6.5",
+]
+
+[tool.uv.sources]
+config-client = { path = "../optscale_client/config_client" }
+restapi-client = { path = "../optscale_client/rest_api_client" }
+auth-client = { path = "../optscale_client/auth_client" }
+optscale-exceptions = { path = "../tools/optscale_exceptions" }
+jira-bus-client = { path = "../optscale_client/jira_bus_client" }
+check-alembic-down-revisions = { path = "../tools/check_alembic_down_revisions" }
+
+[dependency-groups]
+dev = [
+    "check-alembic-down-revisions",
+    "coverage==4.2",
+    "freezegun==0.3.8",
+    "jira-bus-client",
+    "pep8==1.7.1",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ".."
+module-name = "jira_bus"

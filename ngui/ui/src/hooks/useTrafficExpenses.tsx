@@ -4,9 +4,18 @@ import Typography from "@mui/material/Typography";
 import { FormattedMessage, useIntl } from "react-intl";
 import FormattedDigitalUnit, { SI_UNITS } from "components/FormattedDigitalUnit";
 import FormattedMoney from "components/FormattedMoney";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EXPENSES_MAP_OBJECT_TYPES, FORMATTED_MONEY_TYPES } from "utils/constants";
-import { EXTERNAL_LAT, EXTERNAL_LON, INTER_REGION_LAT, INTER_REGION_LON, INTER_REGION_NAME } from "utils/maps";
+import {
+  EXTERNAL_LAT,
+  EXTERNAL_LON,
+  INTER_CONTINENTAL_LAT,
+  INTER_CONTINENTAL_LON,
+  INTER_CONTINENTAL_NAME,
+  INTER_REGION_LAT,
+  INTER_REGION_LON,
+  INTER_REGION_NAME
+} from "utils/maps";
 
 const DEFAULT_SELECTION_STATE = Object.freeze({ selectedCell: null, selectedColumnNames: [], selectedRowName: "" });
 
@@ -60,6 +69,9 @@ const getMarkers = (expenses, uniqueDestinations) => {
     } else if (uniqueDestination === INTER_REGION_NAME) {
       latitude = INTER_REGION_LAT;
       longitude = INTER_REGION_LON;
+    } else if (uniqueDestination === INTER_CONTINENTAL_NAME) {
+      latitude = INTER_CONTINENTAL_LAT;
+      longitude = INTER_CONTINENTAL_LON;
     }
 
     return [
@@ -83,7 +95,8 @@ const getMarkers = (expenses, uniqueDestinations) => {
     externalLocations: locations.filter(
       (location) => location.latitude === EXTERNAL_LAT && location.longitude === EXTERNAL_LON
     ),
-    interRegion: locations.find((location) => location.name === INTER_REGION_NAME)
+    interRegion: locations.find((location) => location.name === INTER_REGION_NAME),
+    interContinental: locations.find((location) => location.name === INTER_CONTINENTAL_NAME)
   };
 };
 
@@ -265,6 +278,7 @@ export const useTrafficExpenses = (expenses) => {
         if (
           !(expense.to.latitude && expense.to.longitude) &&
           expense.to.name !== INTER_REGION_NAME &&
+          expense.to.name !== INTER_CONTINENTAL_NAME &&
           !resultArray.includes(expense.to.name)
         ) {
           return [...resultArray, expense.to.name];
@@ -298,6 +312,9 @@ export const useTrafficExpenses = (expenses) => {
     }
     if (object.type === EXPENSES_MAP_OBJECT_TYPES.INTER_REGION_MARKER) {
       selectColumns([INTER_REGION_NAME]);
+    }
+    if (object.type === EXPENSES_MAP_OBJECT_TYPES.INTER_CONTINENTAL_MARKER) {
+      selectColumns([INTER_CONTINENTAL_NAME]);
     }
     if (object.type === EXPENSES_MAP_OBJECT_TYPES.FLOW) {
       selectCell({ from: { name: object.flow.origin }, to: { name: object.flow.dest } });

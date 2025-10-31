@@ -6,7 +6,7 @@ import InlineSeverityAlert from "components/InlineSeverityAlert";
 import PageContentWrapper from "components/PageContentWrapper";
 import SummaryGrid from "components/SummaryGrid";
 import { useIsAllowed } from "hooks/useAllowedActions";
-import { getSumByNestedObjectKey, isEmpty as isEmptyArray } from "utils/arrays";
+import { getSumByNestedObjectKey, isEmptyArray } from "utils/arrays";
 import { SUMMARY_VALUE_COMPONENT_TYPES, SUMMARY_CARD_TYPES, AWS_CNR } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 import { getPercentageChangeModule, round } from "utils/math";

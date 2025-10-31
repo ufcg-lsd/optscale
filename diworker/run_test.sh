@@ -8,12 +8,12 @@ docker build -t ${TEST_IMAGE} --build-arg BUILDTAG=${BUILD_TAG} -f diworker/Dock
 
 echo "Pycodestyle tests>>>"
 docker run -i --rm ${TEST_IMAGE} \
-    bash -c "pycodestyle --max-line-length=120 diworker"
+    bash -c "uv --project diworker run pycodestyle --exclude=.venv --max-line-length=120 diworker"
 echo "<<<Pycodestyle tests"
 
 echo "Pylint tests>>>"
 docker run -i --rm ${TEST_IMAGE} bash -c \
-  "pylint --rcfile=diworker/.pylintrc --fail-under=9 --fail-on=E,F ./diworker"
+  "uv --project diworker run pylint --rcfile=diworker/.pylintrc --fail-under=9 --fail-on=E,F ./diworker"
 echo "<<Pylint tests"
 
 docker rmi ${TEST_IMAGE}

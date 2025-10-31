@@ -5,7 +5,7 @@ import { FormattedMessage } from "react-intl";
 import ExpandableList from "components/ExpandableList";
 import IconLabel from "components/IconLabel";
 import LabelChip from "components/LabelChip";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 type NoDatasetsCoverageRulesMessageProps = {
   message?: {

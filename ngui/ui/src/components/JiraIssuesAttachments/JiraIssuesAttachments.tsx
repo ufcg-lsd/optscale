@@ -3,7 +3,7 @@ import Link from "@mui/material/Link";
 import { FormattedMessage } from "react-intl";
 import DashedTypography from "components/DashedTypography";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
-import { splitIntoTwoChunks, isEmpty as isEmptyArray } from "utils/arrays";
+import { splitIntoTwoChunks, isEmptyArray } from "utils/arrays";
 import useStyles from "./JiraIssuesAttachments.styles";
 
 const JiraIssueListItem = ({ issueName, link }) => (

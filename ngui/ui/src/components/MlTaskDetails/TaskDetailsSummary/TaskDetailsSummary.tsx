@@ -17,7 +17,7 @@ import { ML_TASK_DETAILS_TAB_NAME, OPTSCALE_CAPABILITY } from "utils/constants";
 import { getTimeDistance } from "utils/datetime";
 import { SPACING_2 } from "utils/layouts";
 import { getSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const LastRunExecutorSummary = ({ isLoading, lastRunExecutor }) => {
   const { isDemo } = useOrganizationInfo();

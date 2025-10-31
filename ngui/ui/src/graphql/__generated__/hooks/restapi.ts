@@ -15,7 +15,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  JSONObject: { input: unknown; output: unknown };
+  JSONObject: { input: Record<string, unknown>; output: Record<string, unknown> };
 };
 
 export type AlibabaConfig = {
@@ -43,6 +43,32 @@ export type AlibabaDataSource = DataSourceInterface & {
   name: Scalars["String"]["output"];
   parent_id?: Maybe<Scalars["String"]["output"]>;
   type: DataSourceType;
+};
+
+export type AvailableFiltersParams = {
+  active?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
+  cloud_account_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  constraint_violated?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
+  end_date: Scalars["Int"]["input"];
+  first_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  first_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
+  k8s_namespace?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  k8s_node?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  k8s_service?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  last_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  last_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
+  meta?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  owner_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  pool_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  recommendations?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
+  region?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  resource_type?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  service_name?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  start_date: Scalars["Int"]["input"];
+  tag?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  traffic_from?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  traffic_to?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  without_tag?: InputMaybe<Array<Scalars["String"]["input"]>>;
 };
 
 export type AwsAssumedRoleConfigInput = {
@@ -188,13 +214,18 @@ export type BreakdownBy =
 
 export type BreakdownParams = {
   active?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
-  breakdown_by: BreakdownBy;
+  breakdown_by: Scalars["String"]["input"];
   cloud_account_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   constraint_violated?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
   end_date: Scalars["Int"]["input"];
+  first_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  first_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
   k8s_namespace?: InputMaybe<Array<Scalars["String"]["input"]>>;
   k8s_node?: InputMaybe<Array<Scalars["String"]["input"]>>;
   k8s_service?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  last_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
+  last_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
+  meta?: InputMaybe<Array<Scalars["String"]["input"]>>;
   owner_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   pool_id?: InputMaybe<Array<Scalars["String"]["input"]>>;
   recommendations?: InputMaybe<Array<Scalars["Boolean"]["input"]>>;
@@ -222,6 +253,7 @@ export type CleanExpensesParams = {
   last_seen_gte?: InputMaybe<Scalars["Int"]["input"]>;
   last_seen_lte?: InputMaybe<Scalars["Int"]["input"]>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
+  meta?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   owner_id?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   pool_id?: InputMaybe<Array<InputMaybe<Scalars["String"]["input"]>>>;
   recommendations?: InputMaybe<Array<InputMaybe<Scalars["Boolean"]["input"]>>>;
@@ -535,6 +567,14 @@ export type K8sDataSource = DataSourceInterface & {
   type: DataSourceType;
 };
 
+export type MetaBreakdown = {
+  __typename?: "MetaBreakdown";
+  breakdown: Scalars["JSONObject"]["output"];
+  end_date: Scalars["Int"]["output"];
+  start_date: Scalars["Int"]["output"];
+  totals: Scalars["JSONObject"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   _empty?: Maybe<Scalars["String"]["output"]>;
@@ -688,6 +728,7 @@ export type OrganizationLimitHit = {
 export type Query = {
   __typename?: "Query";
   _empty?: Maybe<Scalars["String"]["output"]>;
+  availableFilters?: Maybe<Scalars["JSONObject"]["output"]>;
   cleanExpenses?: Maybe<Scalars["JSONObject"]["output"]>;
   cloudPolicies?: Maybe<Scalars["JSONObject"]["output"]>;
   currentEmployee?: Maybe<Employee>;
@@ -696,14 +737,20 @@ export type Query = {
   employeeEmails?: Maybe<Array<Maybe<EmployeeEmail>>>;
   expensesDailyBreakdown?: Maybe<ExpensesDailyBreakdown>;
   invitations?: Maybe<Array<Maybe<Invitation>>>;
+  metaBreakdown?: Maybe<MetaBreakdown>;
   organizationConstraint?: Maybe<OrganizationConstraint>;
   organizationFeatures?: Maybe<Scalars["JSONObject"]["output"]>;
   organizationLimitHits?: Maybe<Array<OrganizationLimitHit>>;
   organizationPerspectives?: Maybe<Scalars["JSONObject"]["output"]>;
   organizationThemeSettings?: Maybe<Scalars["JSONObject"]["output"]>;
-  organizations?: Maybe<Array<Maybe<Organization>>>;
+  organizations: Array<Organization>;
   relevantFlavors?: Maybe<Scalars["JSONObject"]["output"]>;
   resourceCountBreakdown?: Maybe<ResourceCountBreakdown>;
+};
+
+export type QueryAvailableFiltersArgs = {
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<AvailableFiltersParams>;
 };
 
 export type QueryCleanExpensesArgs = {
@@ -734,6 +781,11 @@ export type QueryEmployeeEmailsArgs = {
 };
 
 export type QueryExpensesDailyBreakdownArgs = {
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<BreakdownParams>;
+};
+
+export type QueryMetaBreakdownArgs = {
   organizationId: Scalars["ID"]["input"];
   params?: InputMaybe<BreakdownParams>;
 };
@@ -927,7 +979,7 @@ export type OrganizationsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type OrganizationsQuery = {
   __typename?: "Query";
-  organizations?: Array<{
+  organizations: Array<{
     __typename?: "Organization";
     id: string;
     name: string;
@@ -935,7 +987,7 @@ export type OrganizationsQuery = {
     currency: string;
     is_demo: boolean;
     disabled: boolean;
-  } | null> | null;
+  }>;
 };
 
 export type CreateOrganizationMutationVariables = Exact<{
@@ -1720,13 +1772,16 @@ export type OrganizationFeaturesQueryVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
 }>;
 
-export type OrganizationFeaturesQuery = { __typename?: "Query"; organizationFeatures?: unknown | null };
+export type OrganizationFeaturesQuery = { __typename?: "Query"; organizationFeatures?: Record<string, unknown> | null };
 
 export type OrganizationThemeSettingsQueryVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
 }>;
 
-export type OrganizationThemeSettingsQuery = { __typename?: "Query"; organizationThemeSettings?: unknown | null };
+export type OrganizationThemeSettingsQuery = {
+  __typename?: "Query";
+  organizationThemeSettings?: Record<string, unknown> | null;
+};
 
 export type UpdateOrganizationThemeSettingsMutationVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
@@ -1735,14 +1790,14 @@ export type UpdateOrganizationThemeSettingsMutationVariables = Exact<{
 
 export type UpdateOrganizationThemeSettingsMutation = {
   __typename?: "Mutation";
-  updateOrganizationThemeSettings?: unknown | null;
+  updateOrganizationThemeSettings?: Record<string, unknown> | null;
 };
 
 export type OrganizationPerspectivesQueryVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
 }>;
 
-export type OrganizationPerspectivesQuery = { __typename?: "Query"; organizationPerspectives?: unknown | null };
+export type OrganizationPerspectivesQuery = { __typename?: "Query"; organizationPerspectives?: Record<string, unknown> | null };
 
 export type UpdateOrganizationPerspectivesMutationVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
@@ -1751,7 +1806,7 @@ export type UpdateOrganizationPerspectivesMutationVariables = Exact<{
 
 export type UpdateOrganizationPerspectivesMutation = {
   __typename?: "Mutation";
-  updateOrganizationPerspectives?: unknown | null;
+  updateOrganizationPerspectives?: Record<string, unknown> | null;
 };
 
 export type CreateDataSourceMutationVariables = Exact<{
@@ -1802,9 +1857,9 @@ export type GetOrganizationConstraintQuery = {
     id: string;
     name: string;
     type: OrganizationConstraintType;
-    definition: unknown;
-    filters: unknown;
-    last_run_result: unknown;
+    definition: Record<string, unknown>;
+    filters: Record<string, unknown>;
+    last_run_result: Record<string, unknown>;
   } | null;
 };
 
@@ -1834,8 +1889,24 @@ export type GetResourceCountBreakdownQuery = {
   __typename?: "Query";
   resourceCountBreakdown?: {
     __typename?: "ResourceCountBreakdown";
-    breakdown: unknown;
-    counts: unknown;
+    breakdown: Record<string, unknown>;
+    counts: Record<string, unknown>;
+    start_date: number;
+    end_date: number;
+  } | null;
+};
+
+export type MetaBreakdownQueryVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<BreakdownParams>;
+}>;
+
+export type MetaBreakdownQuery = {
+  __typename?: "Query";
+  metaBreakdown?: {
+    __typename?: "MetaBreakdown";
+    breakdown: Record<string, unknown>;
+    totals: Record<string, unknown>;
     start_date: number;
     end_date: number;
   } | null;
@@ -1981,7 +2052,11 @@ export type GetExpensesDailyBreakdownQueryVariables = Exact<{
 
 export type GetExpensesDailyBreakdownQuery = {
   __typename?: "Query";
-  expensesDailyBreakdown?: { __typename?: "ExpensesDailyBreakdown"; breakdown: unknown; counts: unknown } | null;
+  expensesDailyBreakdown?: {
+    __typename?: "ExpensesDailyBreakdown";
+    breakdown: Record<string, unknown>;
+    counts: Record<string, unknown>;
+  } | null;
 };
 
 export type GetOrganizationLimitHitsQueryVariables = Exact<{
@@ -1993,7 +2068,7 @@ export type GetOrganizationLimitHitsQuery = {
   __typename?: "Query";
   organizationLimitHits?: Array<{
     __typename?: "OrganizationLimitHit";
-    run_result: unknown;
+    run_result: Record<string, unknown>;
     created_at: number;
     value: number;
     constraint_limit: number;
@@ -2005,21 +2080,28 @@ export type RelevantFlavorsQueryVariables = Exact<{
   requestParams?: InputMaybe<Scalars["JSONObject"]["input"]>;
 }>;
 
-export type RelevantFlavorsQuery = { __typename?: "Query"; relevantFlavors?: unknown | null };
+export type RelevantFlavorsQuery = { __typename?: "Query"; relevantFlavors?: Record<string, unknown> | null };
 
 export type CleanExpensesQueryVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
   params?: InputMaybe<CleanExpensesParams>;
 }>;
 
-export type CleanExpensesQuery = { __typename?: "Query"; cleanExpenses?: unknown | null };
+export type CleanExpensesQuery = { __typename?: "Query"; cleanExpenses?: Record<string, unknown> | null };
 
 export type CloudPoliciesQueryVariables = Exact<{
   organizationId: Scalars["ID"]["input"];
   params?: InputMaybe<CloudPoliciesParams>;
 }>;
 
-export type CloudPoliciesQuery = { __typename?: "Query"; cloudPolicies?: unknown | null };
+export type CloudPoliciesQuery = { __typename?: "Query"; cloudPolicies?: Record<string, unknown> | null };
+
+export type AvailableFiltersQueryVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+  params?: InputMaybe<AvailableFiltersParams>;
+}>;
+
+export type AvailableFiltersQuery = { __typename?: "Query"; availableFilters?: Record<string, unknown> | null };
 
 export const AwsDataSourceConfigFragmentFragmentDoc = gql`
   fragment AwsDataSourceConfigFragment on AwsDataSource {
@@ -3191,6 +3273,60 @@ export type GetResourceCountBreakdownQueryResult = Apollo.QueryResult<
 export function refetchGetResourceCountBreakdownQuery(variables: GetResourceCountBreakdownQueryVariables) {
   return { query: GetResourceCountBreakdownDocument, variables: variables };
 }
+export const MetaBreakdownDocument = gql`
+  query MetaBreakdown($organizationId: ID!, $params: BreakdownParams) {
+    metaBreakdown(organizationId: $organizationId, params: $params) {
+      breakdown
+      totals
+      start_date
+      end_date
+    }
+  }
+`;
+
+/**
+ * __useMetaBreakdownQuery__
+ *
+ * To run a query within a React component, call `useMetaBreakdownQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMetaBreakdownQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMetaBreakdownQuery({
+ *   variables: {
+ *      organizationId: // value for 'organizationId'
+ *      params: // value for 'params'
+ *   },
+ * });
+ */
+export function useMetaBreakdownQuery(
+  baseOptions: Apollo.QueryHookOptions<MetaBreakdownQuery, MetaBreakdownQueryVariables> &
+    ({ variables: MetaBreakdownQueryVariables; skip?: boolean } | { skip: boolean })
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<MetaBreakdownQuery, MetaBreakdownQueryVariables>(MetaBreakdownDocument, options);
+}
+export function useMetaBreakdownLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<MetaBreakdownQuery, MetaBreakdownQueryVariables>
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<MetaBreakdownQuery, MetaBreakdownQueryVariables>(MetaBreakdownDocument, options);
+}
+export function useMetaBreakdownSuspenseQuery(
+  baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MetaBreakdownQuery, MetaBreakdownQueryVariables>
+) {
+  const options = baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<MetaBreakdownQuery, MetaBreakdownQueryVariables>(MetaBreakdownDocument, options);
+}
+export type MetaBreakdownQueryHookResult = ReturnType<typeof useMetaBreakdownQuery>;
+export type MetaBreakdownLazyQueryHookResult = ReturnType<typeof useMetaBreakdownLazyQuery>;
+export type MetaBreakdownSuspenseQueryHookResult = ReturnType<typeof useMetaBreakdownSuspenseQuery>;
+export type MetaBreakdownQueryResult = Apollo.QueryResult<MetaBreakdownQuery, MetaBreakdownQueryVariables>;
+export function refetchMetaBreakdownQuery(variables: MetaBreakdownQueryVariables) {
+  return { query: MetaBreakdownDocument, variables: variables };
+}
 export const UpdateEmployeeEmailDocument = gql`
   mutation UpdateEmployeeEmail($employeeId: ID!, $params: UpdateEmployeeEmailInput!) {
     updateEmployeeEmail(employeeId: $employeeId, params: $params) {
@@ -3612,4 +3748,53 @@ export type CloudPoliciesSuspenseQueryHookResult = ReturnType<typeof useCloudPol
 export type CloudPoliciesQueryResult = Apollo.QueryResult<CloudPoliciesQuery, CloudPoliciesQueryVariables>;
 export function refetchCloudPoliciesQuery(variables: CloudPoliciesQueryVariables) {
   return { query: CloudPoliciesDocument, variables: variables };
+}
+export const AvailableFiltersDocument = gql`
+  query AvailableFilters($organizationId: ID!, $params: AvailableFiltersParams) {
+    availableFilters(organizationId: $organizationId, params: $params)
+  }
+`;
+
+/**
+ * __useAvailableFiltersQuery__
+ *
+ * To run a query within a React component, call `useAvailableFiltersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAvailableFiltersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAvailableFiltersQuery({
+ *   variables: {
+ *      organizationId: // value for 'organizationId'
+ *      params: // value for 'params'
+ *   },
+ * });
+ */
+export function useAvailableFiltersQuery(
+  baseOptions: Apollo.QueryHookOptions<AvailableFiltersQuery, AvailableFiltersQueryVariables> &
+    ({ variables: AvailableFiltersQueryVariables; skip?: boolean } | { skip: boolean })
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<AvailableFiltersQuery, AvailableFiltersQueryVariables>(AvailableFiltersDocument, options);
+}
+export function useAvailableFiltersLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<AvailableFiltersQuery, AvailableFiltersQueryVariables>
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<AvailableFiltersQuery, AvailableFiltersQueryVariables>(AvailableFiltersDocument, options);
+}
+export function useAvailableFiltersSuspenseQuery(
+  baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<AvailableFiltersQuery, AvailableFiltersQueryVariables>
+) {
+  const options = baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<AvailableFiltersQuery, AvailableFiltersQueryVariables>(AvailableFiltersDocument, options);
+}
+export type AvailableFiltersQueryHookResult = ReturnType<typeof useAvailableFiltersQuery>;
+export type AvailableFiltersLazyQueryHookResult = ReturnType<typeof useAvailableFiltersLazyQuery>;
+export type AvailableFiltersSuspenseQueryHookResult = ReturnType<typeof useAvailableFiltersSuspenseQuery>;
+export type AvailableFiltersQueryResult = Apollo.QueryResult<AvailableFiltersQuery, AvailableFiltersQueryVariables>;
+export function refetchAvailableFiltersQuery(variables: AvailableFiltersQueryVariables) {
+  return { query: AvailableFiltersDocument, variables: variables };
 }

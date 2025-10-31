@@ -4,7 +4,7 @@ import FormButtonsWrapper from "components/FormButtonsWrapper";
 import Invitation from "components/Invitation";
 import TypographyLoader from "components/TypographyLoader";
 import InvitationActionsContainer from "containers/InvitationActionsContainer";
-import { createGroupsObjectFromArray, isEmpty as isEmptyArray } from "utils/arrays";
+import { createGroupsObjectFromArray, isEmptyArray } from "utils/arrays";
 import { SPACING_4 } from "utils/layouts";
 
 const Invitations = ({ invitations, onSuccessAccept, onSuccessDecline, isLoading = false, styleProps = {} }) => {
