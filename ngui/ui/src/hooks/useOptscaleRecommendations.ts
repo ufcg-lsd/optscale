@@ -33,7 +33,7 @@ const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buc
 
 export const NEBIUS_RECOMMENDATION_TYPES = NEBIUS_RECOMMENDATIONS.map((Recommendation) => new Recommendation().type);
 
-export const useOptscaleRecommendations = () = > {
+export const useOptscaleRecommendations = () => {
     const isNebiusConnectionEnabled = useIsNebiusConnectionEnabled()
 
     return useMemo(()=> {
