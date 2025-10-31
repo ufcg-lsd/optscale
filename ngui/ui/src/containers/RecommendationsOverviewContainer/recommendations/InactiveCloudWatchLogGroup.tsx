@@ -5,27 +5,21 @@ import {detectedAt
 import {AWS_CNR
         import FORMATTED_MONEY_TYPES} from "utils/constants"
 import {CATEGORY} from "./BaseRecommendation"
-import BaseRecommendation
+import BaseRecommendation from "./BaseRecommendation"
 import {AWS_EC2
         import AWS_S3} from "hooks/useRecommendationServices"
 import {FormattedMessage} from "react-intl"
 import FormattedMoney from "components/FormattedMoney"
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel"
 import TextWithDataTestId from "components/TextWithDataTestId"
+
 /**
 * InactiveCloudWatchLogGroup.tsx
 *
 * This file defines the InactiveCloudWatchLogGroup recommendation class that extends BaseRecommendation.
 * It provides the structure and configuration for displaying inactive CloudWatch log group recommendations
 * in the OptScale frontend.
-*
-* The file contains:
-    * - Column definitions for the recommendations table display
-    * - Class properties for recommendation type, name, title, and metadata
-    * - Preview items configuration for card view display
-    *
-    */
-
+*/
 
 const columns = [
     resource({
@@ -61,7 +55,6 @@ const columns = [
         ),
         accessorKey: "query"
     },
-
     possibleMonthlySavings({
         headerDataTestId: "lbl_iclw_possible_monthly_savings",
         defaultSort: "desc"
