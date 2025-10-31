@@ -6,18 +6,19 @@ NONEXISTENT_VOLUME_ID = 'vol-ffffffff'
 
 class ResourceTypes(Enum):
     # resource type in mariadb -> resource type in mongodb
-    instance = 'Instance'
-    volume = 'Volume'
-    snapshot = 'Snapshot'
-    bucket = 'Bucket'
-    k8s_pod = 'K8s Pod'
-    snapshot_chain = 'Snapshot Chain'
-    rds_instance = 'RDS Instance'
-    ip_address = 'IP Address'
-    savings_plan = 'Savings Plan'
-    reserved_instances = 'Reserved Instances'
-    image = 'Image'
-    load_balancer = 'Load Balancer'
+    instance = "Instance"
+    volume = "Volume"
+    snapshot = "Snapshot"
+    bucket = "Bucket"
+    k8s_pod = "K8s Pod"
+    snapshot_chain = "Snapshot Chain"
+    rds_instance = "RDS Instance"
+    ip_address = "IP Address"
+    savings_plan = "Savings Plan"
+    reserved_instances = "Reserved Instances"
+    image = "Image"
+    load_balancer = "Load Balancer"
+    log_group = "Log Group"
 
     @classmethod
     def has_value(cls, value):
@@ -58,7 +59,7 @@ class CloudResource:
         self.cloud_type = None  # placeholder
 
     def _is_field(self, attribute):
-        if attribute.startswith('_'):
+        if attribute.startswith("_"):
             return False
         if callable(getattr(self, attribute)):
             return False
@@ -78,7 +79,7 @@ class CloudResource:
     @property
     def meta(self):
         return {
-            'cloud_console_link': self.cloud_console_link,
+            "cloud_console_link": self.cloud_console_link,
         }
 
     def post_discover(self):
@@ -537,6 +538,92 @@ class LoadBalancerResource(CloudResource):
         })
         return meta
 
+# CloudWatch Log Group resource
+class LogGroupResource(CloudResource):
+    __slots__ = (
+        "name",
+        "stored_bytes",
+        "retention_in_days",
+        "creation_time",
+        "arn",
+        "kms_key_id",
+        "metrics",
+    )
+
+    def __init__(
+        self,
+        name=None,
+        stored_bytes=None,
+        retention_in_days=None,
+        creation_time=None,
+        arn=None,
+        kms_key_id=None,
+        metrics=None,
+        **kwargs,
+    ):
+        """Initialize CloudWatch Log Group specific fields."""
+        super().__init__(**kwargs)
+        self.name = name
+        self.stored_bytes = stored_bytes
+        self.retention_in_days = retention_in_days
+        self.creation_time = creation_time  # datetime aware (UTC) ou None
+        self.arn = arn
+        self.kms_key_id = kms_key_id
+        self.metrics = metrics or {}
+
+    def __repr__(self):
+        """Return short textual representation for debugging."""
+        return "Log Group {0} name={1}".format(self.cloud_resource_id, self.name)
+
+    @staticmethod
+    def _datapoint_value(dp: dict):
+        """Return the numeric value found in a CloudWatch datapoint dict.
+        Checks common keys first then scans for numeric values excluding
+        Timestamp/Unit.
+        """
+        for k in ("Sum", "Maximum", "Average", "Minimum", "SampleCount", "Value"):
+            if k in dp:
+                return dp[k]
+        for k, v in dp.items():
+            if k not in ("Timestamp", "Unit") and isinstance(v, (int, float)):
+                return v
+        return None
+
+    @property
+    def meta(self):
+        """Return meta information for log group resources, including metrics."""
+        meta = super().meta
+        creation_iso = None
+        if isinstance(self.creation_time, datetime):
+            creation_iso = self.creation_time.isoformat()
+        metrics_meta = {}
+        if hasattr(self, "metrics"):
+            for metric_name, data_points in self.metrics.items():
+                metrics_meta[metric_name] = [
+                    {
+                        "timestamp": (
+                            dp["Timestamp"].isoformat()
+                            if isinstance(dp["Timestamp"], datetime)
+                            else dp["Timestamp"]
+                        ),
+                        "value": self._datapoint_value(dp),
+                    }
+                    for dp in data_points
+                ]
+        meta.update(
+            {
+                "name": self.name,
+                "stored_bytes": self.stored_bytes,
+                "retention_in_days": self.retention_in_days,
+                "creation_time": creation_iso,
+                "arn": self.arn,
+                "kms_key_id": self.kms_key_id,
+                "metrics": metrics_meta,
+            }
+        )
+        return meta
+
+
 
 # resource type in mariadb -> resource model
 RES_MODEL_MAP = {
@@ -552,4 +639,5 @@ RES_MODEL_MAP = {
     ResourceTypes.reserved_instances.name: ReservedInstancesResource,
     ResourceTypes.image.name: ImageResource,
     ResourceTypes.load_balancer.name: LoadBalancerResource,
+    ResourceTypes.log_group.name: LogGroupResource,
 }
