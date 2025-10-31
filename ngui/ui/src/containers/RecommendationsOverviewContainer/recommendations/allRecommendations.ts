@@ -5,6 +5,7 @@ import AbandonedLoadBalancers from "./AbandonedLoadBalancers";
 import AbandonedNebiusS3Buckets from "./AbandonedNebiusS3Buckets";
 import AbandonedS3Buckets from "./AbandonedS3Buckets";
 import CvocAgreementOpportunities from "./CvocAgreementOpportunities";
+import InactiveCloudWatchLogGroup from "./InactiveCloudWatchLogGroup";
 import InactiveConsoleUsers from "./InactiveConsoleUsers";
 import InactiveUsers from "./InactiveUsers";
 import InsecureSecurityGroups from "./InsecureSecurityGroups";
@@ -56,6 +57,7 @@ export const OPTSCALE_RECOMMENDATIONS = Object.fromEntries(
     InsecureSecurityGroups,
     InactiveUsers,
     InactiveConsoleUsers,
+    InactiveCloudWatchLogGroup,
     AbandonedS3Buckets,
     AbandonedKinesisStreams,
     AbandonedInstances,
