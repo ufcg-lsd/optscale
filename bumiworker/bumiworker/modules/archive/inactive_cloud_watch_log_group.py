@@ -5,6 +5,7 @@ from bumiworker.bumiworker.modules.base import ArchiveBase
 from bumiworker.bumiworker.modules.recommendations.inactive_cloud_watch_log_group import (
     InactiveCloudWatchLogGroup as InactiveCloudWatchLogGroupRecommendation,
     DEFAULT_DAYS_THRESHOLD,
+    SUPPORTED_CLOUD_TYPES,
 )
 
 
@@ -20,7 +21,7 @@ class InactiveCloudWatchLogGroup(ArchiveBase, InactiveCloudWatchLogGroupRecommen
 
     @property
     def supported_cloud_types(self):
-        return list(self.SUPPORTED_CLOUD_TYPES)
+        return SUPPORTED_CLOUD_TYPES
 
     def _get_pool_id(self, optimization: Dict) -> str:
         pool = optimization.get("pool")
@@ -95,12 +96,11 @@ class InactiveCloudWatchLogGroup(ArchiveBase, InactiveCloudWatchLogGroupRecommen
 
             if not inactive_with_previous_threshold:
                 reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
-            elif not inactive_with_current_threshold and (
-                current_days_threshold != previous_days_threshold
-            ):
-                reason = ArchiveReason.OPTIONS_CHANGED
             elif not inactive_with_current_threshold:
-                reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
+                if current_days_threshold != previous_days_threshold:
+                    reason = ArchiveReason.OPTIONS_CHANGED
+                else:
+                    reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
             else:
                 reason = ArchiveReason.OPTIONS_CHANGED
 
