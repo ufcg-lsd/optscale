@@ -33,39 +33,39 @@ const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buc
 
 export const NEBIUS_RECOMMENDATION_TYPES = NEBIUS_RECOMMENDATIONS.map((Recommendation) => new Recommendation().type);
 
-export const useOptscaleRecommendations = () => {
-  const isNebiusConnectionEnabled = useIsNebiusConnectionEnabled();
+export const useOptscaleRecommendations = () = > {
+    const isNebiusConnectionEnabled = useIsNebiusConnectionEnabled()
 
-  return useMemo(() => {
-    const recommendations = [
-      VolumesNotAttachedForLongTime,
-      ShortLivingInstances,
-      RightsizingRdsInstances,
-      RightsizingInstances,
-      ReservedInstances,
-      ObsoleteSnapshots,
-      ObsoleteSnapshotChains,
-      ObsoleteIps,
-      InstanceSubscription,
-      InstancesMigration,
-      InstancesInStoppedStateForALongTime,
-      InstancesGenerationUpgrade,
-      InstancesForShutdown,
-      InsecureSecurityGroups,
-      InactiveUsers,
-      InactiveConsoleUsers,
-      InactiveCloudWatchLogGroup,
-      IntelligentTiering,
-      AbandonedS3Buckets,
-      AbandonedKinesisStreams,
-      AbandonedInstances,
-      AbandonedLoadBalancers,
-      PublicS3Buckets,
-      ObsoleteImages,
-      AbandonedImages,
-      ...(isNebiusConnectionEnabled ? NEBIUS_RECOMMENDATIONS : [])
-    ];
+    return useMemo(()=> {
+        const recommendations = [
+            VolumesNotAttachedForLongTime,
+            ShortLivingInstances,
+            RightsizingRdsInstances,
+            RightsizingInstances,
+            ReservedInstances,
+            ObsoleteSnapshots,
+            ObsoleteSnapshotChains,
+            ObsoleteIps,
+            InstanceSubscription,
+            InstancesMigration,
+            InstancesInStoppedStateForALongTime,
+            InstancesGenerationUpgrade,
+            InstancesForShutdown,
+            InsecureSecurityGroups,
+            InactiveUsers,
+            InactiveConsoleUsers,
+            InactiveCloudWatchLogGroup,
+            IntelligentTiering,
+            AbandonedS3Buckets,
+            AbandonedKinesisStreams,
+            AbandonedInstances,
+            AbandonedLoadBalancers,
+            PublicS3Buckets,
+            ObsoleteImages,
+            AbandonedImages,
+            ...(isNebiusConnectionEnabled ? NEBIUS_RECOMMENDATIONS: [])
+        ]
 
-    return Object.fromEntries(recommendations.map((Rec) => [new Rec().type, Rec]));
-  }, [isNebiusConnectionEnabled]);
+        return Object.fromEntries(recommendations.map((Rec)=> [new Rec().type, Rec]))
+    }, [isNebiusConnectionEnabled])
 };

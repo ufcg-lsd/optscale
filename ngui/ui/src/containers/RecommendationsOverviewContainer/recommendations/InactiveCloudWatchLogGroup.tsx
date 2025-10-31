@@ -1,16 +1,16 @@
 /**
- * InactiveCloudWatchLogGroup.tsx
- * 
- * This file defines the InactiveCloudWatchLogGroup recommendation class that extends BaseRecommendation.
- * It provides the structure and configuration for displaying inactive CloudWatch log group recommendations
- * in the OptScale frontend.
- * 
- * The file contains:
- * - Column definitions for the recommendations table display
- * - Class properties for recommendation type, name, title, and metadata
- * - Preview items configuration for card view display
- * 
- */
+* InactiveCloudWatchLogGroup.tsx
+*
+* This file defines the InactiveCloudWatchLogGroup recommendation class that extends BaseRecommendation.
+* It provides the structure and configuration for displaying inactive CloudWatch log group recommendations
+* in the OptScale frontend.
+*
+* The file contains:
+    * - Column definitions for the recommendations table display
+    * - Class properties for recommendation type, name, title, and metadata
+    * - Preview items configuration for card view display
+    *
+    */
 
 import { AWS_EC2, AWS_S3 } from "hooks/useRecommendationServices";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
@@ -23,21 +23,8 @@ import FormattedMoney from "components/FormattedMoney";
 
 const columns = [
     resource({
-<<<<<<< HEAD
-        headerDataTestId: "lbl_iclw_resource"
-    }),
-    {
-        header: (
-            <TextWithDataTestId dataTestId="lbl_log_group_name">
-                <FormattedMessage id="logGroupName" />
-            </TextWithDataTestId>
-        ),
-        accessorKey: "log_group_name"
-    },
-=======
         headerDataTestId: "lbl_iclw_log_group_name"
     }),
->>>>>>> c4000b67 (feat: add module frontend ICWLG)
     resourceLocation({
         headerDataTestId: "lbl_iclw_location"
     }),
@@ -68,12 +55,12 @@ const columns = [
         ),
         accessorKey: "query"
     },
-
     possibleMonthlySavings({
         headerDataTestId: "lbl_iclw_possible_monthly_savings",
         defaultSort: "desc"
     })
 ];
+
 
 class InactiveCloudWatchLogGroup extends BaseRecommendation {
     type = "inactive_cloud_watch_log_group";
@@ -93,22 +80,16 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
     categories = [CATEGORY.COST];
 
     static resourceDescriptionMessageId = "inactiveCloudWatchLogGroupResourceRecommendation";
-<<<<<<< HEAD
-    
-    columns = columns;
-    
-=======
 
     get descriptionMessageValues() {
         const { days_threshold: daysThreshold } = this.options;
         return { daysThreshold };
-      }
+    }
 
     columns = columns;
 
->>>>>>> c4000b67 (feat: add module frontend ICWLG)
     get previewItems() {
-        return this.items.map((item) => [
+        return this.items.map((item: any) => [
             {
                 key: `${item.cloud_resource_id}-label`,
                 value: <RecommendationListItemResourceLabel item={item} />
@@ -118,11 +99,7 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
                 value: <FormattedMoney type={FORMATTED_MONEY_TYPES.COMMON} value={item.saving} />
             }
         ]);
-    }   
+    }
 }
 
-<<<<<<< HEAD
 export default InactiveCloudWatchLogGroup;
-=======
-export default InactiveCloudWatchLogGroup;
->>>>>>> c4000b67 (feat: add module frontend ICWLG)
