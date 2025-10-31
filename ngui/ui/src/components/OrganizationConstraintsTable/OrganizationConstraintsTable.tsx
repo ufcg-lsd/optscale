@@ -122,7 +122,7 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
       constraints.map((constraint) => {
         const { filters } = constraint;
 
-        const constraintFilters = Object.values(FILTER_CONFIGS).flatMap((config) => {
+        const filterDefinitions = Object.values(FILTER_CONFIGS).flatMap((config) => {
           if (config.type === FILTER_TYPE.SELECTION) {
             const appliedFilters = filters[config.apiName] ?? [];
 
@@ -165,10 +165,7 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
 
         return {
           ...constraint,
-          filters: constraintFilters,
-          filtersString: constraintFilters
-            .map(({ displayedNameString, displayedValueString }) => `${displayedNameString}: ${displayedValueString}`)
-            .join(" "),
+          filterDefinitions,
           descriptionForSearch: buildDescription({
             type: constraint.type,
             definition: constraint.definition,
@@ -200,15 +197,19 @@ const OrganizationConstraintsTable = ({ constraints, addButtonLink, isLoading = 
             <FormattedMessage id="filters" />
           </TextWithDataTestId>
         ),
-        accessorKey: "filtersString",
+        id: "filters",
+        accessorFn: (originalRow) =>
+          originalRow.filterDefinitions
+            .map(({ displayedNameString, displayedValueString }) => `${displayedNameString}: ${displayedValueString}`)
+            .join(" "),
         cell: ({ row: { original } }) => {
-          const { filters } = original;
+          const { filterDefinitions } = original;
 
-          return isEmptyArray(filters) ? (
+          return isEmptyArray(filterDefinitions) ? (
             CELL_EMPTY_VALUE
           ) : (
             <ExpandableList
-              items={filters}
+              items={filterDefinitions}
               render={({ displayedNameString, displayedValueString, displayedName, displayedValue }) => (
                 <KeyValueLabel
                   key={`${displayedNameString}-${displayedValueString}`}

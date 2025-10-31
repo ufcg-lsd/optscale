@@ -3052,7 +3052,7 @@ class TestExpensesApi(TestApiBase):
         self.assertFalse('world' in response_tags)
         filter_with_tags = response.get('filter_values', {}).get('tag')
         filter_without_tags = response.get('filter_values', {}).get('without_tag')
-        self.assertListEqual(filter_with_tags, [])
+        self.assertListEqual(filter_with_tags, ['hello'])
         self.assertListEqual(filter_without_tags, [])
 
         code, response = self.get_expenses_with_available_filters(
@@ -5836,7 +5836,13 @@ class TestExpensesApi(TestApiBase):
         code, response = self.client.available_filters_get(
             self.org_id, time, time + 1, {'traffic_from': 'from_1:aws_cnr'})
         self.assertEqual(code, 200)
-        self.assertEqual(response['filter_values']['traffic_from'], [])
+        self.assertEqual(len(response['filter_values']['traffic_from']), 3)
+        for t in response['filter_values']['traffic_from']:
+            self.assertTrue(t in [
+                {'name': 'from_1', 'cloud_type': 'aws_cnr'},
+                {'name': 'from_2', 'cloud_type': 'aws_cnr'},
+                'ANY'
+            ])
         self.assertEqual(response['filter_values']['traffic_to'],
                          [{'name': 'to_1', 'cloud_type': 'aws_cnr'}, 'ANY'])
         code, response = self.client.clean_expenses_get(
@@ -6351,3 +6357,9 @@ class TestExpensesApi(TestApiBase):
         self.assertEqual(code, 200)
         self.assertEqual(response['total_count'], 1)
         self.assertEqual(response['total_cost'], 150)
+
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1, {'meta': 'link'})
+        self.assertEqual(len(response['filter_values']['meta']), 2)
+        for x in response['filter_values']['meta']:
+            self.assertTrue(x in ['m_1', 'link'])

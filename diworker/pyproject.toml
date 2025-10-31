@@ -9,7 +9,7 @@ dependencies = [
     "config-client",
     "herald-client",
     "insider-client",
-    "kombu==5.4.2",
+    "kombu==5.5.4",
     "mongodb-migrations==0.7.0",
     "optscale-data",
     "optscale-time",
@@ -18,7 +18,7 @@ dependencies = [
     "pymongo==4.6.3",
     "pyrabbit==1.1.0",
     "restapi-client",
-    "retrying==1.3.3",
+    "retrying==1.4.1",
 ]
 
 [tool.uv.sources]

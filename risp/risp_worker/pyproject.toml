@@ -8,7 +8,7 @@ dependencies = [
     "cloud-adapter",
     "config-client",
     "cryptography==44.0.1",
-    "kombu==5.3.4",
+    "kombu==5.5.4",
     "optscale-exceptions",
     "pymongo==4.6.3",
     "pyyaml==6.0.1",

@@ -35,7 +35,7 @@ class AzureProcessor(RispProcessorBase):
             return
         new_expenses_map = defaultdict(lambda: defaultdict(
             lambda: defaultdict(dict)))
-        instances = {x['cloud_resource_id']: x['region']
+        instances = {x['cloud_resource_id']: x.get('region')
                      for x in self.mongo_client.restapi.resources.find(
                         {'cloud_account_id': cloud_account_id,
                          'resource_type': 'Instance'},
@@ -154,8 +154,9 @@ class AzureProcessor(RispProcessorBase):
             os_type = 'windows' if 'windows' in expense['meter_details'][
                 'meter_sub_category'] else 'linux'
             instance_type = json.loads(
-                expense.get('additional_properties', '{}')).get(
-                    'ServiceType', '')
+                expense.get('additional_properties') or '{}').get(
+                    'ServiceType', '') or expense.get('product').split(
+                        ', ')[1]
             location = expense.get('resource_location', '')
             res_data = (os_type, instance_type, location)
             total_cost = new_expenses_map[expense['resource_id']][

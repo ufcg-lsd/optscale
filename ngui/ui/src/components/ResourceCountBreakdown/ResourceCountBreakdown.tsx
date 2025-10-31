@@ -8,7 +8,7 @@ import { useSyncQueryParamWithState } from "hooks/useSyncQueryParamWithState";
 import { WITH_LEGEND_QUERY_PARAMETER_NAME } from "urls";
 import { splitIntoTwoChunks, isEmptyArray } from "utils/arrays";
 import { getColorsMap } from "utils/charts";
-import { NOT_SET_BREAKDOWN_KEY } from "utils/constants";
+import { EMPTY_BREAKDOWN_KEY } from "utils/constants";
 import { format, secondsToMilliseconds } from "utils/datetime";
 import { SPACING_1 } from "utils/layouts";
 import ResourceCountBreakdownLineChart from "./ResourceCountBreakdownLineChart";
@@ -69,9 +69,7 @@ const useLineData = (breakdown, countKeys) => {
         return {
           x: getDateString(date),
           y: getResourcesCount(date, countKey),
-          translatedSerieId: Object.values(NOT_SET_BREAKDOWN_KEY).includes(countKey)
-            ? intl.formatMessage({ id: "(not set)" })
-            : undefined,
+          translatedSerieId: countKey === EMPTY_BREAKDOWN_KEY.NULL ? intl.formatMessage({ id: "(not set)" }) : undefined,
           details: {
             id,
             created,

@@ -7,6 +7,8 @@ export type BreakdownTotals = Record<string, BreakdownDatum>;
 
 export type Breakdown = Record<string, Record<string, BreakdownDatum>>;
 
+type RequestParams = Record<string, string>;
+
 export type TotalsTableProps = {
   startDate: number;
   endDate: number;
@@ -18,9 +20,17 @@ export type TableLoadingWrapperProps = {
   isLoading: boolean;
 } & TotalsTableProps;
 
-export type ContentProps = {
-  requestParams: Record<string, string>;
+export type MetaProps = {
+  dateRange: {
+    startDate: number;
+    endDate: number;
+  };
+  requestParams: RequestParams;
   metaNames: string[];
+};
+
+export type AvailableMetaFiltersProps = {
+  requestParams: RequestParams;
 };
 
 export type BreakdownType = ObjectValues<typeof BREAKDOWN_TYPE>;
@@ -44,4 +54,22 @@ export type BreakdownBySelectorProps = {
   value: string;
   onChange: (value: string) => void;
   metaNames: string[];
+  isLoading?: boolean;
+};
+
+export type HeadingProps = {
+  breakdownBy: string;
+  onBreakdownChange: (value: string) => void;
+  metaNames: string[];
+  breakdownType: BreakdownType;
+  onBreakdownTypeChange: (value: BreakdownType) => void;
+  applyFilterByCategory: boolean;
+  onApplyFilterByCategoryChange: (value: boolean) => void;
+  withLegend: boolean;
+  onWithLegendChange: (value: boolean) => void;
+};
+
+export type ApplyFilterByCategoryToggleProps = {
+  onChange: (value: boolean) => void;
+  checked: boolean;
 };

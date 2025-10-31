@@ -185,12 +185,13 @@ class AvailableFiltersController(CleanExpenseController):
     def _get_filter_values(self, uniq_values_map, filters):
         filter_values = {}
         for field, values in uniq_values_map.items():
-            if filters.get(field, []):
-                filter_values[field] = []
-            else:
-                if isinstance(values, dict):
-                    values = values.values()
-                filter_values[field] = list(values)
+            if field in self.JOINED_ENTITY_MAP and filters.get(field, []):
+                values = [
+                    v for k, v in values.items() if k in filters.get(field, [])
+                ]
+            if isinstance(values, dict):
+                values = values.values()
+            filter_values[field] = list(values)
         for src_k, dst_k in [('tag', 'without_tag'), ('without_tag', 'tag')]:
             if filters.get(src_k):
                 filter_values[dst_k] = list(set(

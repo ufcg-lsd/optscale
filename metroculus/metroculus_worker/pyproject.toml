@@ -6,7 +6,7 @@ dependencies = [
     "clickhouse-connect==0.8.15",
     "cloud-adapter",
     "config-client",
-    "kombu==5.3.4",
+    "kombu==5.5.4",
     "optscale-data",
     "optscale-time",
     "pymongo==4.6.3",

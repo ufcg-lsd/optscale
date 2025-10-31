@@ -1,3 +1,3 @@
-import Content from "./Content";
+import MetaTab from "./MetaTab";
 
-export { Content };
+export default MetaTab;

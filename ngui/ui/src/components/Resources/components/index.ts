@@ -1,3 +1,3 @@
-import { Content } from "./MetaTab";
+import MetaTab from "./MetaTab";
 
-export { Content as MetaTabContent };
+export { MetaTab };

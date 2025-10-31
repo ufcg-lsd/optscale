@@ -31,7 +31,7 @@ import { SPACING_2 } from "utils/layouts";
 import { getSearchParams } from "utils/network";
 import { isEmptyObject } from "utils/objects";
 import { sliceByLimitWithEllipsis } from "utils/strings";
-import { MetaTabContent } from "./components";
+import { MetaTab } from "./components";
 import { CleanExpensesBreakdownContainer, ResourceCountBreakdownContainer } from "./containers";
 import Filters from "./Filters";
 
@@ -196,7 +196,7 @@ const Resources = ({
     {
       title: CLEAN_EXPENSES_BREAKDOWN_TYPES.META,
       dataTestId: "tab_meta",
-      node: <MetaTabContent requestParams={requestParams} metaNames={filterValues.meta ?? []} />
+      node: <MetaTab requestParams={requestParams} />
     }
   ];
 
@@ -226,7 +226,6 @@ const Resources = ({
           </Box>
           <Box>
             <TabsWrapper
-              isLoading={isFilterValuesLoading}
               tabsProps={{
                 tabs,
                 activeTab: activeBreakdown,
