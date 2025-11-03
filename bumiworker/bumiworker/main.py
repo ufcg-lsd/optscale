@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import urllib3
-from kombu import Connection, Exchange, Queue, Consumer
+from kombu import Connection, Exchange, Queue, Consumer as KombuConsumer
 from kombu.log import get_logger
 from kombu.mixins import ConsumerProducerMixin
 from kombu.utils.debug import setup_logging
@@ -13,9 +13,9 @@ from optscale_client.config_client.client import Client as ConfigClient
 
 
 EXCHANGE_NAME = 'bumi-tasks'
-DLX_EXCHANGE_NAME = '%s-dlx' % EXCHANGE_NAME
+DLX_EXCHANGE_NAME = f'{EXCHANGE_NAME}-dlx'
 QUEUE_NAME = 'bumi-task'
-DLX_QUEUE_NAME = '%s-delayed' % QUEUE_NAME
+DLX_QUEUE_NAME = f'{QUEUE_NAME}-delayed'
 DLX_ARGUMENTS = {'x-dead-letter-exchange': EXCHANGE_NAME,
                  'x-dead-letter-routing-key': QUEUE_NAME}
 task_exchange = Exchange(EXCHANGE_NAME, type='direct')
@@ -38,20 +38,23 @@ class Worker(ConsumerProducerMixin):
         self.config_cl = config_client
         self._rest_cl = None
 
-    def get_consumers(self, consumer, channel):
-        return [consumer(queues=[task_queue], accept=['json'],
+    def get_consumers(self, Consumer, channel):  # noqa: N803 (match base signature)
+        return [Consumer(queues=[task_queue], accept=['json'],
                          callbacks=[self.process_task], prefetch_count=50)]
 
     def on_connection_revived(self):
         LOG.info('Recovering delayed queue')
         try:
-            conn_str = 'amqp://{user}:{pass}@{host}:{port}'.format(
-                **self.config_cl.read_branch('/rabbit'))
-            with Connection(conn_str) as connection:
+            rabbit_cfg = self.config_cl.read_branch('/rabbit')
+            rabbit_conn_str = (
+                f"amqp://{rabbit_cfg['user']}:{rabbit_cfg['pass']}@"
+                f"{rabbit_cfg['host']}:{rabbit_cfg['port']}"
+            )
+            with Connection(rabbit_conn_str) as connection:
                 with connection.channel() as channel:
-                    delayed_consumer = Consumer(channel, dlx_task_queue)
+                    delayed_consumer = KombuConsumer(channel, dlx_task_queue)
                     delayed_consumer.close()
-        except Exception as ex:
+        except (KeyError, OSError, ConnectionError) as ex:
             LOG.exception('Error on delayed queue recover - %s', str(ex))
             raise
 
@@ -77,7 +80,7 @@ class Worker(ConsumerProducerMixin):
             if body.get('module') is not None:
                 transitions_map = GROUP_TASKS_TRANSITIONS
             task = transitions_map[body['state']]
-        except Exception as ex:
+        except (KeyError, TypeError) as ex:
             LOG.exception(
                 'Failed to get task %s(%s), state %s: %s',
                 body.get('created_at'), body.get('organization_id'),
@@ -90,7 +93,7 @@ class Worker(ConsumerProducerMixin):
                  config_cl=self.config_cl,
                  on_continue_cb=self.put_task,
                  create_children_cb=self.create_children).execute()
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             LOG.exception('Task execution failed: %s - %s', type(exc), str(exc))
             raising_exceptions = tuple(
                 [BrokenPipeError, ConnectionResetError, TimeoutError])
@@ -107,9 +110,12 @@ if __name__ == '__main__':
         port=int(os.environ.get('HX_ETCD_PORT', DEFAULT_ETCD_PORT)),
     )
     config_cl.wait_configured()
-    conn_str = 'amqp://{user}:{pass}@{host}:{port}'.format(
-        **config_cl.read_branch('/rabbit'))
-    with Connection(conn_str) as conn:
+    rabbit_cfg = config_cl.read_branch('/rabbit')
+    rabbit_conn_str = (
+        f"amqp://{rabbit_cfg['user']}:{rabbit_cfg['pass']}@"
+        f"{rabbit_cfg['host']}:{rabbit_cfg['port']}"
+    )
+    with Connection(rabbit_conn_str) as conn:
         try:
             worker = Worker(conn, config_cl)
             worker.run()

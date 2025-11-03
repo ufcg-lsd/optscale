@@ -25,7 +25,7 @@ DAYS_IN_MONTH = 30
 LOG = logging.getLogger(__name__)
 
 
-class time_measure(ContextDecorator):
+class TimeMeasure(ContextDecorator):
     def __init__(self, module, module_type, organization_id):
         self.module = module
         self.module_type = module_type
@@ -110,9 +110,11 @@ class ServiceBase(object):
         raise NotImplementedError()
 
     def _publish_activities_tasks(self, tasks, routing_key):
+        rabbit_cfg = self.config_cl.read_branch('/rabbit')
         queue_conn = QConnection(
-            'amqp://{user}:{pass}@{host}:{port}'.format(
-                **self.config_cl.read_branch('/rabbit')))
+            f"amqp://{rabbit_cfg['user']}:{rabbit_cfg['pass']}@"
+            f"{rabbit_cfg['host']}:{rabbit_cfg['port']}"
+        )
         with producers[queue_conn].acquire(block=True) as producer:
             for task in tasks:
                 producer.publish(
@@ -127,8 +129,8 @@ class ServiceBase(object):
     def get(self):
         try:
             error = None
-            with time_measure(self.get_name(), self.get_type(),
-                              self.organization_id):
+            with TimeMeasure(self.get_name(), self.get_type(),
+                             self.organization_id):
                 module_res = self._get()
         except Exception as ex:
             error = str(ex) or str(type(ex))
@@ -382,8 +384,8 @@ class ModuleBase(ServiceBase):
         error = None
         previous_module_res = self.load_previous_result()
         try:
-            with time_measure(self.get_name(), self.get_type(),
-                              self.organization_id):
+            with TimeMeasure(self.get_name(), self.get_type(),
+                             self.organization_id):
                 module_res = self._get()
             module_res = self.set_detection_field(
                 module_res, previous_module_res)
@@ -393,7 +395,7 @@ class ModuleBase(ServiceBase):
             error = str(ex) or str(type(ex))
             module_res = previous_module_res
             ca_id = getattr(ex, 'cloud_account_id', None)
-            acc_str = '' if not ca_id else 'cloud account %s ' % ca_id
+            acc_str = '' if not ca_id else f'cloud account {ca_id} '
             LOG.exception(
                 'Error while processing %s%s (%s) for organization %s, '
                 'failing back to previous result. Reason - %s', acc_str,
@@ -482,8 +484,8 @@ class ArchiveBase(ModuleBase):
     def get(self):
         try:
             error = None
-            with time_measure(self.get_name(), self.get_type(),
-                              self.organization_id):
+            with TimeMeasure(self.get_name(), self.get_type(),
+                             self.organization_id):
                 checklists = self._load_checklists()
                 if len(checklists) == 0:
                     raise ValueError('Checklists not found')
