@@ -13,7 +13,7 @@ from bumiworker.bumiworker.modules.base import (
 )
 
 from tools.optscale_data.clickhouse import ExternalDataConverter
-from tools.optscale_time import utcnow, startday
+from tools.optscale_time import utcnow
 
 
 BULK_SIZE = 2000

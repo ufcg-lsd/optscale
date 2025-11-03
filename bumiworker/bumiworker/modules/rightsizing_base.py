@@ -626,7 +626,7 @@ class RightsizingBase(ModuleBase):
         flavor_regex = option_value
         try:
             re.compile(flavor_regex)
-        except Exception as exc:
+        except re.error as exc:
             LOG.exception('Error while compiling regex %s, processing %s - %s',
                           self.excluded_flavor_regex_key, self.get_name(),
                           str(exc))
@@ -660,6 +660,13 @@ class RightsizingArchiveBase(ArchiveBase, RightsizingBase):
         self.reason_description_map[ArchiveReason.RECOMMENDATION_APPLIED] = (
             'flavor changed')
 
+    # Delegate abstract methods to next MRO class (recommendation mixin)
+    def _get_supported_func_map(self):
+        return super()._get_supported_func_map()
+
+    def _get_raw_expense_resource_filter(self):
+        return super()._get_raw_expense_resource_filter()
+
     @property
     def supported_cloud_types(self):
         return list(self._get_supported_func_map().keys())
@@ -679,8 +686,14 @@ class RightsizingArchiveBase(ArchiveBase, RightsizingBase):
                                result):
         pass
 
-    def _get(self, previous_options, optimizations, cloud_accounts_map,
-             **kwargs):
+    def _get(self, *args, **kwargs):
+        # Keep signature compatible with ArchiveBase._get(*args, **kwargs)
+        if len(args) >= 3:
+            previous_options, optimizations, cloud_accounts_map = args[:3]
+        else:
+            previous_options = kwargs.get('previous_options')
+            optimizations = kwargs.get('optimizations')
+            cloud_accounts_map = kwargs.get('cloud_accounts_map')
         days_threshold = previous_options['days_threshold']
         recommended_cpu_min = previous_options['recommended_flavor_cpu_min']
         optimization_metric = previous_options['metric']
