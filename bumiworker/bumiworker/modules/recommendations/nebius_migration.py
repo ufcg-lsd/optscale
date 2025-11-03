@@ -184,9 +184,9 @@ class NebiusMigration(ModuleBase):
             supported_fractions = [100]
             for fraction in supported_fractions:
                 price_per_cpu = _get_sku_price_by_pattern(
-                    '^{0}. {1}% vCPU$'.format(name, fraction))
+                    f'^{name}. {fraction}% vCPU$')
                 price_per_ram = _get_sku_price_by_pattern(
-                    '^{0}. RAM$'.format(name))
+                    f'^{name}. RAM$')
                 return name, price_per_cpu, price_per_ram
 
     def _find_flavor(self, cloud_type, region, flavor):
@@ -257,9 +257,10 @@ class NebiusMigration(ModuleBase):
                         res = f.result()
                         if res:
                             flavor_map.update({res['flavor']: res})
-                    except Exception as ex:
-                        LOG.warning('Error processing flavor %s: %s' % (
-                            cloud_usages[i], str(ex)))
+                    except Exception as ex:  # pylint: disable=broad-exception-caught
+                        LOG.warning(
+                            f'Error processing flavor {cloud_usages[i]}: {ex}'
+                        )
             for cu in cloud_usages:
                 flavor = flavor_map.get(cu['flavor'])
                 if not flavor:

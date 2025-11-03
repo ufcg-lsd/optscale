@@ -132,7 +132,7 @@ class ServiceBase(object):
             with TimeMeasure(self.get_name(), self.get_type(),
                              self.organization_id):
                 module_res = self._get()
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-exception-caught
             error = str(ex) or str(type(ex))
             module_res = None
             LOG.exception(
@@ -391,7 +391,7 @@ class ModuleBase(ServiceBase):
                 module_res, previous_module_res)
             if self.is_resource_based:
                 module_res = self._handle_dismissed(module_res)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-exception-caught
             error = str(ex) or str(type(ex))
             module_res = previous_module_res
             ca_id = getattr(ex, 'cloud_account_id', None)
@@ -512,7 +512,7 @@ class ArchiveBase(ModuleBase):
                         res = self._get(previous_options, archive_candidates,
                                         cloud_accounts_map)
                         self._archive_data(res, previous['created_at'])
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-exception-caught
             error = str(ex) or str(type(ex))
             LOG.exception(
                 'Error while processing %s (%s) for organization %s. Reason - %s',
