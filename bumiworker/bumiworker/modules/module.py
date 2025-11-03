@@ -20,11 +20,13 @@ def import_module(module_name, module_type):
     modules = list_modules(module_type)
     if module_name not in modules:
         raise UnknownModuleException(
-            'Module %s is unknown in %s scope' % (module_name, module_type))
+            f'Module {module_name} is unknown in {module_type} scope')
     import_base = dirname(__file__)[len(pythonpath):]
     import_base = import_base.replace('/', '.')
-    return __import__('%s.%s.%s' % (import_base, module_type, module_name),
-                      globals(), locals(), modules, 0)
+    return __import__(
+        f'{import_base}.{module_type}.{module_name}',
+        globals(), locals(), modules, 0
+    )
 
 
 def call_module(module_name, module_type, organization_id, config_client,
