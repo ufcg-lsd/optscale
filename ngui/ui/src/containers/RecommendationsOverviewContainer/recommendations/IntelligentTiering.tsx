@@ -1,17 +1,3 @@
-/**
- * IntelligentTiering.tsx
- *
- * This file defines the IntelligentTiering recommendation class that extends BaseRecommendation.
- * It provides the structure and configuration for displaying intelligent tiering recommendations
- * in the OptScale frontend.
- *
- * The file contains:
- * - Column definitions for the recommendations table display
- * - Class properties for recommendation type, name, title, and metadata
- * - Preview items configuration for card view display
- *
- */
-
 import { FormattedMessage } from "react-intl";
 import FormattedMoney from "components/FormattedMoney";
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel";
