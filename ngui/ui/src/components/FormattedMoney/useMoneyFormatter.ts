@@ -1,32 +1,39 @@
 import { useCallback } from "react";
-import { useIntl } from "react-intl";
+import { IntlShape, useIntl } from "react-intl";
 import { formatCompactNumber } from "components/CompactFormattedNumber";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
-import { ONE_CENT, FORMATTED_MONEY_TYPES } from "utils/constants";
+import { FORMATTED_MONEY_TYPES } from "utils/constants";
 
-const ONE_DOLLAR = 1.0;
-
+const ONE_DOLLAR = 1;
 const COMPACT_VALUE_THRESHOLD = 1000;
 
-const formatLessThanOne =
-  (formatter) =>
-  ({ format }) =>
-    `<${formatter(1, { format })}`;
+type FormatParams = {
+  value: number;
+  format?: string;
+  absoluteValue: number;
+  maximumFractionDigits?: number;
+};
 
+type Formatter = IntlShape["formatNumber"];
+
+const formatLessThanOne =
+  (formatter: Formatter) =>
+  ({ format }: { format?: string }) =>
+    `< ${formatter(1, { format })}`;
 
 const formatCompactMoney =
-  (formatter) =>
-  ({ value, format }) =>
-    formatCompactNumber(formatter)({ value, format: `${format}Compact` });
+  (formatter: Formatter) =>
+  ({ value, format }: { value: number; format?: string }) =>
+    formatCompactNumber(formatter)({ value, format: format ? `${format}Compact` : undefined });
 
 const formatCommon =
-  (formatter) =>
-  ({ value, format, absoluteValue }) =>
+  (formatter: Formatter) =>
+  ({ value, format, absoluteValue }: FormatParams) =>
     absoluteValue < ONE_DOLLAR ? formatLessThanOne(formatter)({ format }) : formatter(value, { format });
 
 const formatCompact =
-  (formatter) =>
-  ({ value, format, absoluteValue }) => {
+  (formatter: Formatter) =>
+  ({ value, format, absoluteValue }: FormatParams) => {
     if (absoluteValue >= COMPACT_VALUE_THRESHOLD) {
       return formatCompactMoney(formatter)({ value, format });
     }
@@ -34,13 +41,13 @@ const formatCompact =
   };
 
 const formatTiny =
-  (formatter) =>
-  ({ value, format, maximumFractionDigits = 4 }) =>
+  (formatter: Formatter) =>
+  ({ value, format, maximumFractionDigits = 4 }: FormatParams) =>
     formatter(value, { format, maximumFractionDigits });
 
 const formatTinyCompact =
-  (formatter) =>
-  ({ value, format, maximumFractionDigits = 4 }) => {
+  (formatter: Formatter) =>
+  ({ value, format, maximumFractionDigits = 4 }: FormatParams) => {
     if (Math.abs(value) >= COMPACT_VALUE_THRESHOLD) {
       return formatCompactMoney(formatter)({ value, format });
     }
@@ -50,14 +57,13 @@ const formatTinyCompact =
 
 export const useMoneyFormatter = () => {
   const { currency } = useOrganizationInfo();
-
   const intl = useIntl();
 
   return useCallback(
-    (type, value, { format, ...rest } = {}) => {
+    (type: string, value: number, { format, ...rest }: { format?: string; [key: string]: unknown } = {}) => {
       const calculatedFormat = format || currency;
 
-      if (!value) {
+      if (!value && value !== 0) {
         return intl.formatNumber(0, { format: calculatedFormat });
       }
 
@@ -65,10 +71,19 @@ export const useMoneyFormatter = () => {
         [FORMATTED_MONEY_TYPES.COMMON]: formatCommon,
         [FORMATTED_MONEY_TYPES.COMPACT]: formatCompact,
         [FORMATTED_MONEY_TYPES.TINY_COMPACT]: formatTinyCompact,
-        [FORMATTED_MONEY_TYPES.TINY]: formatTiny
+        [FORMATTED_MONEY_TYPES.TINY]: formatTiny,
       }[type];
 
-      return formatter(intl.formatNumber)({ value, absoluteValue: Math.abs(value), format: calculatedFormat, ...rest });
+      if (!formatter) {
+        return intl.formatNumber(value, { format: calculatedFormat });
+      }
+
+      return formatter(intl.formatNumber)({
+        value,
+        absoluteValue: Math.abs(value),
+        format: calculatedFormat,
+        ...rest,
+      });
     },
     [currency, intl]
   );
