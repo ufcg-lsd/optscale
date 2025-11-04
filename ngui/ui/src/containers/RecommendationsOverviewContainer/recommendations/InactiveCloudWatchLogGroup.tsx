@@ -1,17 +1,3 @@
-/**
-* InactiveCloudWatchLogGroup.tsx
-*
-* This file defines the InactiveCloudWatchLogGroup recommendation class that extends BaseRecommendation.
-* It provides the structure and configuration for displaying inactive CloudWatch log group recommendations
-* in the OptScale frontend.
-*
-* The file contains:
-    * - Column definitions for the recommendations table display
-    * - Class properties for recommendation type, name, title, and metadata
-    * - Preview items configuration for card view display
-    *
-    */
-
 import { AWS_EC2, AWS_S3 } from "hooks/useRecommendationServices";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
