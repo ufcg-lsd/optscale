@@ -72,24 +72,31 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return metrics
         return (resource.get('meta', {}) or {}).get('metrics', {}) or {}
 
-    def _has_recent_metrics(
-            self, series: List[Dict], days_threshold: int = DEFAULT_DAYS_THRESHOLD) -> bool:
+    def _count_occurrences_in_threshold(
+            self, series: List[Dict], days_threshold: int) -> int:
         """
-        Check if the metric series has a timestamp within the recent window.
+        Count the occurrences of metrics within the threshold window.
         """
         cutoff_recent_window = self._utc_now() - timedelta(days=days_threshold)
+        total = 0
         for m in series or []:
             ts = m.get('timestamp')
             if not ts:
                 continue
             try:
                 t = self._parse_ts(ts)
+                if t >= cutoff_recent_window:
+                    total += 1
             except Exception:
                 continue
+        return total
 
-            if t >= cutoff_recent_window:
-                return True
-        return False
+    def _has_recent_metrics(
+            self, series: List[Dict], days_threshold: int = DEFAULT_DAYS_THRESHOLD) -> bool:
+        """
+        Check if the metric series has a timestamp within the recent window.
+        """
+        return self._count_occurrences_in_threshold(series, days_threshold) > 0
 
     def _sum_metrics_last_month(self, series: List[Dict]) -> float:
         """
@@ -215,24 +222,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return ca.get("id") or ca.get("_id")
         return ""
 
-    def _count_occurrences(
-            self, series: List[Dict], days_threshold: int) -> int:
-        """
-        Count the occurrences of the metric.
-        """
-        cutoff_recent_window = self._utc_now() - timedelta(days=days_threshold)
-        total = 0
-        for m in series or []:
-            ts = m.get('timestamp')
-            if not ts:
-                continue
-            try:
-                t = self._parse_ts(ts)
-                if t >= cutoff_recent_window:
-                    total += 1
-            except Exception:
-                continue
-        return total
 
     def _get(self):
         """
@@ -270,9 +259,9 @@ class InactiveCloudWatchLogGroup(ModuleBase):
 
                 metrics = self._get_metrics(r)
 
-                ingestion_occurrences = self._count_occurrences(
+                ingestion_occurrences = self._count_occurrences_in_threshold(
                     metrics.get(MetricKey.INGESTION.value, []), days_threshold)
-                query_occurrences = self._count_occurrences(
+                query_occurrences = self._count_occurrences_in_threshold(
                     metrics.get(MetricKey.QUERY.value, []), days_threshold)
 
                 result.append({
