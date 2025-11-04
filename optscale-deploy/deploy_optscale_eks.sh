@@ -108,14 +108,14 @@ generate_localhost_tls_if_needed() {
   if [[ -n "$TLS_CERT_PATH" && -n "$TLS_KEY_PATH" ]]; then
     require_file "$TLS_CERT_PATH" "tls-cert"
     require_file "$TLS_KEY_PATH"  "tls-key"
-    echo "🔐 Using provided TLS materials:"
+    echo "Using provided TLS materials:"
     echo "    cert: $TLS_CERT_PATH"
     echo "    key : $TLS_KEY_PATH"
     return
   fi
 
   # Neither provided — generate self-signed cert/key to ./tmp_tls/optscale.*
-  echo "🔐 No TLS provided. Generating self-signed localhost certificate/key..."
+  echo "No TLS provided. Generating self-signed localhost certificate/key..."
   check_command "openssl"
 
   mkdir -p "${TLS_OUTPUT_DIR}"
@@ -153,7 +153,7 @@ EOF
   TLS_CERT_PATH="${TLS_CERT_DEFAULT}"
   TLS_KEY_PATH="${TLS_KEY_DEFAULT}"
 
-  echo "✅ Generated:"
+  echo "Generated:"
   echo "    cert: ${TLS_CERT_PATH}"
   echo "    key : ${TLS_KEY_PATH}"
 }
@@ -162,13 +162,13 @@ EOF
 # Main functions
 #================================================================================
 configure_kubeconfig() {
-  echo "✅ 1. Configuring kubeconfig for EKS cluster '$EKS_CLUSTER_NAME' in '$AWS_REGION'..."
+  echo "1. Configuring kubeconfig for EKS cluster '$EKS_CLUSTER_NAME' in '$AWS_REGION'..."
   aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
   echo "Kubeconfig updated successfully."
 }
 
 setup_kubectl_autocomplete() {
-  echo "✅ 2. Setting up kubectl bash autocompletion..."
+  echo "2. Setting up kubectl bash autocompletion..."
   local BASHRC_PATH="$HOME/.bashrc"
   local AUTOCOMPLETE_LINE='source <(kubectl completion bash)'
   if ! grep -Fxq "$AUTOCOMPLETE_LINE" "$BASHRC_PATH" 2>/dev/null; then
@@ -180,13 +180,13 @@ setup_kubectl_autocomplete() {
 }
 
 install_dashboard() {
-  echo "✅ 3. Installing Kubernetes Dashboard..."
+  echo "3. Installing Kubernetes Dashboard..."
   kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
   echo "Dashboard deployment initiated."
 }
 
 install_nginx_and_ssl() {
-  echo "✅ 4. Using TLS key/cert and installing NGINX Ingress..."
+  echo "4. Using TLS key/cert and installing NGINX Ingress..."
 
   # Validate inputs (at this point either provided or generated)
   require_file "$TLS_CERT_PATH" "tls-cert"
@@ -227,7 +227,7 @@ configure_coredns() {
     return
   fi
 
-  echo "✅ 5. Configuring CoreDNS to forward '$DTS_DOMAIN' to '$DTS_FORWARD_IP'..."
+  echo "5. Configuring CoreDNS to forward '$DTS_DOMAIN' to '$DTS_FORWARD_IP'..."
   local corefile
   corefile="$(kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}')"
 
@@ -248,10 +248,10 @@ configure_coredns() {
 }
 
 label_current_node() {
-  echo "✅ 6. Labeling the current node (first Ready node) with node-role.kubernetes.io/control-plane=\"\" ..."
+  echo "6. Labeling the current node (first Ready node) with node-role.kubernetes.io/control-plane=\"\" ..."
 
   if ! kubectl get --raw='/readyz' >/dev/null 2>&1; then
-    echo "🚨 kubectl can’t reach the API server (readyz check failed)."
+    echo "kubectl can’t reach the API server (readyz check failed)."
     kubectl config current-context || true
     exit 1
   fi
@@ -273,14 +273,14 @@ label_current_node() {
     exit 1
   fi
 
-  echo "🎉 Labeled $NODE_NAME with node-role.kubernetes.io/control-plane=\"\""
+  echo "Labeled $NODE_NAME with node-role.kubernetes.io/control-plane=\"\""
 }
 
 #================================================================================
 # Main
 #================================================================================
 main() {
-  echo "🚀 Starting EKS Cluster Configuration Script..."
+  echo "Starting EKS Cluster Configuration Script..."
   check_command "aws"
   check_command "kubectl"
   check_command "helm"
@@ -297,16 +297,16 @@ main() {
   configure_coredns
   label_current_node
 
-  echo "✅ Deploying 'optscale' with TLS files to Helm values..."
+  echo "Deploying 'optscale' with TLS files to Helm values..."
   helm upgrade --install \
     -f values-eks.yaml \
     --set-file optscale_key="${TLS_KEY_PATH}" \
     --set-file certificates.optscale="${TLS_CERT_PATH}" \
     optscale ./optscale/
 
-  echo -e "\n🎉 Script finished successfully!"
+  echo -e "\nScript finished successfully!"
   echo "ℹ️ Default SSL certificate in NGINX Ingress: ${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}"
-  echo "📁 TLS in use:"
+  echo "TLS in use:"
   echo "    cert: ${TLS_CERT_PATH}"
   echo "    key : ${TLS_KEY_PATH}"
 }
