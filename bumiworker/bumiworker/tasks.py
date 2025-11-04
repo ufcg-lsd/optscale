@@ -25,11 +25,9 @@ RECOMMENDATION_FOLDER = 'recommendations'
 
 
 def task_str(task):
-    return (
-        f"{task.get('created_at')} (organization_id {task.get('organization_id')}, "
-        f"module {task.get('module')}({task.get('module_type')}), "
-        f"try {task.get('tries_count')})"
-    )
+    return '%s (organization_id %s, module %s(%s), try %s)' % (
+        task.get('created_at'), task.get('organization_id'),
+        task.get('module'), task.get('module_type'), task.get('tries_count'))
 
 
 class BumiTaskTimeoutError(Exception):
@@ -66,7 +64,8 @@ class Base(object):
             s3_params = self.config_cl.read_branch('/minio')
             self._s3_client = boto3.client(
                 's3',
-                endpoint_url=f"http://{s3_params['host']}:{s3_params['port']}",
+                endpoint_url='http://{}:{}'.format(
+                    s3_params['host'], s3_params['port']),
                 aws_access_key_id=s3_params['access'],
                 aws_secret_access_key=s3_params['secret'],
                 config=BotoConfig(s3={'addressing_style': 'path'})
@@ -106,7 +105,7 @@ class Base(object):
         if self.can_continue(exc):
             self.body['tries_count'] += 1
         else:
-            self.body['reason'] = f'{type(exc)} - {str(exc) or None}'
+            self.body['reason'] = '%s - %s' % (type(exc), str(exc) or None)
             self.body['state'] = TaskState.ERROR
         self.on_continue_cb(self.body, self.is_delayed)
 
@@ -118,10 +117,10 @@ class Base(object):
         try:
             self.check_timeout()
             self._execute()
-        except Exception as main_ex:  # pylint: disable=broad-exception-caught
+        except Exception as main_ex:
             try:
                 self._handle_exception(main_ex)
-            except Exception as set_error_ex:  # pylint: disable=broad-exception-caught
+            except Exception as set_error_ex:
                 LOG.error(
                     'Task %s, step %s - %s', task_str(self.body), self.step,
                     str(set_error_ex))
@@ -153,10 +152,8 @@ class CheckTimeoutThreshold(UpdateTimeout):
         if (utcnow_timestamp() -
                 self.body['last_update'] > self.body['task_timeout']):
             raise BumiTaskTimeoutError(
-                f'Timeout error while process task {
-                    task_str(
-                        self.body)}, step {
-                    self.step}')
+                'Timeout error while process task %s, step %s' % (
+                    task_str(self.body), self.step))
 
 
 class CheckWaitThreshold(Continue):
@@ -170,10 +167,8 @@ class CheckWaitThreshold(Continue):
         if (utcnow_timestamp() - self.body['last_update'] >
                 self.body['wait_timeout']):
             raise BumiTaskWaitError(
-                f'Wait error while process task {
-                    task_str(
-                        self.body)}, step {
-                    self.step}')
+                'Wait error while process task %s, step %s' % (
+                    task_str(self.body), self.step))
 
 
 class CompleteBase(Base):
@@ -187,11 +182,8 @@ class CompleteBase(Base):
                 self.body['wait_timeout']):
             self.on_continue_cb(self.body, self.is_delayed)
         else:
-            LOG.error(
-                'Aborting task %s, step %s since graceful fail seems impossible',
-                task_str(
-                    self.body),
-                self.step)
+            LOG.error('Aborting task %s, step %s since graceful fail seems impossible',
+                      task_str(self.body), self.step)
 
     def _execute(self):
         self.message.ack()
@@ -200,10 +192,9 @@ class CompleteBase(Base):
         failed_modules = []
         for module_folder in [RECOMMENDATION_FOLDER, SERVICE_FOLDER,
                               ARCHIVE_FOLDER]:
-            prefix = f"{
-                os.path.join(
-                    self.body['organization_id'], str(
-                        self.body['created_at']), module_folder)}/"
+            prefix = '%s/' % os.path.join(
+                self.body['organization_id'], str(self.body['created_at']),
+                module_folder)
             s3_objects = self.s3_client.list_objects_v2(
                 Bucket=BUCKET_NAME, Prefix=prefix)
             modules_result = []
@@ -213,7 +204,7 @@ class CompleteBase(Base):
                     with open(temp_file_path, 'wb') as f_res:
                         self.s3_client.download_fileobj(
                             BUCKET_NAME, s3_object['Key'], f_res)
-                    with open(temp_file_path, 'r', encoding='utf-8') as f_in:
+                    with open(temp_file_path, 'r') as f_in:
                         res = json.load(f_in)
                         if res:
                             modules_result.append(res)
@@ -242,7 +233,7 @@ class SetSucceededNotifiable(SetSucceeded):
         recipient = self.config_cl.optscale_error_email_recipient()
         if not recipient:
             return
-        subject = f'[{self.config_cl.public_ip()}] Recommendation module failed'
+        subject = '[%s] Recommendation module failed' % self.config_cl.public_ip()
         template_params = {
             'texts': {
                 'organization': {'id': organization_id,
@@ -282,17 +273,17 @@ class InitializeChildrenBase(CheckTimeoutThreshold):
 
     def _get_child_task(self, module):
         return {
-            'last_update': utcnow_timestamp(),
-            'tries_count': 0,
-            'created_at': self.body['created_at'],
-            'checklist_id': self.body['checklist_id'],
-            'organization_id': self.body['organization_id'],
-            'state': TaskState.CREATED,
-            'module': module,
-            'module_type': self.module_type,
-            'task_timeout': self.body['task_timeout'],
-            'max_retries': self.body['max_retries'],
-        }
+                'last_update': utcnow_timestamp(),
+                'tries_count': 0,
+                'created_at': self.body['created_at'],
+                'checklist_id': self.body['checklist_id'],
+                'organization_id': self.body['organization_id'],
+                'state': TaskState.CREATED,
+                'module': module,
+                'module_type': self.module_type,
+                'task_timeout': self.body['task_timeout'],
+                'max_retries': self.body['max_retries'],
+            }
 
     def create_children_tasks(self, modules):
         children_params = []
@@ -336,10 +327,9 @@ class WaitTasksResult(CheckWaitThreshold):
         raise NotImplementedError
 
     def _execute(self):
-        prefix = f"{
-            os.path.join(
-                self.body['organization_id'], str(
-                    self.body['created_at']), self.folder)}/"
+        prefix = '%s/' % os.path.join(
+            self.body['organization_id'], str(self.body['created_at']),
+            self.folder)
         s3_objects = self.s3_client.list_objects_v2(
             Bucket=BUCKET_NAME, Prefix=prefix)
         if s3_objects['KeyCount'] == self.body['children_count']:
@@ -392,10 +382,9 @@ class CollectCheckResult(CheckTimeoutThreshold):
         ])
 
     def _execute(self):
-        prefix = f"{
-            os.path.join(
-                self.body['organization_id'], str(
-                    self.body['created_at']), RECOMMENDATION_FOLDER)}/"
+        prefix = '%s/' % os.path.join(
+            self.body['organization_id'], str(self.body['created_at']),
+            RECOMMENDATION_FOLDER)
         s3_objects = self.s3_client.list_objects_v2(
             Bucket=BUCKET_NAME, Prefix=prefix)
         modules_result = []
@@ -406,7 +395,7 @@ class CollectCheckResult(CheckTimeoutThreshold):
                 with open(temp_file_path, 'wb') as f_res:
                     self.s3_client.download_fileobj(
                         BUCKET_NAME, s3_object['Key'], f_res)
-                with open(temp_file_path, 'r', encoding='utf-8') as f_in:
+                with open(temp_file_path, 'r') as f_in:
                     res = json.load(f_in)
                     if res.get('timeout_error'):
                         need_raise = True
@@ -427,10 +416,9 @@ class CollectCheckResult(CheckTimeoutThreshold):
 class CheckArchiveResult(CheckTimeoutThreshold):
     def _execute(self):
         self.body['state'] = TaskState.CHECKED_ARCHIVE_RESULT
-        prefix = f"{
-            os.path.join(
-                self.body['organization_id'], str(
-                    self.body['created_at']), ARCHIVE_FOLDER)}/"
+        prefix = '%s/' % os.path.join(
+            self.body['organization_id'], str(self.body['created_at']),
+            ARCHIVE_FOLDER)
         s3_objects = self.s3_client.list_objects_v2(
             Bucket=BUCKET_NAME, Prefix=prefix)
         for s3_object in s3_objects.get('Contents', []):
@@ -439,7 +427,7 @@ class CheckArchiveResult(CheckTimeoutThreshold):
                 with open(temp_file_path, 'wb') as f_res:
                     self.s3_client.download_fileobj(
                         BUCKET_NAME, s3_object['Key'], f_res)
-                with open(temp_file_path, 'r', encoding='utf-8') as f_in:
+                with open(temp_file_path, 'r') as f_in:
                     res = json.load(f_in)
                     if res.get('timeout_error') or res.get('error'):
                         self.body['state'] = TaskState.ERROR
@@ -495,8 +483,8 @@ class HandleTaskTimeout(CheckTimeoutThreshold):
         temp_file_path = str(uuid.uuid4())
         module_obj_path = os.path.join(
             self.body['organization_id'], str(self.body['created_at']),
-            self.body['module_type'], f'{self.body["module"]}.json')
-        with open(temp_file_path, 'w', encoding='utf-8') as outfile:
+            self.body['module_type'], '%s.json' % self.body['module'])
+        with open(temp_file_path, 'w') as outfile:
             json.dump(result, outfile)
         try:
             with open(temp_file_path, 'rb') as f_res:
@@ -520,13 +508,11 @@ class Process(HandleTaskTimeout):
                 self.body['module'], self.body['module_type'],
                 self.body['organization_id'], self.config_cl,
                 created_at=self.body['created_at'])
-        except Exception as ex:  # pylint: disable=broad-exception-caught
-            LOG.exception(
-                'Error while processing %s (%s) for organization %s - %s',
-                self.body['module'],
-                self.body['module_type'],
-                self.body['organization_id'],
-                str(ex))
+        except Exception as ex:
+            LOG.exception('Error while processing %s (%s) for organization %s - %s',
+                          self.body['module'], self.body['module_type'],
+                          self.body['organization_id'],
+                          str(ex))
             data, options = None, None
             error = str(ex)
         module_data = {
@@ -541,7 +527,7 @@ class Process(HandleTaskTimeout):
 
 class Cleanup(SetSucceeded):
     def _execute(self):
-        prefix = f'{self.body["organization_id"]}/'
+        prefix = '%s/' % self.body['organization_id']
         s3_objects = self.s3_client.list_objects_v2(
             Bucket=BUCKET_NAME, Prefix=prefix)
         delete_objects = []
@@ -574,7 +560,7 @@ class SetFailedNotifiable(SetFailed):
         recipient = self.config_cl.optscale_error_email_recipient()
         if not recipient:
             return
-        subject = f'[{self.config_cl.public_ip()}] Bumi task execution failed'
+        subject = '[%s] Bumi task execution failed' % self.config_cl.public_ip()
         template_params = {
             'texts': {
                 'organization': {'id': organization_id,
@@ -588,10 +574,10 @@ class SetFailedNotifiable(SetFailed):
             template_type="bumi_task_execution_failed")
 
     def _execute(self):
-        msg = f'Task {task_str(self.body)} failed. '
+        msg = 'Task %s failed. ' % task_str(self.body)
         failed_modules = self.get_failed_modules()
         if failed_modules:
-            msg += f'Failed modules: {self.get_failed_modules()}'
+            msg += 'Failed modules: %s' % self.get_failed_modules()
         LOG.error(msg)
         # TODO: OS-6259: temporary mute service email
         # self.send_failure_service_email(

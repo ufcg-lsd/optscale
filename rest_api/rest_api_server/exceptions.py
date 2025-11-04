@@ -937,7 +937,7 @@ class Err(enum.Enum):
     ]
     OE0551 = [
         "%s with %s \"%s\" already exists",
-        ["entity type", "param name", "provided name"],
+        ["entity type", "param name",  "provided name"],
         ["Partner", "name", "Development"]
     ]
     OE0552 = [
