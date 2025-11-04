@@ -222,7 +222,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
             return ca.get("id") or ca.get("_id")
         return ""
 
-
     def _get(self):
         """
         Get the inactive log groups.
