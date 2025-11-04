@@ -68,7 +68,8 @@ class ReservedInstances(ReservedInstancesBase):
             result = linux_pd_map.get(raw_info['os'])
         if result is None:
             raise KeyError(
-                f"Operating system {raw_info['os']} with software {raw_info['software']} not found")
+                'Operating system {} with software {} not found'.format(
+                    raw_info['os'], raw_info['software']))
         return result
 
     def get_offer_key(self, raw_info, resource):

@@ -249,10 +249,7 @@ def _is_not_allowed_char(char):
 
 
 def is_allowed_name(name):
-    not_allowed = list(
-        filter(
-            _is_not_allowed_char, map(
-                lambda c: c, str(name))))
+    not_allowed = list(filter(_is_not_allowed_char, map(lambda c: c, str(name))))
     if not not_allowed and str(name)[0].isalpha():
         return True
     return False

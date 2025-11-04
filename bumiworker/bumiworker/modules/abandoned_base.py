@@ -185,15 +185,8 @@ class S3AbandonedBucketsArchiveBase(ArchiveBase, S3AbandonedBucketsBase):
         return self._are_below_thresholds(
             res_data_request_map, metric_threshold_map)
 
-    def _get(self, *args, **kwargs):
-        # Keep signature compatible with ArchiveBase._get(*args, **kwargs)
-        if len(args) >= 3:
-            previous_options, optimizations, cloud_accounts_map = args[:3]
-        else:
-            previous_options = kwargs.get('previous_options')
-            optimizations = kwargs.get('optimizations')
-            cloud_accounts_map = kwargs.get('cloud_accounts_map')
-        # Original implementation below
+    def _get(self, previous_options, optimizations, cloud_accounts_map,
+             **kwargs):
         now = datetime.now(tz=timezone.utc)
         days_threshold = previous_options['days_threshold']
         start_date = now - timedelta(days_threshold)
