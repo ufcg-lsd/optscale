@@ -71,7 +71,7 @@ export const useMoneyFormatter = () => {
         [FORMATTED_MONEY_TYPES.COMMON]: formatCommon,
         [FORMATTED_MONEY_TYPES.COMPACT]: formatCompact,
         [FORMATTED_MONEY_TYPES.TINY_COMPACT]: formatTinyCompact,
-        [FORMATTED_MONEY_TYPES.TINY]: formatTiny,
+        [FORMATTED_MONEY_TYPES.TINY]: formatTiny
       }[type];
 
       if (!formatter) {
@@ -82,7 +82,7 @@ export const useMoneyFormatter = () => {
         value,
         absoluteValue: Math.abs(value),
         format: calculatedFormat,
-        ...rest,
+        ...rest
       });
     },
     [currency, intl]
