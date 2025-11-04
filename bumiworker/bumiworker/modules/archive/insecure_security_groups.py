@@ -32,14 +32,8 @@ class InsecureSecurityGroups(ArchiveBase,
         if sg_id in sgs_ids:
             return True
 
-    def _get(self, *args, **kwargs):
-        # Keep signature compatible with ArchiveBase._get(*args, **kwargs)
-        if len(args) >= 3:
-            previous_options, optimizations, cloud_accounts_map = args[:3]
-        else:
-            previous_options = kwargs.get('previous_options')
-            optimizations = kwargs.get('optimizations')
-            cloud_accounts_map = kwargs.get('cloud_accounts_map')
+    def _get(self, previous_options, optimizations, cloud_accounts_map,
+             **kwargs):
 
         cloud_func_map = self.get_cloud_func_map()
 
@@ -81,8 +75,8 @@ class InsecureSecurityGroups(ArchiveBase,
                 continue
             try:
                 security_groups = security_group_call(
-                    cloud_config, opt_instances, [], insecure_ports)
-            except Exception as ex:  # pylint: disable=broad-exception-caught
+                        cloud_config, opt_instances, [], insecure_ports)
+            except Exception as ex:
                 LOG.exception(ex)
                 continue
             cloud_res_id_sgs = defaultdict(list)
