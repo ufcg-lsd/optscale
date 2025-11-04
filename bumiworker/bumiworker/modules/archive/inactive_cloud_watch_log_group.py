@@ -102,8 +102,6 @@ class InactiveCloudWatchLogGroup(ArchiveBase, InactiveCloudWatchLogGroupRecommen
                 else:
                     reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
             else:
-                # Still inactive with current threshold - should still be in current recommendations
-                # If it's not, something else changed (like excluded_pools or skip_accounts)
                 reason = ArchiveReason.OPTIONS_CHANGED
 
             self._set_reason_properties(optimization, reason)
