@@ -5,7 +5,7 @@ auth:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/auth
-    tag: latest
+    tag: geraldo
   microsoft_oauth_client_id: ""
   name: auth
   replicaCount: 1
@@ -19,7 +19,7 @@ bi_exporter:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/bi_exporter
-    tag: latest
+    tag: geraldo
   name: bi-exporter
   replicaCount: 1
 bi_scheduler:
@@ -27,7 +27,7 @@ bi_scheduler:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/bi_scheduler
-    tag: latest
+    tag: geraldo
   name: bi-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -39,7 +39,7 @@ booking_observer:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/booking_observer
-    tag: latest
+    tag: geraldo
   name: booking-observer
   replicaCount: 2
   schedule: '*/1 * * * *'
@@ -55,7 +55,7 @@ bumischeduler:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/bumischeduler
-    tag: latest
+    tag: geraldo
   name: bumischeduler
   replicaCount: 1
 bumiworker:
@@ -63,14 +63,14 @@ bumiworker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/bumiworker
-    tag: latest
+    tag: geraldo
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/calendar_observer
-    tag: latest
+    tag: geraldo
   name: calendar-observer
   replicaCount: 1
   schedule: 0 * * * *
@@ -114,7 +114,7 @@ cleanelkdb:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/cleanelkdb
-    tag: latest
+    tag: geraldo
   log_max_size: 5120
   name: cleanelkdb
   schedule: '*/15 * * * *'
@@ -124,7 +124,7 @@ cleaninfluxdb:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/cleaninfluxdb
-    tag: latest
+    tag: geraldo
   influxdb_host: influxdb
   influxdb_port: 80
   name: cleaninfluxdb
@@ -138,7 +138,7 @@ cleanmongodb:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/cleanmongodb
-    tag: latest
+    tag: geraldo
   name: cleanmongodb
   rows_limit: 10000
   schedule: '*/3 * * * *'
@@ -153,7 +153,7 @@ clickhouse:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/clickhouse
-    tag: latest
+    tag: geraldo
   name: clickhouse
   replicaCount: 1
   replicas: 1
@@ -170,7 +170,7 @@ configurator:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/configurator
-    tag: latest
+    tag: geraldo
 databases:
 - auth-db
 - my-db
@@ -190,7 +190,7 @@ deactivatorg:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/deactivatorg
-    tag: latest
+    tag: geraldo
   name: deactivatorg
   schedule: 0 2 * * *
   startingDeadlineSeconds: 100
@@ -201,7 +201,7 @@ demo_org_cleanup:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/demo_org_cleanup
-    tag: latest
+    tag: geraldo
   name: demoorgcleanup
   schedule: 0 0 * * *
   startingDeadlineSeconds: 100
@@ -212,7 +212,7 @@ diproxy:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/diproxy
-    tag: latest
+    tag: geraldo
   name: diproxy
   replicaCount: 1
   service:
@@ -226,7 +226,7 @@ diworker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/diworker
-    tag: latest
+    tag: geraldo
   name: diworker
   replicaCount: 1
 docker_registry: null
@@ -250,7 +250,7 @@ elk:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/elk
-    tag: latest
+    tag: geraldo
   ls_heap_size: 2g
   name: elk
   service:
@@ -269,7 +269,7 @@ error_pages:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/error_pages
-    tag: latest
+    tag: geraldo
   name: error-pages
   replicaCount: 1
   service:
@@ -284,10 +284,10 @@ etcd:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/etcd
-    tag: latest
+    tag: geraldo
   job:
     containers:
-      image: andrezavilar/configurator:latest
+      image: andrezavilar/configurator:geraldo
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -309,7 +309,7 @@ failed_imports_dataset_generator:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/failed_imports_dataset_generator
-    tag: latest
+    tag: geraldo
   name: failed-imports-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -320,7 +320,7 @@ filebeat:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/filebeat
-    tag: latest
+    tag: geraldo
   name: filebeat
   service:
     external_port: 9666
@@ -333,7 +333,7 @@ gemini_scheduler:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/gemini_scheduler
-    tag: latest
+    tag: geraldo
   name: gemini-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -342,7 +342,7 @@ gemini_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/gemini_worker
-    tag: latest
+    tag: geraldo
   name: gemini-worker
   replicaCount: 1
 global:
@@ -371,13 +371,13 @@ grafana:
       id: null
       pullPolicy: Never
       repository: andrezavilar/grafana
-      tag: latest
+      tag: geraldo
     name: grafana-nginx
   image:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/grafana
-    tag: latest
+    tag: geraldo
   internalPort: 3000
   name: grafana
   replicaCount: 1
@@ -390,7 +390,7 @@ grafana_nginx:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/grafana_nginx
-    tag: latest
+    tag: geraldo
 herald:
   api:
     replicaCount: 1
@@ -402,7 +402,7 @@ herald:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/herald
-    tag: latest
+    tag: geraldo
   name: herald
   service:
     externalPort: 80
@@ -414,7 +414,7 @@ herald_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/herald_executor
-    tag: latest
+    tag: geraldo
   name: herald-executor
   replicaCount: 1
 influxdb:
@@ -422,7 +422,7 @@ influxdb:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/influxdb
-    tag: latest
+    tag: geraldo
   name: influxdb
   replicaCount: 1
   service:
@@ -435,7 +435,7 @@ insider_api:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/insider_api
-    tag: latest
+    tag: geraldo
   name: insider-api
   replicaCount: 1
   service:
@@ -447,7 +447,7 @@ insider_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/insider_scheduler
-    tag: latest
+    tag: geraldo
   name: insider-scheduler
   replicaCount: 1
   schedule: 0 0 * * *
@@ -457,7 +457,7 @@ insider_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/insider_worker
-    tag: latest
+    tag: geraldo
   name: insider-worker
   replicaCount: 1
 invite_expiration_days: 30
@@ -466,7 +466,7 @@ jira_bus:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/jira_bus
-    tag: latest
+    tag: geraldo
   name: jira-bus
   replicaCount: 1
   service:
@@ -479,7 +479,7 @@ jira_ui:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/jira_ui
-    tag: latest
+    tag: geraldo
   name: jira-ui
   replicaCount: 1
   service:
@@ -496,7 +496,7 @@ katara_service:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/katara_service
-    tag: latest
+    tag: geraldo
   name: katara
   scheduler:
     replicaCount: 1
@@ -511,7 +511,7 @@ katara_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/katara_worker
-    tag: latest
+    tag: geraldo
   name: kataraworker
   replicaCount: 1
 keeper:
@@ -519,7 +519,7 @@ keeper:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/keeper
-    tag: latest
+    tag: geraldo
   name: keeper
   replicaCount: 1
   service:
@@ -532,7 +532,7 @@ keeper_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/keeper_executor
-    tag: latest
+    tag: geraldo
   name: keeper-executor
   replicaCount: 1
 layout_cleaner:
@@ -540,7 +540,7 @@ layout_cleaner:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/layout_cleaner
-    tag: latest
+    tag: geraldo
   name: layout-cleaner
   schedule: 0 3 * * *
   startingDeadlineSeconds: 100
@@ -548,7 +548,7 @@ live_demo_generator:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/live_demo_generator
-    tag: latest
+    tag: geraldo
   name: live-demo-generator
   replicaCount: 1
   schedule: 0 * * * *
@@ -561,7 +561,7 @@ mariadb:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/mariadb
-    tag: latest
+    tag: geraldo
   name: mariadb
   replicaCount: 1
   service:
@@ -574,7 +574,7 @@ metroculus_api:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/metroculus_api
-    tag: latest
+    tag: geraldo
   name: metroculusapi
   replicaCount: 1
   service:
@@ -586,7 +586,7 @@ metroculus_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/metroculus_scheduler
-    tag: latest
+    tag: geraldo
   name: metroculusscheduler
   replicaCount: 1
   schedule: '*/30 * * * *'
@@ -596,7 +596,7 @@ metroculus_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/metroculus_worker
-    tag: latest
+    tag: geraldo
   name: metroculusworker
   replicaCount: 1
 minio:
@@ -607,7 +607,7 @@ minio:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/minio
-    tag: latest
+    tag: geraldo
   name: minio
   replicaCount: 1
   service:
@@ -626,10 +626,10 @@ mongo:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/mongo
-    tag: latest
+    tag: geraldo
   name: mongo
   replicaCount: 1
-  dataSize: 100Gi
+  dataSize: 500Gi
   service:
     externalPort: 80
     host: mongo
@@ -652,7 +652,7 @@ ngui:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/ngui
-    tag: latest
+    tag: geraldo
   name: ngui
   replicaCount: 1
   service:
@@ -723,7 +723,7 @@ organization_violations:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/organization_violations
-    tag: latest
+    tag: geraldo
   name: organization-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -745,7 +745,7 @@ power_schedule:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/power_schedule
-    tag: latest
+    tag: geraldo
   name: power-schedule
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -782,7 +782,7 @@ redis:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/redis
-    tag: latest
+    tag: geraldo
   name: redis
   replicaCount: 1
   service:
@@ -807,7 +807,7 @@ resource_discovery:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/resource_discovery
-    tag: latest
+    tag: geraldo
   memory_limit: 1024
   name: resource-discovery
   replicaCount: 2
@@ -823,7 +823,7 @@ resource_observer:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/resource_observer
-    tag: latest
+    tag: geraldo
   name: resource-observer
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -832,7 +832,7 @@ resource_violations:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/resource_violations
-    tag: latest
+    tag: geraldo
   name: resource-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -842,7 +842,7 @@ rest_api:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/rest_api
-    tag: latest
+    tag: geraldo
   name: restapi
   replicaCount: 1
   service:
@@ -854,7 +854,7 @@ risp_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/risp_scheduler
-    tag: latest
+    tag: geraldo
   name: risp-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -864,7 +864,7 @@ risp_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/risp_worker
-    tag: latest
+    tag: geraldo
   name: risp-worker
   replicaCount: 1
 secrets:
@@ -905,7 +905,7 @@ slacker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/slacker
-    tag: latest
+    tag: geraldo
   name: slacker
   replicaCount: 1
   service:
@@ -918,7 +918,7 @@ slacker_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/slacker_executor
-    tag: latest
+    tag: geraldo
   name: slacker-executor
   replicaCount: 1
 smtp: {}
@@ -1033,7 +1033,7 @@ trapper_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/trapper_scheduler
-    tag: latest
+    tag: geraldo
   name: trapper-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -1043,7 +1043,7 @@ trapper_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/trapper_worker
-    tag: latest
+    tag: geraldo
   name: trapper-worker
   replicaCount: 1
 users_dataset_generator:
@@ -1055,7 +1055,7 @@ users_dataset_generator:
   image:
     pullPolicy: IfNotPresent
     repository: andrezavilar/users_dataset_generator
-    tag: latest
+    tag: geraldo
   name: users-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -1065,7 +1065,7 @@ webhook_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: andrezavilar/webhook_executor
-    tag: latest
+    tag: geraldo
   name: webhook-executor
   replicaCount: 1
 zohocrm:
