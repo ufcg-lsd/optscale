@@ -4,8 +4,8 @@ auth:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/auth
-    tag: geraldo
+    repository: sobreira155/auth
+    tag: dev
   microsoft_oauth_client_id: ""
   name: auth
   replicaCount: 1
@@ -18,16 +18,16 @@ bi_exporter:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bi_exporter
-    tag: geraldo
+    repository: sobreira155/bi_exporter
+    tag: dev
   name: bi-exporter
   replicaCount: 1
 bi_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bi_scheduler
-    tag: geraldo
+    repository: sobreira155/bi_scheduler
+    tag: dev
   name: bi-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -38,8 +38,8 @@ bi_settings:
 booking_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/booking_observer
-    tag: geraldo
+    repository: sobreira155/booking_observer
+    tag: dev
   name: booking-observer
   replicaCount: 2
   schedule: '*/1 * * * *'
@@ -54,23 +54,23 @@ bumischeduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bumischeduler
-    tag: geraldo
+    repository: sobreira155/bumischeduler
+    tag: dev
   name: bumischeduler
   replicaCount: 1
 bumiworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bumiworker
-    tag: geraldo
+    repository: sobreira155/bumiworker
+    tag: dev
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/calendar_observer
-    tag: geraldo
+    repository: sobreira155/calendar_observer
+    tag: dev
   name: calendar-observer
   replicaCount: 1
   schedule: 0 * * * *
@@ -113,8 +113,8 @@ certificates:
 cleanelkdb:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleanelkdb
-    tag: geraldo
+    repository: sobreira155/cleanelkdb
+    tag: dev
   log_max_size: 5120
   name: cleanelkdb
   schedule: '*/15 * * * *'
@@ -123,8 +123,8 @@ cleaninfluxdb:
   days_to_store: 90
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleaninfluxdb
-    tag: geraldo
+    repository: sobreira155/cleaninfluxdb
+    tag: dev
   influxdb_host: influxdb
   influxdb_port: 80
   name: cleaninfluxdb
@@ -137,8 +137,8 @@ cleanmongodb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleanmongodb
-    tag: geraldo
+    repository: sobreira155/cleanmongodb
+    tag: dev
   name: cleanmongodb
   rows_limit: 10000
   schedule: '*/3 * * * *'
@@ -152,8 +152,8 @@ clickhouse:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/clickhouse
-    tag: geraldo
+    repository: sobreira155/clickhouse
+    tag: dev
   name: clickhouse
   replicaCount: 1
   replicas: 1
@@ -169,8 +169,8 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/configurator
-    tag: geraldo
+    repository: sobreira155/configurator
+    tag: dev
 databases:
 - auth-db
 - my-db
@@ -189,8 +189,8 @@ deactivatorg:
   enable: true
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/deactivatorg
-    tag: geraldo
+    repository: sobreira155/deactivatorg
+    tag: dev
   name: deactivatorg
   schedule: 0 2 * * *
   startingDeadlineSeconds: 100
@@ -200,8 +200,8 @@ demo_org_cleanup:
   demo_org_lifetime_hrs: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/demo_org_cleanup
-    tag: geraldo
+    repository: sobreira155/demo_org_cleanup
+    tag: dev
   name: demoorgcleanup
   schedule: 0 0 * * *
   startingDeadlineSeconds: 100
@@ -211,8 +211,8 @@ diproxy:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/diproxy
-    tag: geraldo
+    repository: sobreira155/diproxy
+    tag: dev
   name: diproxy
   replicaCount: 1
   service:
@@ -225,8 +225,8 @@ diworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/diworker
-    tag: geraldo
+    repository: sobreira155/diworker
+    tag: dev
   name: diworker
   replicaCount: 1
 docker_registry: null
@@ -249,8 +249,8 @@ elk:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/elk
-    tag: geraldo
+    repository: sobreira155/elk
+    tag: dev
   ls_heap_size: 2g
   name: elk
   service:
@@ -268,8 +268,8 @@ error_pages:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/error_pages
-    tag: geraldo
+    repository: sobreira155/error_pages
+    tag: dev
   name: error-pages
   replicaCount: 1
   service:
@@ -283,11 +283,11 @@ etcd:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/etcd
-    tag: geraldo
+    repository: sobreira155/etcd
+    tag: dev
   job:
     containers:
-      image: andrezavilar/configurator:geraldo
+      image: sobreira155/configurator:dev
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -308,8 +308,8 @@ failed_imports_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/failed_imports_dataset_generator
-    tag: geraldo
+    repository: sobreira155/failed_imports_dataset_generator
+    tag: dev
   name: failed-imports-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -319,8 +319,8 @@ filebeat:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/filebeat
-    tag: geraldo
+    repository: sobreira155/filebeat
+    tag: dev
   name: filebeat
   service:
     external_port: 9666
@@ -332,8 +332,8 @@ gemini_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/gemini_scheduler
-    tag: geraldo
+    repository: sobreira155/gemini_scheduler
+    tag: dev
   name: gemini-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -341,8 +341,8 @@ gemini_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/gemini_worker
-    tag: geraldo
+    repository: sobreira155/gemini_worker
+    tag: dev
   name: gemini-worker
   replicaCount: 1
 global:
@@ -370,14 +370,14 @@ grafana:
     image:
       id: null
       pullPolicy: Never
-      repository: andrezavilar/grafana
-      tag: geraldo
+      repository: sobreira155/grafana
+      tag: dev
     name: grafana-nginx
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/grafana
-    tag: geraldo
+    repository: sobreira155/grafana
+    tag: dev
   internalPort: 3000
   name: grafana
   replicaCount: 1
@@ -389,8 +389,8 @@ grafana:
 grafana_nginx:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/grafana_nginx
-    tag: geraldo
+    repository: sobreira155/grafana_nginx
+    tag: dev
 herald:
   api:
     replicaCount: 1
@@ -401,8 +401,8 @@ herald:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/herald
-    tag: geraldo
+    repository: sobreira155/herald
+    tag: dev
   name: herald
   service:
     externalPort: 80
@@ -413,16 +413,16 @@ herald_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/herald_executor
-    tag: geraldo
+    repository: sobreira155/herald_executor
+    tag: dev
   name: herald-executor
   replicaCount: 1
 influxdb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/influxdb
-    tag: geraldo
+    repository: sobreira155/influxdb
+    tag: dev
   name: influxdb
   replicaCount: 1
   service:
@@ -434,8 +434,8 @@ insider_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_api
-    tag: geraldo
+    repository: sobreira155/insider_api
+    tag: dev
   name: insider-api
   replicaCount: 1
   service:
@@ -446,8 +446,8 @@ insider_api:
 insider_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_scheduler
-    tag: geraldo
+    repository: sobreira155/insider_scheduler
+    tag: dev
   name: insider-scheduler
   replicaCount: 1
   schedule: 0 0 * * *
@@ -456,8 +456,8 @@ insider_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_worker
-    tag: geraldo
+    repository: sobreira155/insider_worker
+    tag: dev
   name: insider-worker
   replicaCount: 1
 invite_expiration_days: 30
@@ -465,8 +465,8 @@ jira_bus:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/jira_bus
-    tag: geraldo
+    repository: sobreira155/jira_bus
+    tag: dev
   name: jira-bus
   replicaCount: 1
   service:
@@ -478,8 +478,8 @@ jira_ui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/jira_ui
-    tag: geraldo
+    repository: sobreira155/jira_ui
+    tag: dev
   name: jira-ui
   replicaCount: 1
   service:
@@ -495,8 +495,8 @@ katara_service:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/katara_service
-    tag: geraldo
+    repository: sobreira155/katara_service
+    tag: dev
   name: katara
   scheduler:
     replicaCount: 1
@@ -510,16 +510,16 @@ katara_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/katara_worker
-    tag: geraldo
+    repository: sobreira155/katara_worker
+    tag: dev
   name: kataraworker
   replicaCount: 1
 keeper:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/keeper
-    tag: geraldo
+    repository: sobreira155/keeper
+    tag: dev
   name: keeper
   replicaCount: 1
   service:
@@ -531,24 +531,24 @@ keeper_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/keeper_executor
-    tag: geraldo
+    repository: sobreira155/keeper_executor
+    tag: dev
   name: keeper-executor
   replicaCount: 1
 layout_cleaner:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/layout_cleaner
-    tag: geraldo
+    repository: sobreira155/layout_cleaner
+    tag: dev
   name: layout-cleaner
   schedule: 0 3 * * *
   startingDeadlineSeconds: 100
 live_demo_generator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/live_demo_generator
-    tag: geraldo
+    repository: sobreira155/live_demo_generator
+    tag: dev
   name: live-demo-generator
   replicaCount: 1
   schedule: 0 * * * *
@@ -560,8 +560,8 @@ mariadb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/mariadb
-    tag: geraldo
+    repository: sobreira155/mariadb
+    tag: dev
   name: mariadb
   replicaCount: 1
   service:
@@ -573,8 +573,8 @@ metroculus_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_api
-    tag: geraldo
+    repository: sobreira155/metroculus_api
+    tag: dev
   name: metroculusapi
   replicaCount: 1
   service:
@@ -585,8 +585,8 @@ metroculus_api:
 metroculus_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_scheduler
-    tag: geraldo
+    repository: sobreira155/metroculus_scheduler
+    tag: dev
   name: metroculusscheduler
   replicaCount: 1
   schedule: '*/30 * * * *'
@@ -595,8 +595,8 @@ metroculus_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_worker
-    tag: geraldo
+    repository: sobreira155/metroculus_worker
+    tag: dev
   name: metroculusworker
   replicaCount: 1
 minio:
@@ -606,8 +606,8 @@ minio:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/minio
-    tag: geraldo
+    repository: sobreira155/minio
+    tag: dev
   name: minio
   replicaCount: 1
   service:
@@ -625,8 +625,8 @@ mongo:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/mongo
-    tag: geraldo
+    repository: sobreira155/mongo
+    tag: dev
   name: mongo
   replicaCount: 1
   dataSize: 500Gi
@@ -651,8 +651,8 @@ ngui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/ngui
-    tag: geraldo
+    repository: sobreira155/ngui
+    tag: dev
   name: ngui
   replicaCount: 1
   service:
@@ -722,8 +722,8 @@ optscale_service_emails:
 organization_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/organization_violations
-    tag: geraldo
+    repository: sobreira155/organization_violations
+    tag: dev
   name: organization-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -744,8 +744,8 @@ phpmyadmin:
 power_schedule:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/power_schedule
-    tag: geraldo
+    repository: sobreira155/power_schedule
+    tag: dev
   name: power-schedule
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -781,8 +781,8 @@ redis:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/redis
-    tag: geraldo
+    repository: sobreira155/redis
+    tag: dev
   name: redis
   replicaCount: 1
   service:
@@ -806,8 +806,8 @@ report_import_schedules:
 resource_discovery:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_discovery
-    tag: geraldo
+    repository: sobreira155/resource_discovery
+    tag: dev
   memory_limit: 1024
   name: resource-discovery
   replicaCount: 2
@@ -822,8 +822,8 @@ resource_discovery_settings:
 resource_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_observer
-    tag: geraldo
+    repository: sobreira155/resource_observer
+    tag: dev
   name: resource-observer
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -831,8 +831,8 @@ resource_observer:
 resource_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_violations
-    tag: geraldo
+    repository: sobreira155/resource_violations
+    tag: dev
   name: resource-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -841,8 +841,8 @@ rest_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/rest_api
-    tag: geraldo
+    repository: sobreira155/rest_api
+    tag: dev
   name: restapi
   replicaCount: 1
   service:
@@ -853,8 +853,8 @@ rest_api:
 risp_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/risp_scheduler
-    tag: geraldo
+    repository: sobreira155/risp_scheduler
+    tag: dev
   name: risp-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -863,8 +863,8 @@ risp_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/risp_worker
-    tag: geraldo
+    repository: sobreira155/risp_worker
+    tag: dev
   name: risp-worker
   replicaCount: 1
 secrets:
@@ -904,8 +904,8 @@ slacker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/slacker
-    tag: geraldo
+    repository: sobreira155/slacker
+    tag: dev
   name: slacker
   replicaCount: 1
   service:
@@ -917,8 +917,8 @@ slacker_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/slacker_executor
-    tag: geraldo
+    repository: sobreira155/slacker_executor
+    tag: dev
   name: slacker-executor
   replicaCount: 1
 smtp: {}
@@ -1032,8 +1032,8 @@ token_expiration: 168
 trapper_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/trapper_scheduler
-    tag: geraldo
+    repository: sobreira155/trapper_scheduler
+    tag: dev
   name: trapper-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -1042,8 +1042,8 @@ trapper_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/trapper_worker
-    tag: geraldo
+    repository: sobreira155/trapper_worker
+    tag: dev
   name: trapper-worker
   replicaCount: 1
 users_dataset_generator:
@@ -1054,8 +1054,8 @@ users_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/users_dataset_generator
-    tag: geraldo
+    repository: sobreira155/users_dataset_generator
+    tag: dev
   name: users-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -1064,8 +1064,8 @@ webhook_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/webhook_executor
-    tag: geraldo
+    repository: sobreira155/webhook_executor
+    tag: dev
   name: webhook-executor
   replicaCount: 1
 zohocrm:

@@ -147,7 +147,7 @@ install_nginx_and_ssl() {
   --set controller.resources.requests.memory=384Mi \
   --set controller.resources.limits.memory=896Mi \
   --set controller.service.type=LoadBalancer \
-  --set-json 'controller.service.loadBalancerSourceRanges=["192.168.0.0/16"]'
+  --set-json 'controller.service.loadBalancerSourceRanges=["150.165.15.3/25"]'
 
   echo "NGINX Ingress is configured to use TLS secret '${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}'."
 }
