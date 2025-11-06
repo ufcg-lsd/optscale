@@ -5,7 +5,7 @@ auth:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/auth
-    tag: dev
+    tag: v1.2.0
   microsoft_oauth_client_id: ""
   name: auth
   replicaCount: 1
@@ -19,7 +19,7 @@ bi_exporter:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/bi_exporter
-    tag: dev
+    tag: v1.2.0
   name: bi-exporter
   replicaCount: 1
 bi_scheduler:
@@ -27,7 +27,7 @@ bi_scheduler:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/bi_scheduler
-    tag: dev
+    tag: v1.2.0
   name: bi-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -39,7 +39,7 @@ booking_observer:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/booking_observer
-    tag: dev
+    tag: v1.2.0
   name: booking-observer
   replicaCount: 2
   schedule: '*/1 * * * *'
@@ -55,7 +55,7 @@ bumischeduler:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/bumischeduler
-    tag: dev
+    tag: v1.2.0
   name: bumischeduler
   replicaCount: 1
 bumiworker:
@@ -63,14 +63,14 @@ bumiworker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/bumiworker
-    tag: dev
+    tag: v1.2.0
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/calendar_observer
-    tag: dev
+    tag: v1.2.0
   name: calendar-observer
   replicaCount: 1
   schedule: 0 * * * *
@@ -114,7 +114,7 @@ cleanelkdb:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/cleanelkdb
-    tag: dev
+    tag: v1.2.0
   log_max_size: 5120
   name: cleanelkdb
   schedule: '*/15 * * * *'
@@ -124,7 +124,7 @@ cleaninfluxdb:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/cleaninfluxdb
-    tag: dev
+    tag: v1.2.0
   influxdb_host: influxdb
   influxdb_port: 80
   name: cleaninfluxdb
@@ -138,7 +138,7 @@ cleanmongodb:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/cleanmongodb
-    tag: dev
+    tag: v1.2.0
   name: cleanmongodb
   rows_limit: 10000
   schedule: '*/3 * * * *'
@@ -153,7 +153,7 @@ clickhouse:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/clickhouse
-    tag: dev
+    tag: v1.2.0
   name: clickhouse
   replicaCount: 1
   replicas: 1
@@ -170,7 +170,7 @@ configurator:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/configurator
-    tag: dev
+    tag: v1.2.0
 databases:
 - auth-db
 - my-db
@@ -190,7 +190,7 @@ deactivatorg:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/deactivatorg
-    tag: dev
+    tag: v1.2.0
   name: deactivatorg
   schedule: 0 2 * * *
   startingDeadlineSeconds: 100
@@ -201,7 +201,7 @@ demo_org_cleanup:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/demo_org_cleanup
-    tag: dev
+    tag: v1.2.0
   name: demoorgcleanup
   schedule: 0 0 * * *
   startingDeadlineSeconds: 100
@@ -212,7 +212,7 @@ diproxy:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/diproxy
-    tag: dev
+    tag: v1.2.0
   name: diproxy
   replicaCount: 1
   service:
@@ -226,7 +226,7 @@ diworker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/diworker
-    tag: dev
+    tag: v1.2.0
   name: diworker
   replicaCount: 1
 docker_registry: null
@@ -250,7 +250,7 @@ elk:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/elk
-    tag: dev
+    tag: v1.2.0
   ls_heap_size: 2g
   name: elk
   service:
@@ -269,7 +269,7 @@ error_pages:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/error_pages
-    tag: dev
+    tag: v1.2.0
   name: error-pages
   replicaCount: 1
   service:
@@ -284,10 +284,10 @@ etcd:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/etcd
-    tag: dev
+    tag: v1.2.0
   job:
     containers:
-      image: sobreira155/configurator:dev
+      image: sobreira155/configurator:v1.2.0
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -309,7 +309,7 @@ failed_imports_dataset_generator:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/failed_imports_dataset_generator
-    tag: dev
+    tag: v1.2.0
   name: failed-imports-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -320,7 +320,7 @@ filebeat:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/filebeat
-    tag: dev
+    tag: v1.2.0
   name: filebeat
   service:
     external_port: 9666
@@ -333,7 +333,7 @@ gemini_scheduler:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/gemini_scheduler
-    tag: dev
+    tag: v1.2.0
   name: gemini-scheduler
   schedule: '*/5 * * * *'
   startingDeadlineSeconds: 100
@@ -342,7 +342,7 @@ gemini_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/gemini_worker
-    tag: dev
+    tag: v1.2.0
   name: gemini-worker
   replicaCount: 1
 global:
@@ -371,13 +371,13 @@ grafana:
       id: null
       pullPolicy: Never
       repository: sobreira155/grafana
-      tag: dev
+      tag: v1.2.0
     name: grafana-nginx
   image:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/grafana
-    tag: dev
+    tag: v1.2.0
   internalPort: 3000
   name: grafana
   replicaCount: 1
@@ -390,7 +390,7 @@ grafana_nginx:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/grafana_nginx
-    tag: dev
+    tag: v1.2.0
 herald:
   api:
     replicaCount: 1
@@ -402,7 +402,7 @@ herald:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/herald
-    tag: dev
+    tag: v1.2.0
   name: herald
   service:
     externalPort: 80
@@ -414,7 +414,7 @@ herald_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/herald_executor
-    tag: dev
+    tag: v1.2.0
   name: herald-executor
   replicaCount: 1
 influxdb:
@@ -422,7 +422,7 @@ influxdb:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/influxdb
-    tag: dev
+    tag: v1.2.0
   name: influxdb
   replicaCount: 1
   service:
@@ -435,7 +435,7 @@ insider_api:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/insider_api
-    tag: dev
+    tag: v1.2.0
   name: insider-api
   replicaCount: 1
   service:
@@ -447,7 +447,7 @@ insider_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/insider_scheduler
-    tag: dev
+    tag: v1.2.0
   name: insider-scheduler
   replicaCount: 1
   schedule: 0 0 * * *
@@ -457,7 +457,7 @@ insider_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/insider_worker
-    tag: dev
+    tag: v1.2.0
   name: insider-worker
   replicaCount: 1
 invite_expiration_days: 30
@@ -466,7 +466,7 @@ jira_bus:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/jira_bus
-    tag: dev
+    tag: v1.2.0
   name: jira-bus
   replicaCount: 1
   service:
@@ -479,7 +479,7 @@ jira_ui:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/jira_ui
-    tag: dev
+    tag: v1.2.0
   name: jira-ui
   replicaCount: 1
   service:
@@ -496,7 +496,7 @@ katara_service:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/katara_service
-    tag: dev
+    tag: v1.2.0
   name: katara
   scheduler:
     replicaCount: 1
@@ -511,7 +511,7 @@ katara_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/katara_worker
-    tag: dev
+    tag: v1.2.0
   name: kataraworker
   replicaCount: 1
 keeper:
@@ -519,7 +519,7 @@ keeper:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/keeper
-    tag: dev
+    tag: v1.2.0
   name: keeper
   replicaCount: 1
   service:
@@ -532,7 +532,7 @@ keeper_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/keeper_executor
-    tag: dev
+    tag: v1.2.0
   name: keeper-executor
   replicaCount: 1
 layout_cleaner:
@@ -540,7 +540,7 @@ layout_cleaner:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/layout_cleaner
-    tag: dev
+    tag: v1.2.0
   name: layout-cleaner
   schedule: 0 3 * * *
   startingDeadlineSeconds: 100
@@ -548,7 +548,7 @@ live_demo_generator:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/live_demo_generator
-    tag: dev
+    tag: v1.2.0
   name: live-demo-generator
   replicaCount: 1
   schedule: 0 * * * *
@@ -561,7 +561,7 @@ mariadb:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/mariadb
-    tag: dev
+    tag: v1.2.0
   name: mariadb
   replicaCount: 1
   service:
@@ -574,7 +574,7 @@ metroculus_api:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/metroculus_api
-    tag: dev
+    tag: v1.2.0
   name: metroculusapi
   replicaCount: 1
   service:
@@ -586,7 +586,7 @@ metroculus_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/metroculus_scheduler
-    tag: dev
+    tag: v1.2.0
   name: metroculusscheduler
   replicaCount: 1
   schedule: '*/30 * * * *'
@@ -596,7 +596,7 @@ metroculus_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/metroculus_worker
-    tag: dev
+    tag: v1.2.0
   name: metroculusworker
   replicaCount: 1
 minio:
@@ -607,7 +607,7 @@ minio:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/minio
-    tag: dev
+    tag: v1.2.0
   name: minio
   replicaCount: 1
   service:
@@ -626,7 +626,7 @@ mongo:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/mongo
-    tag: dev
+    tag: v1.2.0
   name: mongo
   replicaCount: 1
   dataSize: 500Gi
@@ -652,7 +652,7 @@ ngui:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/ngui
-    tag: dev
+    tag: v1.2.0
   name: ngui
   replicaCount: 1
   service:
@@ -723,7 +723,7 @@ organization_violations:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/organization_violations
-    tag: dev
+    tag: v1.2.0
   name: organization-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -745,7 +745,7 @@ power_schedule:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/power_schedule
-    tag: dev
+    tag: v1.2.0
   name: power-schedule
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -782,7 +782,7 @@ redis:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/redis
-    tag: dev
+    tag: v1.2.0
   name: redis
   replicaCount: 1
   service:
@@ -807,7 +807,7 @@ resource_discovery:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/resource_discovery
-    tag: dev
+    tag: v1.2.0
   memory_limit: 1024
   name: resource-discovery
   replicaCount: 2
@@ -823,7 +823,7 @@ resource_observer:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/resource_observer
-    tag: dev
+    tag: v1.2.0
   name: resource-observer
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -832,7 +832,7 @@ resource_violations:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/resource_violations
-    tag: dev
+    tag: v1.2.0
   name: resource-violations
   replicaCount: 1
   schedule: '*/5 * * * *'
@@ -842,7 +842,7 @@ rest_api:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/rest_api
-    tag: dev
+    tag: v1.2.0
   name: restapi
   replicaCount: 1
   service:
@@ -854,7 +854,7 @@ risp_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/risp_scheduler
-    tag: dev
+    tag: v1.2.0
   name: risp-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -864,7 +864,7 @@ risp_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/risp_worker
-    tag: dev
+    tag: v1.2.0
   name: risp-worker
   replicaCount: 1
 secrets:
@@ -905,7 +905,7 @@ slacker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/slacker
-    tag: dev
+    tag: v1.2.0
   name: slacker
   replicaCount: 1
   service:
@@ -918,7 +918,7 @@ slacker_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/slacker_executor
-    tag: dev
+    tag: v1.2.0
   name: slacker-executor
   replicaCount: 1
 smtp: {}
@@ -1033,7 +1033,7 @@ trapper_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/trapper_scheduler
-    tag: dev
+    tag: v1.2.0
   name: trapper-scheduler
   replicaCount: 1
   schedule: 45 */1 * * *
@@ -1043,7 +1043,7 @@ trapper_worker:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/trapper_worker
-    tag: dev
+    tag: v1.2.0
   name: trapper-worker
   replicaCount: 1
 users_dataset_generator:
@@ -1055,7 +1055,7 @@ users_dataset_generator:
   image:
     pullPolicy: IfNotPresent
     repository: sobreira155/users_dataset_generator
-    tag: dev
+    tag: v1.2.0
   name: users-dataset-generator
   s3_path: null
   schedule: 0 0 * * *
@@ -1065,7 +1065,7 @@ webhook_executor:
     id: null
     pullPolicy: IfNotPresent
     repository: sobreira155/webhook_executor
-    tag: dev
+    tag: v1.2.0
   name: webhook-executor
   replicaCount: 1
 zohocrm:
