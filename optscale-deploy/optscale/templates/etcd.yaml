@@ -1,8 +1,8 @@
 {{- $config := .Values.etcd }}
 {{- if .Values.ha }}
-{{- $sc := default "" .Values.global.storageclass }}
+{{- $storageClass := default "" .Values.global.storageclass }}
 
-{{- if not $sc }}
+{{- if not $storageClass }}
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -24,7 +24,7 @@ metadata:
     type: local
 spec:
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: {{ default "local-storage" $sc }}
+  storageClassName: {{ default "local-storage" $storageClass }}
   volumeMode: Filesystem
   capacity:
     storage: 10Gi

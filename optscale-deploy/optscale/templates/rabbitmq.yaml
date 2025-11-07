@@ -1,7 +1,7 @@
 {{- $config := .Values.rabbitmq -}}
-{{- $sc := default "" .Values.global.storageclass -}}
-{{- $useExternal := ne $sc "" -}}
-{{- $scName := ternary $sc (printf "%s-storage" $config.name) $useExternal -}}
+{{- $storageClass := default "" .Values.global.storageclass -}}
+{{- $useExternal := ne $storageClass "" -}}
+{{- $storageClassName := ternary $storageClass (printf "%s-storage" $config.name) $useExternal -}}
 {{- $clusterDomain := default "cluster.local" .Values.clusterDomain -}}
 ---
 apiVersion: v1
@@ -155,9 +155,9 @@ metadata:
   labels:
     type: local
   annotations:
-    volume.alpha.kubernetes.io/storage-class: {{ $scName }}
+    volume.alpha.kubernetes.io/storage-class: {{ $storageClassName }}
 spec:
-  storageClassName: {{ $scName }}
+  storageClassName: {{ $storageClassName }}
   capacity:
     storage: {{ $config.mnesiaSize }}
   accessModes:
@@ -173,7 +173,7 @@ apiVersion: v1
 metadata:
   name: {{ $config.name }}-claim
 spec:
-  storageClassName: {{ $scName }}
+  storageClassName: {{ $storageClassName }}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -450,8 +450,8 @@ spec:
             else
               printf '\ncluster_formation.peer_discovery_backend = classic_config\n' >> /etc/rabbitmq/rabbitmq.conf
             fi
-     
-            
+
+
             chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /etc/rabbitmq || true
             chmod 700 /var/lib/rabbitmq || true
             [ -f /var/lib/rabbitmq/.erlang.cookie ] && chmod 600 /var/lib/rabbitmq/.erlang.cookie || true

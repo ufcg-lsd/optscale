@@ -299,7 +299,7 @@ main() {
 
   echo "Deploying 'optscale' with TLS files to Helm values..."
   helm upgrade --install \
-    -f values-eks.yaml \
+    -f ./optscale/values-eks.yaml \
     --set-file optscale_key="${TLS_KEY_PATH}" \
     --set-file certificates.optscale="${TLS_CERT_PATH}" \
     optscale ./optscale/
