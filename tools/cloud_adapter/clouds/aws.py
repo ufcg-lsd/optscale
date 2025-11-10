@@ -23,7 +23,8 @@ from botocore.exceptions import (ClientError,
                                  ParamValidationError,
                                  ConnectTimeoutError,
                                  ReadTimeoutError,
-                                 SSLError)
+                                 SSLError,
+                                 BotoCoreError)
 from botocore.session import Session as CoreSession
 from botocore.parsers import ResponseParserError
 from retrying import retry
@@ -64,6 +65,48 @@ GROUP_DATES_PATTERNS = {
     1: ['[0-9]{8}-[0-9]{8}/',
         'year=[0-9]{4}/month=([1-9]|1[0-2])/']
 }
+
+def _is_throttling_or_retryable(self, err: Exception) -> bool:
+    if isinstance(err, (ReadTimeoutError, ConnectTimeoutError, EndpointConnectionError, SSLError, ResponseParserError)):
+        return True
+
+    if isinstance(err, BotoCoreError):
+        return True
+
+    if isinstance(err, ClientError):
+        code = (err.response or {}).get('Error', {}).get('Code', '')
+        retryable = {
+            'Throttling', 'ThrottlingException', 'Throttled',
+            'RequestLimitExceeded', 'TooManyRequestsException',
+            'ServiceUnavailable', 'InternalError', 'InternalFailure',
+            'ProvisionedThroughputExceededException'
+        }
+        return code in retryable
+    return False
+
+def _exp_backoff_jitter(self, func, *args, max_attempts=10, base_delay=0.25, max_sleep=5.0, **kwargs):
+    """
+    Exponential backoff with *full jitter* (sleep ~ U(0, base*2^(n-1))),
+    tuned for AWS throttling bursts.
+
+    - Only retries on throttling/transient/network errors.
+    - Caps individual sleeps at max_sleep.
+    - Raises immediately for non-retryable ClientError codes.
+    """
+    attempt = 0
+    while True:
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            attempt += 1
+            if not self._is_throttling_or_retryable(e) or attempt >= max_attempts:
+                raise
+
+            exp = base_delay * (2 ** (attempt - 1))
+            delay = min(max_sleep, random.uniform(0, exp))
+            LOG.warning("Retryable error on %s (attempt %d/%d). Sleeping %.2fs: %s",
+                        getattr(func, "__name__", str(func)), attempt, max_attempts, delay, e)
+            time.sleep(delay)
 
 
 def _retry_on_error(exc):
@@ -2173,7 +2216,7 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['nextToken'] = next_token
 
-            resp = self._retry(logs_client.describe_log_groups, **params)
+            resp = self._exp_backoff_jitter(logs_client.describe_log_groups, **params)
             for g in resp.get('logGroups', []):
                 yield g
 
