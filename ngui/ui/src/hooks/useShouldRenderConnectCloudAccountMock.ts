@@ -1,4 +1,4 @@
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { useAllDataSources } from "./coreData/useAllDataSources";
 
 export const useShouldRenderConnectCloudAccountMock = (dataSourceType) => {
@@ -6,5 +6,5 @@ export const useShouldRenderConnectCloudAccountMock = (dataSourceType) => {
 
   return dataSourceType
     ? dataSources.findIndex((dataSource) => dataSource.type === dataSourceType) === -1
-    : isEmpty(dataSources);
+    : isEmptyArray(dataSources);
 };

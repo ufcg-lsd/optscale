@@ -6,7 +6,7 @@ import { FormattedMessage } from "react-intl";
 import { Link as RouterLink } from "react-router-dom";
 import EventsOverviewListItem from "components/EventsOverviewListItem";
 import { EVENTS } from "urls";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { getCurrentTimeInMsec } from "utils/datetime";
 import useStyles from "./EventsOverviewList.styles";
 
@@ -14,7 +14,7 @@ const EventsOverviewList = ({ events, isLoading }) => {
   const { classes } = useStyles();
 
   const renderLatestEvents = () =>
-    !isEmpty(events) ? (
+    !isEmptyArray(events) ? (
       <List component="nav" aria-labelledby="nested-list-subheader" className={classes.listContainer}>
         {events.map((event) => (
           <Link

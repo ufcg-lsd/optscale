@@ -1,7 +1,7 @@
 import React from "react";
 import Grid from "@mui/material/Grid";
 import useMetric from "hooks/useMetric";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { METRIC_TYPES } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 import MetricCard from "./MetricCard";

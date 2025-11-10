@@ -11,7 +11,9 @@ import {
   useOrganizationThemeSettingsQuery
 } from "graphql/__generated__/hooks/restapi";
 import { useCurrentOrganization } from "hooks/useOrganizationInfo";
+import { useSignOut } from "hooks/useSignOut";
 import { useUpdateScope } from "hooks/useUpdateScope";
+import { isEmptyArray } from "utils/arrays";
 import { getSearchParams, removeSearchParam } from "utils/network";
 
 type CoreDataContainerProps = {
@@ -33,6 +35,7 @@ type CoreDataContainerProps = {
 
 const CoreDataContainer = ({ render }: CoreDataContainerProps) => {
   const updateScope = useUpdateScope();
+  const signOut = useSignOut();
 
   const {
     loading: getOrganizationsLoading,
@@ -42,7 +45,14 @@ const CoreDataContainer = ({ render }: CoreDataContainerProps) => {
     onCompleted: (data) => {
       const { organizationId } = getSearchParams() as { organizationId: string };
 
-      if (data.organizations.find((org) => org.id === organizationId)) {
+      const { organizations } = data;
+
+      if (isEmptyArray(organizations)) {
+        signOut();
+        return;
+      }
+
+      if (organizations.find((org) => org.id === organizationId)) {
         updateScope({
           newScopeId: organizationId
         });

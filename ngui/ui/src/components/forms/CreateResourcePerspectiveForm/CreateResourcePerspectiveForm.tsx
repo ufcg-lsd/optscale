@@ -1,4 +1,5 @@
 import { FormProvider, useForm } from "react-hook-form";
+import { FILTER_TYPE } from "components/FilterComponents/constants";
 import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import ResourcesPerspectiveValuesDescription from "components/ResourcesPerspectiveValuesDescription";
 import { FormButtons, NameAutocompleteField, PayloadField, PerspectiveOverrideWarning } from "./FormElements";
@@ -26,11 +27,11 @@ const CreateResourcePerspectiveForm = ({
   const perspectiveFilterValues = Object.values(FILTER_CONFIGS).reduce((acc, filterConfig) => {
     const key = filterConfig.id;
 
-    if (filterConfig.type === "range") {
+    if (filterConfig.type === FILTER_TYPE.RANGE) {
       return acc;
     }
 
-    if (filterConfig.type === "selection") {
+    if (filterConfig.type === FILTER_TYPE.SELECTION) {
       return {
         ...acc,
         [filterConfig.apiName]: filterConfig.transformers.filterFilterValuesByAppliedFilters(

@@ -1,7 +1,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { useIntl } from "react-intl";
 import DataSourceMultiSelect from "components/DataSourceMultiSelect";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FIELD_NAMES } from "../constants";
 import { FormValues } from "../types";
 

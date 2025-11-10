@@ -4,7 +4,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import Chip from "components/Chip";
 import Input from "components/Input";
 import InputLoader from "components/InputLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { RUNSET_TEMPLATE_REGIONS } from "utils/constants";
 import { FIELD_NAMES } from "../constants";
 

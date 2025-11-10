@@ -121,6 +121,46 @@ class PolicyGeneratorController(BaseController):
         ]
     }
 
+    aws_linked_account_policy_template = {
+          "Version": "2012-10-17",
+          "Statement": [
+                {
+                      "Sid": "AllowS3AccountListingAndMetadata",
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:ListAllMyBuckets",
+                        "s3:GetBucketLocation",
+                        "s3:GetBucketPublicAccessBlock",
+                        "s3:GetBucketPolicyStatus",
+                        "s3:GetBucketAcl",
+                        "s3:GetBucketTagging"
+                      ],
+                      "Resource": "*"
+                },
+                {
+                      "Sid": "AllowIAMOperations",
+                      "Effect": "Allow",
+                      "Action": [
+                        "iam:GetAccessKeyLastUsed",
+                        "iam:GetLoginProfile",
+                        "iam:ListUsers",
+                        "iam:ListAccessKeys"
+                      ],
+                      "Resource": "*"
+                    },
+                {
+                      "Sid": "AllowMonitoringAndInfrastructureReadOnly",
+                      "Effect": "Allow",
+                      "Action": [
+                        "cloudwatch:GetMetricStatistics",
+                        "ec2:Describe*",
+                        "elasticloadbalancing:Describe*"
+                      ],
+                      "Resource": "*"
+                }
+          ]
+    }
+
     @staticmethod
     def _get_aws_account_id(access_key_id, secret_access_key,
                             session_token=None, region='us-east-1'):
@@ -147,6 +187,9 @@ class PolicyGeneratorController(BaseController):
             raise FailedDependency(Err.OE0570, [exc])
         return account_id
 
+    def generate_role_policy_linked_account(self):
+        return json.loads(json.dumps(self.aws_linked_account_policy_template))
+
     def generate_aws_role_policy(self, bucket_name):
         return json.loads(
             json.dumps(self.aws_policy_role_template) % (
@@ -156,14 +199,22 @@ class PolicyGeneratorController(BaseController):
         return json.loads(
             json.dumps(self.aws_trust_rel_template) % account_id)
 
-    def generate_policies(self, cloud_type, bucket_name):
+    def generate_policies(self, cloud_type, bucket_name=None, linked=False):
         if cloud_type not in self.supported_clouds:
             raise WrongArgumentsException(Err.OE0436, [cloud_type])
         account_id = self.get_aws_account_id()
-        return {
-            "role_policy": self.generate_aws_role_policy(bucket_name),
+        result = {
             "trust_policy": self.generate_aws_trust_rel_template(account_id),
         }
+        if not linked:
+            result.update({
+                "role_policy": self.generate_aws_role_policy(bucket_name),
+            })
+        else:
+            result.update({
+                "role_policy": self.generate_role_policy_linked_account(),
+            })
+        return result
 
 
 class PolicyGeneratorControllerAsyncController(BaseAsyncControllerWrapper):

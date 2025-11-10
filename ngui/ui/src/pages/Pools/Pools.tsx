@@ -2,7 +2,7 @@ import Mocked, { MESSAGE_TYPES } from "components/Mocked";
 import PoolsOverview from "components/PoolsOverview";
 import { PageMockupContextProvider } from "contexts/PageMockupContext";
 import PoolsService, { dataMocked } from "services/PoolsService";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const Pools = () => {
   const { useGet } = PoolsService();
@@ -16,7 +16,7 @@ const Pools = () => {
         </PageMockupContextProvider>
       }
       backdropMessageType={MESSAGE_TYPES.POOLS}
-      mockCondition={data.limit === 0 && data.parent_id === null && isEmpty(data.children)}
+      mockCondition={data.limit === 0 && data.parent_id === null && isEmptyArray(data.children)}
     >
       <PoolsOverview
         data={data}

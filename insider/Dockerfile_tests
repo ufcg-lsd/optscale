@@ -1,9 +1,15 @@
 ARG BUILDTAG=build
 ARG IMAGE=insider_api
 FROM ${IMAGE}:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
+COPY tools tools
 COPY optscale_client/insider_client optscale_client/insider_client
-COPY insider/test-requirements.txt insider/.pylintrc insider/.coveragerc ./insider/
-RUN pip install --no-cache-dir -r insider/test-requirements.txt
+
+COPY insider/.pylintrc insider/.coveragerc ./insider/
+COPY insider/insider_api/pyproject.toml insider/insider_api/uv.lock ./insider/insider_api/
+
+RUN uv --project insider/insider_api sync --locked
+
 COPY insider/insider_api/tests insider/insider_api/tests

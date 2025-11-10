@@ -188,21 +188,23 @@ class TestFlavorsApi(TestBase):
                 "price": 0.05571888,
                 "ram": 2.0,
             })
-
+        conversion_rate = 0.5
         gcp_params = {
             "cloud_type": "gcp_cnr",
             "resource_type": "instance",
+            "cloud_account_id": "test",
             "cpu": 16,
             "region": "test",
             "mode": "search_relevant",
             "family_specs": {"source_flavor_id": "e2-small"},
+            "currency_conversion_rate": conversion_rate
         }
         code, resp = self.client.find_flavor(**gcp_params)
         self.assertEqual(code, 200)
         self.assertEqual(resp, {
                 "cpu": 16,
                 "flavor": "e2-standard-16",
-                "price": 0.60376656,
+                "price": 0.60376656 * conversion_rate,
                 "ram": 64.0,
             })
 

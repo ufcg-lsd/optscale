@@ -17,7 +17,7 @@ import RangePickerForm from "components/RangePickerForm";
 import SearchInput from "components/SearchInput";
 import Table from "components/Table";
 import { useInitialMount } from "hooks/useInitialMount";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EVENT_LEVEL, EVENTS_LIMIT } from "utils/constants";
 import { EN_FULL_FORMAT, formatUTC } from "utils/datetime";
 import { SPACING_1, SPACING_2, SPACING_3 } from "utils/layouts";
@@ -256,7 +256,7 @@ const Events = ({
     ));
 
   const renderEventList = () => {
-    const noEvents = isEmpty(events);
+    const noEvents = isEmptyArray(events);
 
     if (isLoading) {
       return <Loader />;

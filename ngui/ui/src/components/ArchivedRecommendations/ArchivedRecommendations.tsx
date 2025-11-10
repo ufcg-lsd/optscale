@@ -12,10 +12,10 @@ import PanelLoader from "components/PanelLoader";
 import ArchivedRecommendationsDetailsContainer from "containers/ArchivedRecommendationsDetailsContainer";
 import RangePickerFormContainer from "containers/RangePickerFormContainer";
 import { RECOMMENDATIONS } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { DATE_RANGE_TYPE } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const ArchivedRecommendations = ({
   onBarChartSelect,

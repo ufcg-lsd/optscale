@@ -3,7 +3,7 @@ import CopyText from "components/CopyText";
 import ExpandableList from "components/ExpandableList";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import Tooltip from "components/Tooltip";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { sliceByLimitWithEllipsis } from "utils/strings";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 

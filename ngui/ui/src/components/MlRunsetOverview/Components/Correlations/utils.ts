@@ -1,4 +1,4 @@
-import { isEmpty as isEmptyArray, isArrayOfArrays } from "utils/arrays";
+import { isEmptyArray, isArrayOfArrays } from "utils/arrays";
 import { formatRunFullName } from "utils/ml";
 
 export const DIMENSION_GROUPS = Object.freeze({

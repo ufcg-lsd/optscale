@@ -16,7 +16,7 @@ import { useAssignmentRulesAvailableFilters } from "hooks/useAssignmentRulesAvai
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { ASSIGNMENT_RULES, POOLS } from "urls";
 import { isError } from "utils/api";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   DEFAULT_CONDITIONS,
   CONDITION_TYPES,

@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from datetime import timedelta
 import time
 from concurrent.futures import as_completed
-from datetime import timedelta
 import enum
 import urllib.parse
 from collections import defaultdict
@@ -372,7 +371,7 @@ class Aws(S3CloudMixin):
                         dates, default=None) or instance['LaunchTime']
                     spotted = instance.get('InstanceLifecycle') == 'spot'
                     vpc_id = instance.get('VpcId')
-                    architecture = instance['Architecture']
+                    architecture = instance.get('Architecture')
                     instance_resource = InstanceResource(
                         cloud_resource_id=instance['InstanceId'],
                         cloud_account_id=self.cloud_account_id,
@@ -479,7 +478,14 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_log_groups, (r,))
                 for r in self.list_regions()]
 
-    def _handle_specific_error(self, exc, error_code, additional_allowed=None):
+    def log_group_discovery_calls(self):
+        """
+        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+        """
+        return [(self.discover_region_log_groups, (r,))
+                for r in self.list_regions()]    
+    
+    def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
         allowed = {error_code}
         if additional_allowed:
@@ -2145,7 +2151,6 @@ class Aws(S3CloudMixin):
     def list_all_log_groups(self, region):
         """
         List all CloudWatch Logs group names in the given region.
-
         :param region: AWS region name (string)
         :return: list of log group name strings
         :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
@@ -2171,7 +2176,6 @@ class Aws(S3CloudMixin):
     def get_log_groups_details(self, log_group_names, region):
         """
         Retrieve details for the provided CloudWatch Log Group names.
-
         :param log_group_names: iterable of log group names (strings)
         :param region: AWS region name (string)
         :return: dict mapping log_group_name -> dict with keys:
@@ -2216,40 +2220,38 @@ class Aws(S3CloudMixin):
             if code == 'InvalidParameterException':
                 raise ValueError(str(e))
             raise
-        
 
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, past_days=90):
         """
         Build LogGroupResource objects for all CloudWatch Log Groups in a region.
-
         This fetches available log group names, details and metrics, then
         constructs LogGroupResource instances. If cloud_resource_id_generator
         is provided it is used to produce cloud_resource_id values; otherwise
         the log group name is used.
-
         :param region: AWS region name (string)
         :param cloud_resource_id_generator: optional callable returning a unique id
-        :param pasted_days: number of days to fetch metrics for (int)
+        :param past_days: number of days to fetch metrics for (int)
         :return: list of LogGroupResource objects
         :raises: propagates exceptions for unexpected failures
         """
         try:
             log_group_names = self.list_all_log_groups(region)
-            
+
             if not log_group_names:
                 return []
-            
+
             details = self.get_log_groups_details(log_group_names, region)
-            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+            metrics = self.get_log_groups_metrics(log_group_names, region, past_days)
             resources = []
-            
+
             for lg_name in log_group_names:
                 try:
                     lg_details = details.get(lg_name)
                     if lg_details is None:
                         continue
                     cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
-                    
+
                     resource = LogGroupResource(
                         name=lg_details['name'],
                         stored_bytes=lg_details['stored_bytes'],
@@ -2257,21 +2259,21 @@ class Aws(S3CloudMixin):
                         creation_time=lg_details['creation_time'],
                         arn=lg_details['arn'],
                         kms_key_id=lg_details['kms_key_id'],
-                        
+
                         cloud_resource_id=cloud_resource_id,
                         cloud_account_id=getattr(self, 'cloud_account_id', None),
                         region=region,
                         organization_id=getattr(self, 'organization_id', None),
                         tags={}
                     )
-                    
+
                     setattr(resource, 'metrics', metrics.get(lg_name, {}))
                     resources.append(resource)
-                    
+
                 except Exception as e:
                     LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
                     continue
-            
+
             return resources      
         except Exception as e:
             LOG.exception(f"Error creating log group resources for region {region}: {e}")
@@ -2280,7 +2282,6 @@ class Aws(S3CloudMixin):
     def discover_region_log_groups(self, region):
         """
         Generator that yields LogGroupResource objects for the specified region.
-
         Delegates to create_log_group_resources to build resources and yields
         them one by one. Errors are logged and discovery for the region is
         aborted gracefully.
@@ -2298,7 +2299,6 @@ class Aws(S3CloudMixin):
     def get_log_group_tags(self, logs_client, log_group_name):
         """
         Retrieve tags for a specific CloudWatch Log Group.
-
         :param logs_client: boto3 logs client
         :param log_group_name: CloudWatch log group name (string)
         :return: dict of tags (may be empty)
@@ -2315,7 +2315,6 @@ class Aws(S3CloudMixin):
     def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
         """
         Collect CloudWatch metrics for multiple log groups in parallel.
-
         :param log_group_names: iterable of log group names (strings)
         :param region: AWS region name (string)
         :param days_ago: integer days range to collect metrics for (int)
@@ -2324,7 +2323,7 @@ class Aws(S3CloudMixin):
         """
         if not log_group_names:
             return {}
-    
+
         metrics_to_fetch = {
             'ingestion': {
                 'MetricName': 'IncomingBytes',
@@ -2351,18 +2350,18 @@ class Aws(S3CloudMixin):
                 'Unit': 'Bytes'
             }
         }
-        
+
         end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(days=days_ago)
-        
+
         session = self.get_session()
         cw = session.client('cloudwatch', region_name=region)
-        
+
         results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
-        
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_key = {}
-            
+
             for lg_name in log_group_names:
                 for metric_key, metric_config in metrics_to_fetch.items():
                     params = {
@@ -2375,14 +2374,14 @@ class Aws(S3CloudMixin):
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }
-                    
+
                     future = executor.submit(
                         self._exp_backoff_retry, 
                         cw.get_metric_statistics, 
                         **params
                     )
                     future_to_key[future] = (lg_name, metric_key)
-            
+
             for future in as_completed(future_to_key):
                 lg_name, metric_key = future_to_key[future]
                 try:
@@ -2392,13 +2391,12 @@ class Aws(S3CloudMixin):
                 except Exception as e:
                     LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
                     results[lg_name][metric_key] = []
-        
+
         return results
-    
+
     def _generate_log_group_cloud_link(self, region, log_group_name):
         """
         Generate a console URL that links to the log group in CloudWatch logs v2.
-
         :param region: AWS region name (string)
         :param log_group_name: CloudWatch log group name (string)
         :return: fully formed console URL string
@@ -2406,7 +2404,7 @@ class Aws(S3CloudMixin):
         encoded_name = urllib.parse.quote(log_group_name, safe='')
         return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
 
-    
+
     def _exp_backoff_retry(self, func, max_retries=5, base_delay=1, *args, **kwargs):
         attempt = 0
         while True:

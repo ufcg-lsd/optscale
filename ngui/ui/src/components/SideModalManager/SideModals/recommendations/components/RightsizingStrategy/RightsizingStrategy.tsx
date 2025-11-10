@@ -4,7 +4,7 @@ import Selector, { Item, ItemContent } from "components/Selector";
 import TypographyLoader from "components/TypographyLoader";
 import { intl as rawIntl } from "translations/react-intl-config";
 import { RIGHTSIZING_METRIC_LIMIT_TYPES } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { isNumberInRange } from "utils/validation";
 
 export const NAME = "rightsizingStrategy";

@@ -1,6 +1,6 @@
 import Grid from "@mui/material/Grid";
 import LineChart from "components/LineChart";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EN_FORMAT, unixTimestampToDateTime } from "utils/datetime";
 import { SPACING_2 } from "utils/layouts";
 import MetricChartTooltip from "../MetricChartTooltip";

@@ -461,6 +461,8 @@ class TestApiBase(tornado.testing.AsyncHTTPTestCase):
                     params[k].add(r.get(k))
                 r_tags = set([t for t in r.get('tags', {}).keys()])
                 params['tags'].update(r_tags)
+                r_meta = set([t for t in r.get('meta', {}).keys()])
+                params['meta'].update(r_meta)
                 recommendations = False
                 rec = r.get('recommendations')
                 if rec and (rec['run_timestamp'] >= last_recommend_run):

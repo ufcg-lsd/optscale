@@ -21,8 +21,7 @@ import {
   GcpTenantCredentials,
   GCP_TENANT_CREDENTIALS_FIELD_NAMES,
   AwsAssumedRoleInputs,
-  AWS_ROLE_CREDENTIALS_FIELD_NAMES,
-  AWS_BILLING_BUCKET_FIELD_NAMES
+  AWS_ROLE_CREDENTIALS_FIELD_NAMES
 } from "components/DataSourceCredentialFields";
 import { Switch } from "components/forms/common/fields";
 import {
@@ -78,18 +77,7 @@ const CredentialInputs = ({ type, config }) => {
     }
 
     if (config.assume_role_account_id && config.assume_role_name) {
-      return (
-        <AwsAssumedRoleInputs
-          readOnlyFields={[AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_ACCOUNT_ID]}
-          fieldsRequiredForRoleFetch={[
-            AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_ACCOUNT_ID,
-            AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_NAME,
-            AWS_BILLING_BUCKET_FIELD_NAMES.BUCKET_NAME,
-            AWS_BILLING_BUCKET_FIELD_NAMES.BUCKET_PREFIX,
-            AWS_BILLING_BUCKET_FIELD_NAMES.EXPORT_NAME
-          ]}
-        />
-      );
+      return <AwsAssumedRoleInputs readOnlyFields={[AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_ACCOUNT_ID]} />;
     }
 
     return (
@@ -125,7 +113,7 @@ const CredentialInputs = ({ type, config }) => {
           hidden={[
             GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET,
             GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE,
-            GCP_CREDENTIALS_FIELD_NAMES.PROJECT_ID
+            GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_PROJECT_ID
           ]}
         />
       );

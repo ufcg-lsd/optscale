@@ -6,7 +6,7 @@ import IconButton from "components/IconButton";
 import QuickDatePickerValues from "components/QuickDatePickerValues";
 import { isExpensesLimit, isTtlLimit } from "utils/constraints";
 import { millisecondsToSeconds, secondsToMilliseconds } from "utils/datetime";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { FIELD_NAMES } from "./constants";
 import { ExpenseLimitInput, TtlLimitInput } from "./FormElements";
 

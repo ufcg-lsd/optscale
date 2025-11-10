@@ -5,7 +5,7 @@ import Chip from "components/Chip";
 import Input from "components/Input";
 import InputLoader from "components/InputLoader";
 import QuestionMark from "components/QuestionMark";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FIELD_NAMES } from "../constants";
 import { FormValues } from "../types";
 

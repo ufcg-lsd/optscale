@@ -131,6 +131,8 @@ class InstanceGenerationUpgrade(ModuleBase):
                         generation_params['preinstalled'] = preinstalled
                 if meter_id and cloud_type == 'azure_cnr':
                     generation_params['meter_id'] = meter_id
+                if cloud_type == 'alibaba_cnr':
+                    generation_params['cloud_account_id'] = cloud_account_id
                 try:
                     _, gen_resp = self.insider_cl.find_flavor_generation(
                         **generation_params, currency=currency)

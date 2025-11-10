@@ -13,7 +13,7 @@ import useDateRanges, {
 import { GOALS_FILTER, STATUS_FILTER } from "utils/constants";
 import { secondsToMilliseconds, inDateRange } from "utils/datetime";
 import { SPACING_2 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import RunsBreakdowns from "./RunsBreakdowns";
 import RunsFilters from "./RunsFilters";
 import RunsTable from "./RunsTable";

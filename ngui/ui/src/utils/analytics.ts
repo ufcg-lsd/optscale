@@ -3,7 +3,7 @@ import Analytics from "analytics";
 import { isDemo, isProduction } from "urls";
 import { initialize } from "utils/hotjar";
 import { getEnvironmentVariable } from "./env";
-import { isEmpty } from "./objects";
+import { isEmptyObject } from "./objects";
 
 // Hotjar analytics
 const HOT_JAR_ID = getEnvironmentVariable("VITE_HOTJAR_ID");
@@ -127,7 +127,7 @@ export const dropUserIdentificationIfUniqueIdChanged = (currentUid) => {
       log("%cGA analytics storage reset completed");
 
       // if no user traits were set while reset — identifying user with just uid
-      if (!identificationLoading && isEmpty(analytics.user().traits)) {
+      if (!identificationLoading && isEmptyObject(analytics.user().traits)) {
         log("%cGA no user info was set while storage reset. Identifying user with uid only");
         identify(currentUid, { userId: currentUid });
       }

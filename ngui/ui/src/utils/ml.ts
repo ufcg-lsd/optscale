@@ -1,4 +1,4 @@
-import { isEmpty as isEmptyArray } from "./arrays";
+import { isEmptyArray } from "./arrays";
 import { GOAL_STATUS, GOALS_FILTER_TYPES } from "./constants";
 
 export const formatRunNumber = (number) => `#${number}`;

@@ -1,17 +1,16 @@
 import { Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import AwsAssumedRoleCredentials from "../AwsAssumedRoleCredentials";
-import AwsAssumedRolePolicies from "../AwsAssumedRolePolicies";
-import AwsBillingBucket from "../AwsBillingBucket";
+import AwsBillingBucketInputs from "../AwsBillingBucketInputs";
 import AwsExportType from "../AwsExportType";
 import AwsUseAwsEdpDiscount from "../AwsUseAwsEdpDiscount";
 
 const AwsAssumedRoleInputs = ({
   readOnlyFields = [],
-  fieldsRequiredForRoleFetch = []
+  showAssumedRoleCredentialsInModal = false
 }: {
   readOnlyFields?: string[];
-  fieldsRequiredForRoleFetch: string[];
+  showAssumedRoleCredentialsInModal?: boolean;
 }) => (
   <>
     <AwsAssumedRoleCredentials readOnlyFields={readOnlyFields} />
@@ -20,8 +19,7 @@ const AwsAssumedRoleInputs = ({
       <FormattedMessage id="costAndUsageReportParametersDescription" />
     </Typography>
     <AwsExportType />
-    <AwsBillingBucket />
-    <AwsAssumedRolePolicies fieldsRequiredForRoleFetch={fieldsRequiredForRoleFetch} />
+    <AwsBillingBucketInputs showAssumedRoleCredentialsInModal={showAssumedRoleCredentialsInModal} />
   </>
 );
 

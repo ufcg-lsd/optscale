@@ -9,7 +9,7 @@ import { useApiState } from "hooks/useApiState";
 import { useIsDownMediaQuery } from "hooks/useMediaQueries";
 import { useRootData } from "hooks/useRootData";
 import EnvironmentsService from "services/EnvironmentsService";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const EnvironmentsContainer = () => {
   const startTour = useStartTour();
@@ -47,7 +47,7 @@ const EnvironmentsContainer = () => {
   return (
     <Mocked
       mock={<EnvironmentsMocked />}
-      mockCondition={(!isGetEnvironmentsLoading && isEmpty(environments)) || isOpen}
+      mockCondition={(!isGetEnvironmentsLoading && isEmptyArray(environments)) || isOpen}
       backdropMessageType={MESSAGE_TYPES.ENVIRONMENTS}
     >
       <Environments

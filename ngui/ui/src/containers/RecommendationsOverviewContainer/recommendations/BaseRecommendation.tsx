@@ -1,5 +1,5 @@
 import FormattedMoney from "components/FormattedMoney";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FORMATTED_MONEY_TYPES } from "utils/constants";
 import { ObjectValues, TODO } from "utils/types";
 

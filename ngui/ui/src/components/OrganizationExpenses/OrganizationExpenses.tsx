@@ -12,7 +12,7 @@ import { EXPENSES_BY_POOL } from "urls";
 import { AXIS_FORMATS } from "utils/charts";
 import { EXPENSES_PERIOD, LAST_MONTH, THIS_MONTH, THIS_MONTH_FORECAST, FORMATTED_MONEY_TYPES } from "utils/constants";
 import { getUTCShortMonthFromTimestamp } from "utils/datetime";
-import { isEmpty as isEmptyObject, idx } from "utils/objects";
+import { isEmptyObject, idx } from "utils/objects";
 
 // Ensure we display bar chart in order
 const getOrderedExpenses = (expenses) => ({

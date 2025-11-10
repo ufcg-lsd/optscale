@@ -31,7 +31,7 @@ import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
 import { ENVIRONMENTS_TABLE } from "reducers/columns";
 import { ENVIRONMENT_CREATE } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SCOPE_TYPES, RESOURCE_PAGE_TABS, ENVIRONMENT_TOUR_IDS_BY_DYNAMIC_FIELDS } from "utils/constants";
 import { millisecondsToSeconds } from "utils/datetime";
 import { SPACING_1 } from "utils/layouts";

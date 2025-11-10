@@ -20,7 +20,7 @@ import { getPoolUrl } from "urls";
 import { TAB_QUERY_PARAM_NAME, ORGANIZATION_OVERVIEW_TABS, RESOURCE_LIMIT_HIT_STATE } from "utils/constants";
 import { CONSTRAINTS_TYPES, CONSTRAINT_MESSAGE_FORMAT, isExpensesLimit, isTtlLimit } from "utils/constraints";
 import { format, EN_FULL_FORMAT, secondsToMilliseconds, millisecondsToSeconds, addHours } from "utils/datetime";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import useStyles from "./ResourceConstraintCard.styles";
 
 const CONSTRAINT_STATUS = Object.freeze({
@@ -89,8 +89,8 @@ const ResourceConstraintCard = ({
   const { classes } = useStyles();
 
   const getConstraintStatus = () => {
-    if (!isEmpty(poolPolicy) && poolPolicy.active) {
-      if (isEmpty(constraint)) {
+    if (!isEmptyObject(poolPolicy) && poolPolicy.active) {
+      if (isEmptyObject(constraint)) {
         return CONSTRAINT_STATUS.POOL_POLICY;
       }
       return CONSTRAINT_STATUS.RESOURCE_SPECIFIC;
@@ -104,7 +104,7 @@ const ResourceConstraintCard = ({
     if (constraintStatus === CONSTRAINT_STATUS.POOL_POLICY) {
       return poolPolicy.limit;
     }
-    if (!isEmpty(constraint)) {
+    if (!isEmptyObject(constraint)) {
       return constraint.limit;
     }
     return undefined;
@@ -112,7 +112,7 @@ const ResourceConstraintCard = ({
 
   const limit = getLimit();
 
-  const [isSwitchEnabled, setIsSwitchEnabled] = useToggle(!isEmpty(constraint));
+  const [isSwitchEnabled, setIsSwitchEnabled] = useToggle(!isEmptyObject(constraint));
   const [editMode, setEditMode] = useState(false);
 
   const onEditMode = () => {
@@ -129,7 +129,7 @@ const ResourceConstraintCard = ({
         return deleteConstraint(constraint.id);
       }
 
-      if (isEmpty(poolPolicy)) {
+      if (isEmptyObject(poolPolicy)) {
         return createConstraint(0);
       }
 

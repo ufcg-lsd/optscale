@@ -40,12 +40,22 @@ fragment GcpDataSourceConfigFragment on GcpDataSource {
       table_name
       project_id
     }
+    pricing_data {
+      dataset_name
+      table_name
+      project_id
+    }
   }
 }
 
 fragment GcpTenantDataSourceConfigFragment on GcpTenantDataSource {
   config {
     billing_data {
+      dataset_name
+      table_name
+      project_id
+    }
+    pricing_data {
       dataset_name
       table_name
       project_id
@@ -287,6 +297,15 @@ query GetResourceCountBreakdown($organizationId: ID!, $params: BreakdownParams) 
   }
 }
 
+query MetaBreakdown($organizationId: ID!, $params: BreakdownParams) {
+  metaBreakdown(organizationId: $organizationId, params: $params) {
+    breakdown
+    totals
+    start_date
+    end_date
+  }
+}
+
 mutation UpdateEmployeeEmail($employeeId: ID!, $params: UpdateEmployeeEmailInput!) {
   updateEmployeeEmail(employeeId: $employeeId, params: $params) {
     id
@@ -342,4 +361,8 @@ query CleanExpenses($organizationId: ID!, $params: CleanExpensesParams) {
 
 query CloudPolicies($organizationId: ID!, $params: CloudPoliciesParams) {
   cloudPolicies(organizationId: $organizationId, params: $params)
+}
+
+query AvailableFilters($organizationId: ID!, $params: AvailableFiltersParams) {
+  availableFilters(organizationId: $organizationId, params: $params)
 }

@@ -9,7 +9,7 @@ import { useOpenSideModal } from "hooks/useOpenSideModal";
 import GoogleCalendarIcon from "icons/GoogleCalendarIcon";
 import { EMAIL_SUPPORT } from "urls";
 import { getTimeDistance } from "utils/datetime";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import Integration from "../Integration";
 import Title from "../Title";
 
@@ -106,10 +106,10 @@ const getButton = ({ googleCalendarStatus, isLoading, canUpdate, canDelete, open
 const getGoogleCalendarStatus = (serviceAccount, calendarSynchronization) => {
   let googleCalendarStatus = GOOGLE_CALENDAR_STATUS.ALL_DISABLED;
 
-  if (serviceAccount && isEmpty(calendarSynchronization)) {
+  if (serviceAccount && isEmptyObject(calendarSynchronization)) {
     googleCalendarStatus = GOOGLE_CALENDAR_STATUS.CAN_CONNECT;
   }
-  if (!isEmpty(calendarSynchronization)) {
+  if (!isEmptyObject(calendarSynchronization)) {
     googleCalendarStatus = GOOGLE_CALENDAR_STATUS.CAN_DISCONNECT;
   }
   return googleCalendarStatus;

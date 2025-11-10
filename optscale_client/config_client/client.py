@@ -558,3 +558,15 @@ class Client(etcd.Client):
         Gets the Company name (Hystax)
         """
         return self.get("/company_name").value
+
+    def report_imports_setting(self):
+        """
+        Get settings for report imports
+        """
+        return self.read_branch('/restapi/report_imports')
+
+    def diworker_settings(self):
+        """
+        Get settings diworker
+        """
+        return self.read_branch('/diworker')

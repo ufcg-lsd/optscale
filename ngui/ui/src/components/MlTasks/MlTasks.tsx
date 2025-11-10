@@ -23,7 +23,7 @@ import {
   EMPTY_UUID
 } from "utils/constants";
 import { getSearchParams, updateSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const PageActionBar = () => {
   const openSideModal = useOpenSideModal();

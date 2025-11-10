@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { FormattedMessage } from "react-intl";
 import DashedTypography from "components/DashedTypography";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import useStyles from "./QuickDatePickerValues.styles";
 
 const QuickValues = ({ titleMessageId, items }) => (
