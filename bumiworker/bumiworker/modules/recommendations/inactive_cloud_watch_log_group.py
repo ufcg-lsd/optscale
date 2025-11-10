@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 
 from bumiworker.bumiworker.modules.base import ModuleBase
-from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import CloudWatchLogsPricing, DEFAULT as CWL_PRICING
+from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import DEFAULT as CWL_PRICING
 
 SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 

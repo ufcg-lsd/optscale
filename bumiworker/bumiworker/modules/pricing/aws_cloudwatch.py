@@ -3,7 +3,6 @@ Pricing for AWS CloudWatch Logs
 See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
 """
 from dataclasses import dataclass
-from typing import Mapping
 
 
 @dataclass(frozen=True)

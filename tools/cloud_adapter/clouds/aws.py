@@ -2215,7 +2215,7 @@ class Aws(S3CloudMixin):
             raise
 
 
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=90):
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, past_days=90):
         """
         Build LogGroupResource objects for all CloudWatch Log Groups in a region.
         This fetches available log group names, details and metrics, then
@@ -2224,7 +2224,7 @@ class Aws(S3CloudMixin):
         the log group name is used.
         :param region: AWS region name (string)
         :param cloud_resource_id_generator: optional callable returning a unique id
-        :param pasted_days: number of days to fetch metrics for (int)
+        :param past_days: number of days to fetch metrics for (int)
         :return: list of LogGroupResource objects
         :raises: propagates exceptions for unexpected failures
         """
@@ -2235,7 +2235,7 @@ class Aws(S3CloudMixin):
                 return []
 
             details = self.get_log_groups_details(log_group_names, region)
-            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+            metrics = self.get_log_groups_metrics(log_group_names, region, past_days)
             resources = []
 
             for lg_name in log_group_names:
