@@ -3,7 +3,6 @@ Pricing for AWS CloudWatch Logs
 See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
 """
 from dataclasses import dataclass
-from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -14,7 +13,7 @@ class CloudWatchLogsPricing:
     compression_factor: float
 
 
-# from es-east-1
+# from us-east-1
 DEFAULT = CloudWatchLogsPricing(
     storage_usd_per_gb_month=0.03,
     ingestion_usd_per_gb=0.50,

@@ -566,7 +566,7 @@ class LogGroupResource(CloudResource):
         self.name = name
         self.stored_bytes = stored_bytes
         self.retention_in_days = retention_in_days
-        self.creation_time = creation_time  # datetime aware (UTC) ou None
+        self.creation_time = creation_time  # datetime aware (UTC) or None
         self.arn = arn
         self.kms_key_id = kms_key_id
         self.metrics = metrics or {}

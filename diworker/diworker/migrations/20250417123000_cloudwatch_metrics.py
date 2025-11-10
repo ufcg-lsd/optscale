@@ -2,7 +2,6 @@ import logging
 
 from diworker.diworker.migrations.base import BaseMigration
 import clickhouse_connect
-from optscale_client.rest_api_client.client_v2 import Client as RestClient
 
 LOG = logging.getLogger(__name__)
 
