@@ -24,14 +24,14 @@ new_res_types = sa.Enum('instance', 'volume', 'snapshot', 'bucket', 'k8s_pod',
 
 
 def upgrade():
-    """Adiciona 'log_group' ao enum da coluna resource_type."""
+    """Adds 'log_group' to the resource_type column enum"""
     op.alter_column('discovery_info', 'resource_type',
                     existing_type=old_res_types,
                     type_=new_res_types, nullable=False)
 
 
 def downgrade():
-    """Remove 'log_group' do enum da coluna resource_type."""
+    """Removes 'log_group' from the resource_type column enum."""
     op.alter_column('discovery_info', 'resource_type',
                     existing_type=new_res_types,
                     type_=old_res_types, nullable=False)
