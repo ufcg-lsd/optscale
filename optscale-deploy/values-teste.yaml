@@ -3,7 +3,7 @@ auth:
   google_oauth_client_secret: ""
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/auth
     tag: dev
   microsoft_oauth_client_id: ""
@@ -17,7 +17,7 @@ auth:
 bi_exporter:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/bi_exporter
     tag: dev
   name: bi-exporter
@@ -25,7 +25,7 @@ bi_exporter:
 bi_scheduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/bi_scheduler
     tag: dev
   name: bi-scheduler
@@ -37,7 +37,7 @@ bi_settings:
   task_wait_timeout: 259200
 booking_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/booking_observer
     tag: dev
   name: booking-observer
@@ -53,7 +53,7 @@ bumi_worker:
 bumischeduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/bumischeduler
     tag: dev
   name: bumischeduler
@@ -61,14 +61,14 @@ bumischeduler:
 bumiworker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/bumiworker
     tag: dev
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/calendar_observer
     tag: dev
   name: calendar-observer
@@ -112,7 +112,7 @@ certificates:
     -----END CERTIFICATE-----
 cleanelkdb:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/cleanelkdb
     tag: dev
   log_max_size: 5120
@@ -122,7 +122,7 @@ cleanelkdb:
 cleaninfluxdb:
   days_to_store: 90
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/cleaninfluxdb
     tag: dev
   influxdb_host: influxdb
@@ -136,7 +136,7 @@ cleanmongodb:
   file_max_rows: 10000
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/cleanmongodb
     tag: dev
   name: cleanmongodb
@@ -151,7 +151,7 @@ clickhouse:
   external: false
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/clickhouse
     tag: dev
   name: clickhouse
@@ -168,7 +168,7 @@ clusterDomain: cluster.local
 company_name: Hystax
 configurator:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/configurator
     tag: dev
 databases:
@@ -188,7 +188,7 @@ deactivatorg:
   days_limit: 30
   enable: true
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/deactivatorg
     tag: dev
   name: deactivatorg
@@ -199,7 +199,7 @@ demo:
 demo_org_cleanup:
   demo_org_lifetime_hrs: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/demo_org_cleanup
     tag: dev
   name: demoorgcleanup
@@ -210,7 +210,7 @@ deploy_cleaninfluxdb: "true"
 diproxy:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/diproxy
     tag: dev
   name: diproxy
@@ -224,7 +224,7 @@ disable_email_verification: true
 diworker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/diworker
     tag: dev
   name: diworker
@@ -248,7 +248,7 @@ elk:
   es_heap_size: 1g
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/elk
     tag: dev
   ls_heap_size: 2g
@@ -267,7 +267,7 @@ encryption_salt_auth: null
 error_pages:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/error_pages
     tag: dev
   name: error-pages
@@ -282,7 +282,7 @@ etcd:
   hb_interval: 500
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/etcd
     tag: dev
   job:
@@ -307,7 +307,7 @@ failed_imports_dataset_generator:
   enable: false
   filename: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/failed_imports_dataset_generator
     tag: dev
   name: failed-imports-dataset-generator
@@ -318,7 +318,7 @@ fake_cad_enabled: 0
 filebeat:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/filebeat
     tag: dev
   name: filebeat
@@ -331,7 +331,7 @@ force_aws_edp_strip: null
 gemini_scheduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/gemini_scheduler
     tag: dev
   name: gemini-scheduler
@@ -340,7 +340,7 @@ gemini_scheduler:
 gemini_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/gemini_worker
     tag: dev
   name: gemini-worker
@@ -375,7 +375,7 @@ grafana:
     name: grafana-nginx
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/grafana
     tag: dev
   internalPort: 3000
@@ -388,7 +388,7 @@ grafana:
     type: NodePort
 grafana_nginx:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/grafana_nginx
     tag: dev
 herald:
@@ -400,7 +400,7 @@ herald:
     role: engine
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/herald
     tag: dev
   name: herald
@@ -412,7 +412,7 @@ herald:
 herald_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/herald_executor
     tag: dev
   name: herald-executor
@@ -420,7 +420,7 @@ herald_executor:
 influxdb:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/influxdb
     tag: dev
   name: influxdb
@@ -433,7 +433,7 @@ influxdb:
 insider_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/insider_api
     tag: dev
   name: insider-api
@@ -445,7 +445,7 @@ insider_api:
     type: ClusterIP
 insider_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/insider_scheduler
     tag: dev
   name: insider-scheduler
@@ -455,7 +455,7 @@ insider_scheduler:
 insider_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/insider_worker
     tag: dev
   name: insider-worker
@@ -464,7 +464,7 @@ invite_expiration_days: 30
 jira_bus:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/jira_bus
     tag: dev
   name: jira-bus
@@ -477,7 +477,7 @@ jira_bus:
 jira_ui:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/jira_ui
     tag: dev
   name: jira-ui
@@ -494,7 +494,7 @@ katara_service:
     role: api
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/katara_service
     tag: dev
   name: katara
@@ -509,7 +509,7 @@ katara_service:
 katara_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/katara_worker
     tag: dev
   name: kataraworker
@@ -517,7 +517,7 @@ katara_worker:
 keeper:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/keeper
     tag: dev
   name: keeper
@@ -530,7 +530,7 @@ keeper:
 keeper_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/keeper_executor
     tag: dev
   name: keeper-executor
@@ -538,7 +538,7 @@ keeper_executor:
 layout_cleaner:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/layout_cleaner
     tag: dev
   name: layout-cleaner
@@ -546,7 +546,7 @@ layout_cleaner:
   startingDeadlineSeconds: 100
 live_demo_generator:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/live_demo_generator
     tag: dev
   name: live-demo-generator
@@ -559,7 +559,7 @@ mariadb:
     username: root
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/mariadb
     tag: dev
   name: mariadb
@@ -572,7 +572,7 @@ mariadb:
 metroculus_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/metroculus_api
     tag: dev
   name: metroculusapi
@@ -584,7 +584,7 @@ metroculus_api:
     type: ClusterIP
 metroculus_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/metroculus_scheduler
     tag: dev
   name: metroculusscheduler
@@ -594,7 +594,7 @@ metroculus_scheduler:
 metroculus_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/metroculus_worker
     tag: dev
   name: metroculusworker
@@ -605,7 +605,7 @@ minio:
     secret: secret_password
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/minio
     tag: dev
   name: minio
@@ -624,7 +624,7 @@ mongo:
   external: false
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/mongo
     tag: dev
   name: mongo
@@ -650,7 +650,7 @@ ngui:
     microsoft_oauth_client_id: ""
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/ngui
     tag: dev
   name: ngui
@@ -721,7 +721,7 @@ optscale_service_emails:
   recipient: null
 organization_violations:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/organization_violations
     tag: dev
   name: organization-violations
@@ -733,7 +733,7 @@ password_strength_settings: {}
 phpmyadmin:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: myadmin
   replicaCount: 1
   service:
@@ -743,7 +743,7 @@ phpmyadmin:
     type: NodePort
 power_schedule:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/power_schedule
     tag: dev
   name: power-schedule
@@ -759,7 +759,7 @@ rabbitmq:
     username: optscale
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   memory_limit: 512
   mnesiaSize: 10Gi
   name: rabbitmq
@@ -780,7 +780,7 @@ rabbitmq:
 redis:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/redis
     tag: dev
   name: redis
@@ -793,7 +793,7 @@ redis:
 release: null
 report_import_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: curlimages/curl
     tag: latest
   name: report-import-scheduler
@@ -805,7 +805,7 @@ report_import_schedules:
   "24": 0 0 * * *
 resource_discovery:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/resource_discovery
     tag: dev
   memory_limit: 1024
@@ -821,7 +821,7 @@ resource_discovery_settings:
   writing_timeout: 60
 resource_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/resource_observer
     tag: dev
   name: resource-observer
@@ -830,7 +830,7 @@ resource_observer:
   startingDeadlineSeconds: 100
 resource_violations:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/resource_violations
     tag: dev
   name: resource-violations
@@ -840,7 +840,7 @@ resource_violations:
 rest_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/rest_api
     tag: dev
   name: restapi
@@ -852,7 +852,7 @@ rest_api:
     type: ClusterIP
 risp_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/risp_scheduler
     tag: dev
   name: risp-scheduler
@@ -862,7 +862,7 @@ risp_scheduler:
 risp_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/risp_worker
     tag: dev
   name: risp-worker
@@ -903,7 +903,7 @@ skip_config_update: false
 slacker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/slacker
     tag: dev
   name: slacker
@@ -916,7 +916,7 @@ slacker:
 slacker_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/slacker_executor
     tag: dev
   name: slacker-executor
@@ -943,7 +943,7 @@ thanos_compactor:
   deleteDelay: 6h
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   job:
     spec:
       containers:
@@ -964,7 +964,7 @@ thanos_query:
           image: thanosio/thanos:v0.39.1
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-query
   replicaCount: 1
   service:
@@ -979,7 +979,7 @@ thanos_receive:
   dataSize: 10Gi
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   maxConcurrency: 20
   memory_limit: 8192
   name: thanos-receive
@@ -1001,7 +1001,7 @@ thanos_storegateway:
   ignoreDeletionMarksDelay: 3h
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-storegateway
   replicaCount: 1
   service:
@@ -1017,7 +1017,7 @@ thanos_web:
   httpPort: 10902
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-web
   refreshInterval: 10m
   service:
@@ -1031,7 +1031,7 @@ thanos_web:
 token_expiration: 168
 trapper_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/trapper_scheduler
     tag: dev
   name: trapper-scheduler
@@ -1041,7 +1041,7 @@ trapper_scheduler:
 trapper_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/trapper_worker
     tag: dev
   name: trapper-worker
@@ -1053,7 +1053,7 @@ users_dataset_generator:
   enable: false
   filename: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/users_dataset_generator
     tag: dev
   name: users-dataset-generator
@@ -1063,7 +1063,7 @@ users_dataset_generator:
 webhook_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: sobreira155/webhook_executor
     tag: dev
   name: webhook-executor
