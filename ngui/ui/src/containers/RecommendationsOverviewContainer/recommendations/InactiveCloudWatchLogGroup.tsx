@@ -56,7 +56,7 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
 
   descriptionMessageId = "inactiveCloudWatchLogGroupDescription";
 
-  emptyMessageId = "noInactiveCloudWatchLogGroup";
+  emptyMessageId = "noInactiveCloudWatchLogGroups";
 
   services = [AWS_EC2, AWS_S3];
 
