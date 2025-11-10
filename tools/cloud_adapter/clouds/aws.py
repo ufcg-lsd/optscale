@@ -56,7 +56,7 @@ BUCKET_ACCEPTED_URIS = [
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers'
 ]
 # maximum value for MaxResults (AWS limitation)
-MAX_RESULTS = 1000
+MAX_RESULTS = 399
 CSV_FORMAT_PATTERN = r'\.csv.(gz|zip)$'
 PARQUET_FORMAT_PATTERN = r'\.snappy.parquet$'
 GROUP_DATES_PATTERNS = {
