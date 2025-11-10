@@ -371,7 +371,7 @@ class Aws(S3CloudMixin):
                         dates, default=None) or instance['LaunchTime']
                     spotted = instance.get('InstanceLifecycle') == 'spot'
                     vpc_id = instance.get('VpcId')
-                    architecture = instance.get('Architecture')
+                    architecture = instance['Architecture']
                     instance_resource = InstanceResource(
                         cloud_resource_id=instance['InstanceId'],
                         cloud_account_id=self.cloud_account_id,
@@ -478,41 +478,14 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_log_groups, (r,))
                 for r in self.list_regions()]
 
-    def log_group_discovery_calls(self):
-        """
-        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
-        """
-        return [(self.discover_region_log_groups, (r,))
-                for r in self.list_regions()]    
-    
     def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
-        allowed = {error_code}
-        if additional_allowed:
-            allowed.update(additional_allowed)
-        if exc_error_code in allowed:
+        if exc_error_code == error_code:
             return
-        raise exc
+        else:
+            raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
-      
-        """
-        Inspect S3 bucket public settings.
-
-        This helper inspects a bucket's public configuration in three places:
-        - PublicAccessBlock (BlockPublicPolicy / BlockPublicAcls)
-        - Bucket policy public status (get_bucket_policy_status)
-        - Bucket ACLs (get_bucket_acl)
-
-        It returns a dict with:
-        - is_public_policy: True if bucket policy makes the bucket public
-        - is_public_acls: True if any ACL grant makes the bucket public
-        - public_access_block: raw result from get_public_access_block (may be empty)
-
-        Note: method tolerates missing configurations and maps known ClientError
-        codes (e.g. NoSuchPublicAccessBlockConfiguration, NoSuchBucketPolicy)
-        to non-fatal behavior.
-        """
         
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
@@ -521,11 +494,11 @@ class Aws(S3CloudMixin):
             public_access_block = bucket_s3.get_public_access_block(
                 Bucket=bucket_name)
         except ClientError as exc:
-            allowed = {'NoSuchPublicAccessBlockConfiguration', 'AccessDenied', 'AllAccessDisabled'}
-            self._handle_specific_error(exc, 'NoSuchPublicAccessBlockConfiguration', allowed)
-            if exc.response['Error'].get('Code') in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning("[IT] Unable to read public access block for bucket %s due to %s",
-                            bucket_name, exc.response['Error'].get('Code'))
+            # We get this type of exception if we don't change any public
+            # access settings. So it's normal situation if config is
+            # not found
+            self._handle_specific_error(
+                exc, 'NoSuchPublicAccessBlockConfiguration')
             
         access_block_config = public_access_block.get(
             'PublicAccessBlockConfiguration', {})
@@ -547,24 +520,14 @@ class Aws(S3CloudMixin):
                     'PolicyStatus', {}).get('IsPublic')
             except ClientError as exc:
                 # Bucket could be created without any bucket policy
-                allowed = {'NoSuchBucketPolicy', 'AccessDenied', 'AllAccessDisabled'}
-                self._handle_specific_error(exc, 'NoSuchBucketPolicy', allowed)
-                if exc.response['Error'].get('Code') in {'AccessDenied', 'AllAccessDisabled'}:
-                    LOG.warning("[IT] Unable to read bucket policy status for %s due to %s",
-                                bucket_name, exc.response['Error'].get('Code'))
+                self._handle_specific_error(exc, 'NoSuchBucketPolicy')
 
         if block_public_acls is False:
             try:
                 alc_map = bucket_s3.get_bucket_acl(Bucket=bucket_name)
             except ClientError as exc:
-                err_code = exc.response['Error'].get('Code')
-                if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                    LOG.warning("[IT] Unable to read ACLs for bucket %s due to %s",
-                                bucket_name, err_code)
-                    alc_map = {'Grants': []}
-                else:
-                    LOG.error(str(exc))
-                    raise
+                LOG.error(str(exc))
+                raise
             grants = alc_map.get('Grants', [])
             for grant in grants:
                 grantee = grant.get('Grantee', {})
@@ -587,64 +550,20 @@ class Aws(S3CloudMixin):
     
     def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
 
-        """
-        Gather Intelligent-Tiering and related storage metadata for a bucket.
-
-        The returned metadata is a dictionary with the following keys:
-        - intelligent_tiering_enabled (bool): whether any Intelligent-Tiering
-          configuration exists for the bucket.
-        - intelligent_tiering_configs (list): raw IntelligentTieringConfigurationList.
-        - lifecycle_rules (list): bucket lifecycle configuration rules (if any).
-        - has_lifecycle (bool): True when lifecycle configuration exists.
-        - storage_class_analysis (list): analytics configuration list (if any).
-        - metrics_configurations (list): metrics configuration list (if any).
-        - total_size_bytes (int|None): aggregated bucket size in bytes (CloudWatch),
-          if available.
-        - object_count (int|None): estimated or exact number of objects in bucket.
-        - access_pattern (deprecated|placeholder): reserved for future use.
-        - it_status_bucket (str): 'enabled' when intelligent-tiering applies to
-          the full bucket, otherwise 'disabled'.
-        - tiers (list): list of [display_name, size_gb] pairs for detected storage tiers.
-        - last_checked (list): ISO dates (YYYY-MM-DD) where GET object activity was detected.
-
-        Behavior summary:
-        - Attempts to read Intelligent-Tiering configurations (list_bucket_intelligent_tiering_configurations)
-          and determines whether IT applies to the entire bucket (no filter or empty prefix).
-        - Reads lifecycle, analytics and metrics configs where available, ignoring
-          known "no such configuration" errors.
-        - Tries to obtain object count by sampling list_objects_v2 (MaxKeys=1000).
-          If sample returns 1000 items (potentially large bucket), falls back to CloudWatch
-          NumberOfObjects metric (7-day window). For smaller buckets it paginates to compute
-          an accurate object count.
-        - Uses CloudWatch BucketSizeBytes metric (7-day window) per storage type to
-          compute total_size_bytes and per-tier sizes.
-        - Collects last access dates using CloudWatch GetRequests (sum per day)
-          for the last 30 days and returns dates where Sum > 0 in last_checked.
-        - All network/cloud errors are caught and logged; missing data remains None
-          or empty lists as appropriate.
-
-        Parameters:
-        - s3_client: boto3 S3 client already configured for the bucket's region.
-        - bucket_name: name of the bucket to inspect.
-
-        Returns:
-        - dict described above containing metadata about intelligent-tiering and storage metrics.
-        """
-
         metadata = {
-            'intelligent_tiering_enabled': False,
-            'intelligent_tiering_configs': [],
-            'lifecycle_rules': [],
-            'has_lifecycle': False,
-            'storage_class_analysis': [],
-            'metrics_configurations': [],
-            'total_size_bytes': None,
-            'object_count': None,
-            'access_pattern': None,
-            'it_status_bucket': 'unknown',
-            'tiers': [],
-            'last_checked': []
-        }
+        'intelligent_tiering_enabled': False,
+        'intelligent_tiering_configs': [],
+        'lifecycle_rules': [],
+        'has_lifecycle': False,
+        'storage_class_analysis': [],
+        'metrics_configurations': [],
+        'total_size_bytes': None,
+        'object_count': None,
+        'access_pattern': None,
+        'it_status_bucket': None,
+        'tiers': [],
+        'last_checked': []
+    }
         try:
             it_configs = s3_client.list_bucket_intelligent_tiering_configurations(
                 Bucket=bucket_name
@@ -652,7 +571,6 @@ class Aws(S3CloudMixin):
             configs_list = it_configs.get('IntelligentTieringConfigurationList', [])
             metadata['intelligent_tiering_enabled'] = bool(configs_list)
             metadata['intelligent_tiering_configs'] = configs_list
-            LOG.debug('it_api configs_ok')
             # Check if IT applies to entire bucket (no filter or empty prefix)
             full_bucket = False
             for cfg in configs_list:
@@ -670,14 +588,7 @@ class Aws(S3CloudMixin):
                     break
             metadata['it_status_bucket'] = 'enabled' if (metadata['intelligent_tiering_enabled'] and full_bucket) else 'disabled'
         except ClientError as exc:
-            err_code = exc.response['Error'].get('Code')
-            if err_code != 'NoSuchConfiguration':
-                LOG.warning('it_api configs_err: %s', err_code)
-            else:
-                LOG.debug('it_api configs_err: %s', err_code)
-            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(f"[IT] Unable to read Intelligent-Tiering config for bucket {bucket_name} due to %s", err_code)
-            elif err_code != 'NoSuchConfiguration':
+            if exc.response['Error'].get('Code') != 'NoSuchConfiguration':
                 LOG.warning(f"[IT] Failed to get Intelligent-Tiering config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -686,13 +597,8 @@ class Aws(S3CloudMixin):
             )
             metadata['lifecycle_rules'] = lifecycle.get('Rules', [])
             metadata['has_lifecycle'] = True
-            LOG.debug('it_api lifecycle_ok')
         except ClientError as exc:
-            err_code = exc.response['Error'].get('Code')
-            LOG.warning('it_api lifecycle_err: %s', err_code)
-            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(f"[IT] Unable to read lifecycle config for bucket %s due to %s", bucket_name, err_code)
-            elif err_code != 'NoSuchLifecycleConfiguration':
+            if exc.response['Error'].get('Code') != 'NoSuchLifecycleConfiguration':
                 LOG.warning(f"[IT] Failed to get lifecycle config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -702,14 +608,8 @@ class Aws(S3CloudMixin):
             metadata['storage_class_analysis'] = analytics.get(
                 'AnalyticsConfigurationList', []
             )
-            LOG.debug('it_api analytics_ok')
         except ClientError as exc:
-            err_code = exc.response['Error'].get('Code')
-            allowed = {'NoSuchConfiguration', 'NoSuchAnalyticsConfiguration'}
-            LOG.warning('it_api analytics_err: %s', err_code)
-            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(f"[IT] Unable to read analytics config for bucket %s due to %s", bucket_name, err_code)
-            elif err_code not in allowed:
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchAnalyticsConfiguration']:
                 LOG.warning(f"[IT] Failed to get analytics config for bucket {bucket_name}: {str(exc)}")
 
         try:
@@ -720,12 +620,8 @@ class Aws(S3CloudMixin):
                 'MetricsConfigurationList', []
             )
         except ClientError as exc:
-            err_code = exc.response['Error'].get('Code')
-            allowed = {'NoSuchConfiguration', 'NoSuchMetricsConfiguration'}
-            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(f"[IT] Unable to read metrics config for bucket %s due to %s", bucket_name, err_code)
-            elif err_code not in allowed:
-                LOG.warning(f"[IT] Failed to get metrics config for bucket {bucket_name}: {str(exc)}")
+            if exc.response['Error'].get('Code') not in ['NoSuchConfiguration', 'NoSuchMetricsConfiguration']:
+                LOG.warning(f"[IT] Failed to get metrics config for bucket {bucket_name}: {str(exc)}") 
 
         # Get bucket size and object count via CloudWatch
         try:
@@ -965,23 +861,8 @@ class Aws(S3CloudMixin):
         return region
 
     def discover_bucket_info(self, bucket_name):
-        try:
-            region_info = self.s3.get_bucket_location(Bucket=bucket_name)
-            region = self.get_region_from_location(region_info)
-        except ClientError as exc:
-            err_code = exc.response['Error'].get('Code')
-            if err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(
-                    "[IT] Unable to get location for bucket %s due to %s; using default region fallback",
-                    bucket_name, err_code)
-                region = self.config.get('region_name', self.DEFAULT_S3_REGION_NAME) or 'us-east-1'
-            else:
-                raise
-        except Exception as exc:
-            LOG.warning(
-                "[IT] Unexpected error getting location for bucket %s: %s; using default region fallback",
-                bucket_name, str(exc))
-            region = self.config.get('region_name', self.DEFAULT_S3_REGION_NAME) or 'us-east-1'
+        region_info = self.s3.get_bucket_location(Bucket=bucket_name)
+        region = self.get_region_from_location(region_info)
 
         # get_bucket_tagging fails for eu-south-1 if region is not set
         # explicitly, so we find region first and initialize client for
@@ -996,39 +877,15 @@ class Aws(S3CloudMixin):
             tags = s3.get_bucket_tagging(Bucket=bucket_name)
         except ClientError as exc:
             err_code = exc.response['Error'].get('Code')
-            if err_code == 'NoSuchTagSet':
-                tags = {}
-            elif err_code in {'AccessDenied', 'AllAccessDisabled'}:
-                LOG.warning(
-                    "[IT] Unable to fetch tags for bucket %s due to %s",
-                    bucket_name, err_code)
+            if err_code and err_code == 'NoSuchTagSet':
                 tags = {}
             else:
                 raise
 
-        try:
-            it_metadata = self._get_bucket_intelligent_tiering_metadata(
-                s3_client=s3,
-                bucket_name=bucket_name
-            )
-        except Exception as exc:
-            LOG.warning(
-                "[IT] Failed to collect intelligent-tiering metadata for bucket %s: %s",
-                bucket_name, str(exc))
-            it_metadata = {
-                'intelligent_tiering_enabled': False,
-                'intelligent_tiering_configs': [],
-                'lifecycle_rules': [],
-                'has_lifecycle': False,
-                'storage_class_analysis': [],
-                'metrics_configurations': [],
-                'total_size_bytes': None,
-                'object_count': None,
-                'access_pattern': None,
-                'it_status_bucket': 'unknown',
-                'tiers': [],
-                'last_checked': []
-            }
+        it_metadata = self._get_bucket_intelligent_tiering_metadata(
+            s3_client=s3,
+            bucket_name=bucket_name
+        )
 
         bucket_resource = BucketResource(
             cloud_resource_id=bucket_name,
@@ -2149,12 +2006,6 @@ class Aws(S3CloudMixin):
                 raise
 
     def list_all_log_groups(self, region):
-        """
-        List all CloudWatch Logs group names in the given region.
-        :param region: AWS region name (string)
-        :return: list of log group name strings
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
-        """
         try:
             session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
             if session is None:
@@ -2174,15 +2025,6 @@ class Aws(S3CloudMixin):
             raise
 
     def get_log_groups_details(self, log_group_names, region):
-        """
-        Retrieve details for the provided CloudWatch Log Group names.
-        :param log_group_names: iterable of log group names (strings)
-        :param region: AWS region name (string)
-        :return: dict mapping log_group_name -> dict with keys:
-                 'name', 'stored_bytes', 'retention_in_days', 'creation_time', 'arn', 'kms_key_id'
-                 If a group's details cannot be obtained, the value will be None.
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
-        """
         try:
             session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
             logs_client = session.client('logs', region_name=region)
@@ -2220,38 +2062,26 @@ class Aws(S3CloudMixin):
             if code == 'InvalidParameterException':
                 raise ValueError(str(e))
             raise
+        
 
-
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, past_days=90):
-        """
-        Build LogGroupResource objects for all CloudWatch Log Groups in a region.
-        This fetches available log group names, details and metrics, then
-        constructs LogGroupResource instances. If cloud_resource_id_generator
-        is provided it is used to produce cloud_resource_id values; otherwise
-        the log group name is used.
-        :param region: AWS region name (string)
-        :param cloud_resource_id_generator: optional callable returning a unique id
-        :param past_days: number of days to fetch metrics for (int)
-        :return: list of LogGroupResource objects
-        :raises: propagates exceptions for unexpected failures
-        """
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
         try:
             log_group_names = self.list_all_log_groups(region)
-
+            
             if not log_group_names:
                 return []
-
+            
             details = self.get_log_groups_details(log_group_names, region)
-            metrics = self.get_log_groups_metrics(log_group_names, region, past_days)
+            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
             resources = []
-
+            
             for lg_name in log_group_names:
                 try:
                     lg_details = details.get(lg_name)
                     if lg_details is None:
                         continue
                     cloud_resource_id = cloud_resource_id_generator() if cloud_resource_id_generator else lg_name
-
+                    
                     resource = LogGroupResource(
                         name=lg_details['name'],
                         stored_bytes=lg_details['stored_bytes'],
@@ -2259,21 +2089,21 @@ class Aws(S3CloudMixin):
                         creation_time=lg_details['creation_time'],
                         arn=lg_details['arn'],
                         kms_key_id=lg_details['kms_key_id'],
-
+                        
                         cloud_resource_id=cloud_resource_id,
                         cloud_account_id=getattr(self, 'cloud_account_id', None),
                         region=region,
                         organization_id=getattr(self, 'organization_id', None),
                         tags={}
                     )
-
+                    
                     setattr(resource, 'metrics', metrics.get(lg_name, {}))
                     resources.append(resource)
-
+                    
                 except Exception as e:
                     LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
                     continue
-
+            
             return resources      
         except Exception as e:
             LOG.exception(f"Error creating log group resources for region {region}: {e}")
@@ -2281,12 +2111,7 @@ class Aws(S3CloudMixin):
 
     def discover_region_log_groups(self, region):
         """
-        Generator that yields LogGroupResource objects for the specified region.
-        Delegates to create_log_group_resources to build resources and yields
-        them one by one. Errors are logged and discovery for the region is
-        aborted gracefully.
-        :param region: AWS region name (string)
-        :yield: LogGroupResource instances
+        Discover LogGroupResource objects for region (delegates to create_log_group_resources).
         """
         try:
             for resource in self.create_log_group_resources(region):
@@ -2297,12 +2122,6 @@ class Aws(S3CloudMixin):
 
 
     def get_log_group_tags(self, logs_client, log_group_name):
-        """
-        Retrieve tags for a specific CloudWatch Log Group.
-        :param logs_client: boto3 logs client
-        :param log_group_name: CloudWatch log group name (string)
-        :return: dict of tags (may be empty)
-        """
         try:
             response = logs_client.list_tags_log_group(logGroupName=log_group_name)
             return response.get('tags', {})
@@ -2312,22 +2131,15 @@ class Aws(S3CloudMixin):
             LOG.warning(f"Error getting tags for log group {log_group_name}: {str(e)}")
             return {}
 
-    def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
-        """
-        Collect CloudWatch metrics for multiple log groups in parallel.
-        :param log_group_names: iterable of log group names (strings)
-        :param region: AWS region name (string)
-        :param days_ago: integer days range to collect metrics for (int)
-        :param max_workers: maximum parallel workers for fetching metrics (int)
-        :return: dict mapping log_group_name -> dict(metric_key -> list of datapoints)
-        """
+    def get_log_groups_metrics(self, log_group_names, region, days_ago=30, max_workers=10):
+
         if not log_group_names:
             return {}
-
+    
         metrics_to_fetch = {
             'ingestion': {
                 'MetricName': 'IncomingBytes',
-                'Period': 86400,
+                'Period': 3600,
                 'Stat': 'Sum',
                 'Unit': 'Bytes'
             },
@@ -2339,29 +2151,23 @@ class Aws(S3CloudMixin):
             },
             'incoming_events': {
                 'MetricName': 'IncomingLogEvents',
-                'Period': 86400,
+                'Period': 3600,
                 'Stat': 'Sum',
                 'Unit': 'Count'
-            },
-            'query': {
-                'MetricName': 'QueryBytes',
-                'Period': 86400,
-                'Stat': 'Sum',
-                'Unit': 'Bytes'
             }
         }
-
+        
         end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(days=days_ago)
-
+        
         session = self.get_session()
         cw = session.client('cloudwatch', region_name=region)
-
+        
         results = {lg: {key: [] for key in metrics_to_fetch} for lg in log_group_names}
-
+        
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_key = {}
-
+            
             for lg_name in log_group_names:
                 for metric_key, metric_config in metrics_to_fetch.items():
                     params = {
@@ -2374,14 +2180,14 @@ class Aws(S3CloudMixin):
                         'Statistics': [metric_config['Stat']],
                         'Unit': metric_config['Unit']
                     }
-
+                    
                     future = executor.submit(
                         self._exp_backoff_retry, 
                         cw.get_metric_statistics, 
                         **params
                     )
                     future_to_key[future] = (lg_name, metric_key)
-
+            
             for future in as_completed(future_to_key):
                 lg_name, metric_key = future_to_key[future]
                 try:
@@ -2391,20 +2197,14 @@ class Aws(S3CloudMixin):
                 except Exception as e:
                     LOG.error(f"Error fetching {metric_key} for {lg_name}: {str(e)}")
                     results[lg_name][metric_key] = []
-
+        
         return results
-
+    
     def _generate_log_group_cloud_link(self, region, log_group_name):
-        """
-        Generate a console URL that links to the log group in CloudWatch logs v2.
-        :param region: AWS region name (string)
-        :param log_group_name: CloudWatch log group name (string)
-        :return: fully formed console URL string
-        """
         encoded_name = urllib.parse.quote(log_group_name, safe='')
         return f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logsV2:log-groups/log-group/{encoded_name}"
 
-
+    
     def _exp_backoff_retry(self, func, max_retries=5, base_delay=1, *args, **kwargs):
         attempt = 0
         while True:
