@@ -23,3 +23,4 @@ DEFAULT = CloudWatchLogsPricing(
     query_usd_per_gb=0.005,
     compression_factor=0.15,
 )
+
