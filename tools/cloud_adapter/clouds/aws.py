@@ -1056,7 +1056,6 @@ class Aws(S3CloudMixin):
     def discover_region_lbs_v2(self, region):
         # ELBv2 (ALB/NLB)
         elbv2 = self.session.client('elbv2', region)
-        # paginate describe_load_balancers
         next_token = None
         first_iteration = True
         while next_token or first_iteration:
@@ -1064,11 +1063,13 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['Marker'] = next_token
             first_iteration = False
+
             described = self._retry(elbv2.describe_load_balancers, **params)
             lbs = described.get('LoadBalancers', [])
             if not lbs:
                 break
-            # collect ARNs and batch describe_tags (max 20 ARNs per call)
+
+        # Batch tags (max 20 ARNs per call)
             arns = [lb['LoadBalancerArn'] for lb in lbs]
             for i in range(0, len(arns), 20):
                 chunk = arns[i:i+20]
@@ -1095,31 +1096,29 @@ class Aws(S3CloudMixin):
             if not next_token:
                 break
 
+
     def discover_region_lbs(self, region):
         # Classic ELB (v1)
         elb = self.session.client('elb', region)
-        # list load balancers (paged)
         next_marker = None
         while True:
             params = {}
             if next_marker:
                 params['Marker'] = next_marker
+
             described = self._retry(elb.describe_load_balancers, **params)
             lbs = described.get('LoadBalancerDescriptions', [])
             if not lbs:
                 break
 
-            # collect names and batch describe_tags (ELB classic uses LoadBalancerNames)
+            # Batch tags (ELB classic takes names; max 20 per call)
             names = [lb['LoadBalancerName'] for lb in lbs]
-            # ELB.describe_tags accepts up to 20 names per call; chunk defensively
             for i in range(0, len(names), 20):
                 chunk = names[i:i+20]
                 tag_resp = self._retry(elb.describe_tags, LoadBalancerNames=chunk)
                 for tag_desc in tag_resp.get('TagDescriptions', []):
                     lb_name = tag_desc.get('LoadBalancerName')
                     tags = {t['Key']: t['Value'] for t in tag_desc.get('Tags', [])}
-                    # find corresponding lb and yield resource (or attach tags)
-                    # simple mapping by name:
                     for lb in lbs:
                         if lb['LoadBalancerName'] == lb_name:
                             lb_res = LoadBalancerResource(
@@ -2159,25 +2158,41 @@ class Aws(S3CloudMixin):
             else:
                 raise
 
+    def _iter_log_groups(self, region, name_prefix=None, page_limit=50, pause_s=0.0):
+        """
+        Yield log group dicts using describe_log_groups with manual pagination,
+        applying self._retry to each API call and optional tiny pause to smooth QPS.
+        """
+        session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+        logs_client = session.client('logs', region_name=region)
+        next_token = None
+        while True:
+            params = {'limit': page_limit}
+            if name_prefix:
+                params['logGroupNamePrefix'] = name_prefix
+            if next_token:
+                params['nextToken'] = next_token
+
+            resp = self._retry(logs_client.describe_log_groups, **params)
+            for g in resp.get('logGroups', []):
+                yield g
+
+            next_token = resp.get('nextToken')
+            if not next_token:
+                break
+            if pause_s:
+                time.sleep(pause_s)
+
     def list_all_log_groups(self, region):
         """
-        List all CloudWatch Logs group names in the given region.
-
-        :param region: AWS region name (string)
-        :return: list of log group name strings
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
+        List all CloudWatch Logs group names in the given region, with retry + pagination.
         """
         try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            if session is None:
-                raise RuntimeError("No AWS session available")
-            logs_client = session.client('logs', region_name=region)
-            paginator = logs_client.get_paginator('describe_log_groups')
             result = []
-            for page in paginator.paginate():
-                for g in page.get('logGroups', []):
-                    if 'logGroupName' in g:
-                        result.append(g['logGroupName'])
+            for g in self._iter_log_groups(region, name_prefix=None, page_limit=50, pause_s=0.05):
+                name = g.get('logGroupName')
+                if name:
+                    result.append(name)
             return result
         except ClientError as e:
             code = e.response.get('Error', {}).get('Code')
@@ -2187,46 +2202,32 @@ class Aws(S3CloudMixin):
 
     def get_log_groups_details(self, log_group_names, region):
         """
-        Retrieve details for the provided CloudWatch Log Group names.
-
-        :param log_group_names: iterable of log group names (strings)
-        :param region: AWS region name (string)
-        :return: dict mapping log_group_name -> dict with keys:
-                 'name', 'stored_bytes', 'retention_in_days', 'creation_time', 'arn', 'kms_key_id'
-                 If a group's details cannot be obtained, the value will be None.
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
+        Retrieve details for provided log group names by scanning pages once with retry.
         """
         try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            logs_client = session.client('logs', region_name=region)
-            result = {}
-            for lg_name in log_group_names:
-                try:
-                    resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
-                    chosen = None
-                    for g in resp.get('logGroups', []):
-                        if g.get('logGroupName') == lg_name:
-                            chosen = g
-                            break
-                    if not chosen:
-                        result[lg_name] = None
-                        continue
+            target = set(log_group_names or [])
+            result = {n: None for n in target}
+            if not target:
+                return result
 
+            for g in self._iter_log_groups(region, name_prefix=None, page_limit=50, pause_s=0.05):
+                lg_name = g.get('logGroupName')
+                if lg_name in target:
                     ct = None
-                    if 'creationTime' in chosen and chosen['creationTime'] is not None:
-                        ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
-
+                    if 'creationTime' in g and g['creationTime'] is not None:
+                        ct = datetime.fromtimestamp(g['creationTime'] / 1000.0, tz=timezone.utc)
                     result[lg_name] = {
-                        'name': chosen.get('logGroupName'),
-                        'stored_bytes': chosen.get('storedBytes', 0),
-                        'retention_in_days': chosen.get('retentionInDays'),
+                        'name': lg_name,
+                        'stored_bytes': g.get('storedBytes', 0),
+                        'retention_in_days': g.get('retentionInDays'),
                         'creation_time': ct,
-                        'arn': chosen.get('arn'),
-                        'kms_key_id': chosen.get('kmsKeyId')
+                        'arn': g.get('arn'),
+                        'kms_key_id': g.get('kmsKeyId')
                     }
-                except Exception as e:
-                    LOG.exception("Error getting details for %s: %s", lg_name, e)
-                    result[lg_name] = None
+                    # Optional optimization: early-exit if we’ve found all targets
+                    if all(v is not None for v in result.values()):
+                        break
+
             return result
         except ClientError as e:
             code = e.response.get('Error', {}).get('Code')
