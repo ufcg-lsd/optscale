@@ -108,7 +108,6 @@ def _exp_backoff_jitter(self, func, *args, max_attempts=10, base_delay=0.25, max
                         getattr(func, "__name__", str(func)), attempt, max_attempts, delay, e)
             time.sleep(delay)
 
-
 def _retry_on_error(exc):
     if isinstance(exc, ResponseParserError):
         return True
@@ -2216,7 +2215,7 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['nextToken'] = next_token
 
-            resp = self._exp_backoff_jitter(logs_client.describe_log_groups, **params)
+            resp = _exp_backoff_jitter(logs_client.describe_log_groups, **params)
             for g in resp.get('logGroups', []):
                 yield g
 
