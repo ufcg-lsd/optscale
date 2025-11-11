@@ -21,7 +21,8 @@ from botocore.exceptions import (ClientError,
                                  ParamValidationError,
                                  ConnectTimeoutError,
                                  ReadTimeoutError,
-                                 SSLError)
+                                 SSLError,
+                                 BotoCoreError)
 from botocore.session import Session as CoreSession
 from botocore.parsers import ResponseParserError
 from retrying import retry
@@ -54,7 +55,7 @@ BUCKET_ACCEPTED_URIS = [
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers'
 ]
 # maximum value for MaxResults (AWS limitation)
-MAX_RESULTS = 1000
+MAX_RESULTS = 399
 CSV_FORMAT_PATTERN = r'\.csv.(gz|zip)$'
 PARQUET_FORMAT_PATTERN = r'\.snappy.parquet$'
 GROUP_DATES_PATTERNS = {
@@ -63,6 +64,47 @@ GROUP_DATES_PATTERNS = {
         'year=[0-9]{4}/month=([1-9]|1[0-2])/']
 }
 
+def _is_throttling_or_retryable(self, err: Exception) -> bool:
+    if isinstance(err, (ReadTimeoutError, ConnectTimeoutError, EndpointConnectionError, SSLError, ResponseParserError)):
+        return True
+
+    if isinstance(err, BotoCoreError):
+        return True
+
+    if isinstance(err, ClientError):
+        code = (err.response or {}).get('Error', {}).get('Code', '')
+        retryable = {
+            'Throttling', 'ThrottlingException', 'Throttled',
+            'RequestLimitExceeded', 'TooManyRequestsException',
+            'ServiceUnavailable', 'InternalError', 'InternalFailure',
+            'ProvisionedThroughputExceededException'
+        }
+        return code in retryable
+    return False
+
+def _exp_backoff_jitter(self, func, *args, max_attempts=10, base_delay=0.25, max_sleep=5.0, **kwargs):
+    """
+    Exponential backoff with *full jitter* (sleep ~ U(0, base*2^(n-1))),
+    tuned for AWS throttling bursts.
+
+    - Only retries on throttling/transient/network errors.
+    - Caps individual sleeps at max_sleep.
+    - Raises immediately for non-retryable ClientError codes.
+    """
+    attempt = 0
+    while True:
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            attempt += 1
+            if not _is_throttling_or_retryable(self, e) or attempt >= max_attempts:
+                raise
+
+            exp = base_delay * (2 ** (attempt - 1))
+            delay = min(max_sleep, random.uniform(0, exp))
+            LOG.warning("Retryable error on %s (attempt %d/%d). Sleeping %.2fs: %s",
+                        getattr(func, "__name__", str(func)), attempt, max_attempts, delay, e)
+            time.sleep(delay)
 
 def _retry_on_error(exc):
     if isinstance(exc, ResponseParserError):
@@ -204,7 +246,7 @@ class Aws(S3CloudMixin):
     @property
     def s3_resource(self):
         return self.session.resource('s3')
-    
+
     @property
     def logs(self):
         return self.session.client('logs')
@@ -342,11 +384,6 @@ class Aws(S3CloudMixin):
         }
 
     def discover_region_instances(self, region):
-        """
-        Discovers instance cloud resources
-        :return: list(model.InstanceResource)
-        """
-        vpc_id_to_name = self._discover_region_vpcs(region)
         ec2 = self.session.client('ec2', region)
         next_token = None
         first_iteration = True
@@ -355,7 +392,8 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['NextToken'] = next_token
             first_iteration = False
-            described = ec2.describe_instances(**params)
+            # Use retry wrapper on describe_instances
+            described = self._retry(ec2.describe_instances, **params)
             next_token = described.get('NextToken')
             for reservation in described['Reservations']:
                 for instance in reservation['Instances']:
@@ -375,20 +413,17 @@ class Aws(S3CloudMixin):
                         cloud_resource_id=instance['InstanceId'],
                         cloud_account_id=self.cloud_account_id,
                         region=region,
-                        name=self._extract_tag(instance, 'Name'),
-                        flavor=instance['InstanceType'],
-                        architecture=architecture,
-                        security_groups=sg_ids,
-                        organization_id=self.organization_id,
-                        tags=self._extract_tags(instance),
-                        spotted=spotted,
-                        image_id=instance.get('ImageId'),
-                        cloud_created_at=int(cloud_created.timestamp()),
-                        vpc_id=vpc_id,
-                        vpc_name=vpc_id_to_name.get(vpc_id)
+                        name=self._extract_tag(inst, 'Name'),
+                        state=inst.get('State', {}).get('Name'),
+                        instance_type=inst.get('InstanceType'),
+                        private_ip=inst.get('PrivateIpAddress'),
+                        public_ip=inst.get('PublicIpAddress'),
+                        tags=self._extract_tags(inst),
+                        organization_id=self.organization_id
                     )
-                    self._set_cloud_link(instance_resource, region)
-                    yield instance_resource
+                    self._set_cloud_link(inst_resource, region)
+                    yield inst_resource
+
 
     def instance_discovery_calls(self):
         """
@@ -407,23 +442,25 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['NextToken'] = next_token
             first_iteration = False
-            described = ec2.describe_volumes(**params)
+            # <--- use retry wrapper for the describe call
+            described = self._retry(ec2.describe_volumes, **params)
             next_token = described.get('NextToken')
-            for volume in described['Volumes']:
+            for volume in described.get('Volumes', []):
                 volume_resource = VolumeResource(
                     cloud_resource_id=volume['VolumeId'],
                     cloud_account_id=self.cloud_account_id,
                     region=region,
                     name=self._extract_tag(volume, 'Name'),
-                    size=gbs_to_bytes(volume['Size']),
-                    volume_type=volume['VolumeType'],
+                    size=gbs_to_bytes(volume.get('Size', 0)),
+                    volume_type=volume.get('VolumeType'),
                     organization_id=self.organization_id,
                     tags=self._extract_tags(volume),
-                    attached=(volume['State'] == 'in-use'),
-                    snapshot_id=volume['SnapshotId']
+                    attached=(volume.get('State') == 'in-use'),
+                    snapshot_id=volume.get('SnapshotId')
                 )
                 self._set_cloud_link(volume_resource, region)
                 yield volume_resource
+
 
     def volume_discovery_calls(self):
         """
@@ -469,7 +506,13 @@ class Aws(S3CloudMixin):
         """
         return [(self.discover_region_snapshots, (r,))
                 for r in self.list_regions()]
-    
+
+    def log_group_discovery_calls(self):
+        """
+        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+        """
+        return [(self.discover_region_log_groups, (r,))
+                for r in self.list_regions()]
 
     def log_group_discovery_calls(self):
         """
@@ -488,7 +531,7 @@ class Aws(S3CloudMixin):
         raise exc
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
-      
+
         """
         Inspect S3 bucket public settings.
 
@@ -501,6 +544,7 @@ class Aws(S3CloudMixin):
         - is_public_policy: True if bucket policy makes the bucket public
         - is_public_acls: True if any ACL grant makes the bucket public
         - public_access_block: raw result from get_public_access_block (may be empty)
+        """
 
     def _get_bucket_public_settings(self, bucket_s3, s3_client, bucket_name):
         """
@@ -520,7 +564,7 @@ class Aws(S3CloudMixin):
         codes (e.g. NoSuchPublicAccessBlockConfiguration, NoSuchBucketPolicy)
         to non-fatal behavior.
         """
-        
+
         is_public_policy, is_public_acls = (False, False)
         public_access_block = {}
 
@@ -528,12 +572,12 @@ class Aws(S3CloudMixin):
             public_access_block = bucket_s3.get_public_access_block(
                 Bucket=bucket_name)
         except ClientError as exc:
-            # We get this type of exception if we don't change any public
-            # access settings. So it's normal situation if config is
-            # not found
-            self._handle_specific_error(
-                exc, 'NoSuchPublicAccessBlockConfiguration')
-            
+            allowed = {'NoSuchPublicAccessBlockConfiguration', 'AccessDenied', 'AllAccessDisabled'}
+            self._handle_specific_error(exc, 'NoSuchPublicAccessBlockConfiguration', allowed)
+            if exc.response['Error'].get('Code') in {'AccessDenied', 'AllAccessDisabled'}:
+                LOG.warning("[IT] Unable to read public access block for bucket %s due to %s",
+                            bucket_name, exc.response['Error'].get('Code'))
+
         access_block_config = public_access_block.get(
             'PublicAccessBlockConfiguration', {})
         block_public_policy = access_block_config.get(
@@ -583,7 +627,7 @@ class Aws(S3CloudMixin):
                 is_public_acls = has_permission and has_accepted_uris
                 if is_public_acls:
                     break
-        
+
         result = {
             'is_public_policy': is_public_policy,
             'is_public_acls': is_public_acls,
@@ -591,7 +635,7 @@ class Aws(S3CloudMixin):
         }
 
         return result
-    
+
     def _get_bucket_intelligent_tiering_metadata(self, s3_client, bucket_name):
         """
         Gather Intelligent-Tiering and related storage metadata for a bucket.
@@ -728,7 +772,7 @@ class Aws(S3CloudMixin):
                     Bucket=bucket_name,
                     MaxKeys=1000
                 )
-                
+
                 if not sample_response.get('Contents'):
                     object_count_val = 0
                     LOG.info(f"[IT] Bucket {bucket_name} is empty: 0 objects")
@@ -738,10 +782,10 @@ class Aws(S3CloudMixin):
                         key = obj.get('Key', '')
                         size = obj.get('Size', 0)
                         return size > 0 or not key.endswith('/')
-                    
+
                     actual_objects = [obj for obj in sample_response['Contents'] if is_actual_object(obj)]
                     sample_count = len(actual_objects)
-                    
+
                     # For large buckets, use CloudWatch
                     if len(sample_response['Contents']) == 1000:
                         objects_stats = cloudwatch.get_metric_statistics(
@@ -767,27 +811,27 @@ class Aws(S3CloudMixin):
                         # For smaller buckets, paginate to get accurate count
                         total_objects = sample_count
                         continuation_token = sample_response.get('NextContinuationToken')
-                        
+
                         while continuation_token:
                             try:
                                 response = s3_client.list_objects_v2(
                                     Bucket=bucket_name,
                                     ContinuationToken=continuation_token
                                 )
-                                
+
                                 if response.get('Contents'):
                                     actual_objects = [obj for obj in response['Contents'] if is_actual_object(obj)]
                                     total_objects += len(actual_objects)
-                                
+
                                 continuation_token = response.get('NextContinuationToken')
-                                
+
                             except Exception as page_exc:
                                 LOG.warning(f"[IT] Failed to get page for bucket {bucket_name}: {str(page_exc)}")
                                 break
-                        
+
                         object_count_val = total_objects
                         LOG.info(f"[IT] Accurate object count for bucket {bucket_name}: {object_count_val}")
-                        
+
             except Exception as exc:
                 LOG.warning(f"[IT] Failed to get accurate object count for bucket {bucket_name}: {str(exc)}")
                 # Fallback to CloudWatch if sampling fails
@@ -890,10 +934,10 @@ class Aws(S3CloudMixin):
         try:
             region_name = s3_client.meta.region_name
             cloudwatch = self.session.client('cloudwatch', region_name=region_name)
-            
+
             get_requests_metric = 'GetRequests'
             dates_with_object_access = []
-            
+
             try:
                 get_stats = cloudwatch.get_metric_statistics(
                     Namespace='AWS/S3',
@@ -908,14 +952,14 @@ class Aws(S3CloudMixin):
                     Statistics=['Sum']
                 )
                 get_dps = get_stats.get('Datapoints', [])
-                
+
                 # Collect dates with GET requests
                 for dp in get_dps:
                     if dp.get('Sum', 0) > 0:
                         ts = dp.get('Timestamp')
                         if isinstance(ts, datetime):
                             dates_with_object_access.append(ts.date().isoformat())
-                
+
                 # Store unique sorted dates
                 if dates_with_object_access:
                     metadata['last_checked'] = sorted(list(set(dates_with_object_access)))
@@ -923,11 +967,11 @@ class Aws(S3CloudMixin):
                 else:
                     metadata['last_checked'] = []
                     LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 30 days")
-                    
+
             except Exception as exc:
                 LOG.warning(f"[IT] Failed to get {get_requests_metric} metrics for bucket {bucket_name}: {str(exc)}")
                 metadata['last_checked'] = []
-            
+
         except Exception as exc:
             LOG.warning(f"[IT] Failed to get access metrics for bucket {bucket_name}: {str(exc)}")
             metadata['last_checked'] = []
@@ -1039,58 +1083,86 @@ class Aws(S3CloudMixin):
         return tags
 
     def discover_region_lbs_v2(self, region):
-        session = self.get_session()
-        elb = session.client('elbv2', region)
-        lbs = elb.describe_load_balancers().get('LoadBalancers', [])
-        for lb in lbs:
-            lb_arn = lb['LoadBalancerArn']
-            tags = elb.describe_tags(ResourceArns=[lb_arn]).get(
-                'TagDescriptions', [])
-            tags = self._parse_lb_tags(tags)
-            lb_resource = LoadBalancerResource(
-                name=lb['LoadBalancerName'],
-                cloud_resource_id=lb_arn,
-                cloud_account_id=self.cloud_account_id,
-                organization_id=self.organization_id,
-                region=region,
-                vpc_id=lb['VpcId'],
-                security_groups=lb.get('SecurityGroups'),
-                category=lb.get('Type'),
-                tags=tags,
-                cloud_console_link=self._generate_cloud_link(
-                    LoadBalancerResource, region, lb_arn),
-            )
-            yield lb_resource
+        # ELBv2 (ALB/NLB)
+        elbv2 = self.session.client('elbv2', region)
+        next_token = None
+        first_iteration = True
+        while next_token or first_iteration:
+            params = {'PageSize': MAX_RESULTS}
+            if next_token:
+                params['Marker'] = next_token
+            first_iteration = False
+
+            described = self._retry(elbv2.describe_load_balancers, **params)
+            lbs = described.get('LoadBalancers', [])
+            if not lbs:
+                break
+
+        # Batch tags (max 20 ARNs per call)
+            arns = [lb['LoadBalancerArn'] for lb in lbs]
+            for i in range(0, len(arns), 20):
+                chunk = arns[i:i+20]
+                tag_resp = self._retry(elbv2.describe_tags, ResourceArns=chunk)
+                for tag_entry in tag_resp.get('TagDescriptions', []):
+                    arn = tag_entry.get('ResourceArn')
+                    tags = {t['Key']: t['Value'] for t in tag_entry.get('Tags', [])}
+                    for lb in lbs:
+                        if lb.get('LoadBalancerArn') == arn:
+                            lb_res = LoadBalancerResource(
+                                cloud_resource_id=arn,
+                                cloud_account_id=self.cloud_account_id,
+                                region=region,
+                                name=lb.get('LoadBalancerName'),
+                                tags=tags,
+                                organization_id=self.organization_id
+                            )
+                            self._set_cloud_link(lb_res, region)
+                            yield lb_res
+
+            next_token = described.get('NextToken')
+            if not next_token:
+                break
+
 
     def discover_region_lbs(self, region):
-        """Discover "classic" load balancer resources"""
-        session = self.get_session()
-        elb = session.client('elb', region)
-        lbs = elb.describe_load_balancers().get(
-            'LoadBalancerDescriptions', [])
-        for lb in lbs:
-            name = lb['LoadBalancerName']
-            tags = elb.describe_tags(LoadBalancerNames=[name]).get(
-                'TagDescriptions', [])
-            tags = self._parse_lb_tags(tags)
-            # ARN is not returned for classic LBs, generate it
-            cloud_resource_id = (f'arn:aws:elasticloadbalancing:{region}:'
-                                 f'{self.config["account_id"]}:'
-                                 f'loadbalancer/{name}')
-            lb_resource = LoadBalancerResource(
-                name=name,
-                cloud_resource_id=cloud_resource_id,
-                cloud_account_id=self.cloud_account_id,
-                organization_id=self.organization_id,
-                region=region,
-                vpc_id=lb['VPCId'],
-                security_groups=lb.get('SecurityGroups'),
-                tags=tags,
-                category='classic',
-                cloud_console_link=self._generate_cloud_link(
-                    LoadBalancerResource, region, name),
-            )
-            yield lb_resource
+        # Classic ELB (v1)
+        elb = self.session.client('elb', region)
+        next_marker = None
+        while True:
+            params = {}
+            if next_marker:
+                params['Marker'] = next_marker
+
+            described = self._retry(elb.describe_load_balancers, **params)
+            lbs = described.get('LoadBalancerDescriptions', [])
+            if not lbs:
+                break
+
+            # Batch tags (ELB classic takes names; max 20 per call)
+            names = [lb['LoadBalancerName'] for lb in lbs]
+            for i in range(0, len(names), 20):
+                chunk = names[i:i+20]
+                tag_resp = self._retry(elb.describe_tags, LoadBalancerNames=chunk)
+                for tag_desc in tag_resp.get('TagDescriptions', []):
+                    lb_name = tag_desc.get('LoadBalancerName')
+                    tags = {t['Key']: t['Value'] for t in tag_desc.get('Tags', [])}
+                    for lb in lbs:
+                        if lb['LoadBalancerName'] == lb_name:
+                            lb_res = LoadBalancerResource(
+                                cloud_resource_id=lb.get('LoadBalancerName'),
+                                cloud_account_id=self.cloud_account_id,
+                                region=region,
+                                name=lb.get('LoadBalancerName'),
+                                tags=tags,
+                                organization_id=self.organization_id
+                            )
+                            self._set_cloud_link(lb_res, region)
+                            yield lb_res
+
+            next_marker = described.get('NextMarker')
+            if not next_marker:
+                break
+
 
     def load_balancer_discovery_calls(self):
         """
@@ -2111,24 +2183,41 @@ class Aws(S3CloudMixin):
             else:
                 raise
 
+    def _iter_log_groups(self, region, name_prefix=None, page_limit=50, pause_s=0.0):
+        """
+        Yield log group dicts using describe_log_groups with manual pagination,
+        applying self._retry to each API call and optional tiny pause to smooth QPS.
+        """
+        session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
+        logs_client = session.client('logs', region_name=region)
+        next_token = None
+        while True:
+            params = {'limit': page_limit}
+            if name_prefix:
+                params['logGroupNamePrefix'] = name_prefix
+            if next_token:
+                params['nextToken'] = next_token
+
+            resp = _exp_backoff_jitter(self, logs_client.describe_log_groups, **params)
+            for g in resp.get('logGroups', []):
+                yield g
+
+            next_token = resp.get('nextToken')
+            if not next_token:
+                break
+            if pause_s:
+                time.sleep(pause_s)
+
     def list_all_log_groups(self, region):
         """
-        List all CloudWatch Logs group names in the given region.
-        :param region: AWS region name (string)
-        :return: list of log group name strings
-        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
+        List all CloudWatch Logs group names in the given region, with retry + pagination.
         """
         try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            if session is None:
-                raise RuntimeError("No AWS session available")
-            logs_client = session.client('logs', region_name=region)
-            paginator = logs_client.get_paginator('describe_log_groups')
             result = []
-            for page in paginator.paginate():
-                for g in page.get('logGroups', []):
-                    if 'logGroupName' in g:
-                        result.append(g['logGroupName'])
+            for g in self._iter_log_groups(region, name_prefix=None, page_limit=50, pause_s=0.05):
+                name = g.get('logGroupName')
+                if name:
+                    result.append(name)
             return result
         except ClientError as e:
             code = e.response.get('Error', {}).get('Code')
@@ -2147,36 +2236,29 @@ class Aws(S3CloudMixin):
         :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
         """
         try:
-            session = getattr(self, "get_session", None) and self.get_session() or getattr(self, "session", None)
-            logs_client = session.client('logs', region_name=region)
-            result = {}
-            for lg_name in log_group_names:
-                try:
-                    resp = logs_client.describe_log_groups(logGroupNamePrefix=lg_name, limit=50)
-                    chosen = None
-                    for g in resp.get('logGroups', []):
-                        if g.get('logGroupName') == lg_name:
-                            chosen = g
-                            break
-                    if not chosen:
-                        result[lg_name] = None
-                        continue
+            target = set(log_group_names or [])
+            result = {n: None for n in target}
+            if not target:
+                return result
 
+            for g in self._iter_log_groups(region, name_prefix=None, page_limit=50, pause_s=0.05):
+                lg_name = g.get('logGroupName')
+                if lg_name in target:
                     ct = None
-                    if 'creationTime' in chosen and chosen['creationTime'] is not None:
-                        ct = datetime.fromtimestamp(chosen['creationTime'] / 1000.0, tz=timezone.utc)
-
+                    if 'creationTime' in g and g['creationTime'] is not None:
+                        ct = datetime.fromtimestamp(g['creationTime'] / 1000.0, tz=timezone.utc)
                     result[lg_name] = {
-                        'name': chosen.get('logGroupName'),
-                        'stored_bytes': chosen.get('storedBytes', 0),
-                        'retention_in_days': chosen.get('retentionInDays'),
+                        'name': lg_name,
+                        'stored_bytes': g.get('storedBytes', 0),
+                        'retention_in_days': g.get('retentionInDays'),
                         'creation_time': ct,
-                        'arn': chosen.get('arn'),
-                        'kms_key_id': chosen.get('kmsKeyId')
+                        'arn': g.get('arn'),
+                        'kms_key_id': g.get('kmsKeyId')
                     }
-                except Exception as e:
-                    LOG.exception("Error getting details for %s: %s", lg_name, e)
-                    result[lg_name] = None
+                    # Optional optimization: early-exit if we’ve found all targets
+                    if all(v is not None for v in result.values()):
+                        break
+
             return result
         except ClientError as e:
             code = e.response.get('Error', {}).get('Code')
@@ -2237,7 +2319,7 @@ class Aws(S3CloudMixin):
                     LOG.exception(f"Error creating LogGroupResource for {lg_name}: {e}")
                     continue
 
-            return resources      
+            return resources
         except Exception as e:
             LOG.exception(f"Error creating log group resources for region {region}: {e}")
             raise
@@ -2339,8 +2421,8 @@ class Aws(S3CloudMixin):
                     }
 
                     future = executor.submit(
-                        self._exp_backoff_retry, 
-                        cw.get_metric_statistics, 
+                        self._exp_backoff_retry,
+                        cw.get_metric_statistics,
                         **params
                     )
                     future_to_key[future] = (lg_name, metric_key)
