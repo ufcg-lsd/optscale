@@ -49,7 +49,7 @@ requirements = [
     'databricks-sdk==0.11.0',
 
     "requests==2.32.4",
-    "retrying==1.3.3",
+    "retrying>=1.4.1",
 ]
 
 setup(name='cloud-adapter',

@@ -149,6 +149,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             {"$match": {
                 "resource_type": "Bucket",
                 "cloud_account_id": cloud_account_id,
+                "active": True,
                 "deleted_at": 0
             }},
             {"$project": {
@@ -160,19 +161,15 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "tiers": "$meta.tiers",
                 "object_count": "$meta.object_count",
                 "pool_id": 1,
+                "owner_id": "$owner_id",
+                "employee_id": "$employee_id",
                 "region": 1,
                 "last_checked": "$meta.last_checked",
                 "has_lifecycle": "$meta.has_lifecycle",
                 "lifecycle_rules": "$meta.lifecycle_rules"
             }}
         ]
-        try:
-            docs = list(self.mongo_client.restapi.resources.aggregate(pipeline))
-        except Exception as exc:
-            LOG.warning("it_docs error: %s", str(exc))
-            return []
-        LOG.debug("it_docs ok")
-        return docs
+        return list(self.mongo_client.restapi.resources.aggregate(pipeline))
 
     def _candidate_and_saving(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -188,48 +185,43 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         """
         false_candidate = {"is_candidate": False, "saving": 0.0, "is_with_it": True}
 
-        try:
-            it_status = str(doc.get("it_status_bucket", "")).lower()
-            it_on = it_status in IT_POSITIVE_STATUS
-            if it_on:
-                return false_candidate
-
-            tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
-            total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
-            if total_gb <= 0.0:
-                return false_candidate
-
-            today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
-            access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
-            if access_tier == "frequent":
-                return false_candidate
-
-            has_lifecycle_flag = bool(doc.get("has_lifecycle"))
-            lifecycle_rules = doc.get("lifecycle_rules")
-            if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
-                return false_candidate
-
-            object_count = int(doc.get("object_count") or 0)
-            if object_count <= 0:
-                return false_candidate
-
-            has_standard_positive = any(
-                (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
-                for x in tiers_gb
-            )
-            if not has_standard_positive:
-                return false_candidate
-
-            eligible_objects = object_count
-            cost_now = _current_monthly_cost(total_gb, tiers_gb)
-            cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
-
-            saving = max(0.0, cost_now - cost_it)
-            LOG.debug("it_eval ok")
-            return {"is_candidate": True, "saving": saving, "is_with_it": False}
-        except Exception as exc:
-            LOG.warning("it_eval error: %s", str(exc))
+        it_status = str(doc.get("it_status_bucket", "")).lower()
+        it_on = it_status in IT_POSITIVE_STATUS
+        if it_on:
             return false_candidate
+
+        tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
+        total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
+        if total_gb <= 0.0:
+            return false_candidate
+
+        today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
+        access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
+        if access_tier == "frequent":
+            return false_candidate
+
+        has_lifecycle_flag = bool(doc.get("has_lifecycle"))
+        lifecycle_rules = doc.get("lifecycle_rules")
+        if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
+            return false_candidate
+
+        object_count = int(doc.get("object_count") or 0)
+        if object_count <= 0:
+            return false_candidate
+
+        has_standard_positive = any(
+            (str(x["name"]).lower() == "standard" and float(x["gb"]) > 0.0)
+            for x in tiers_gb
+        )
+        if not has_standard_positive:
+            return false_candidate
+
+        eligible_objects = object_count
+        cost_now = _current_monthly_cost(total_gb, tiers_gb)
+        cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
+
+        saving = max(0.0, cost_now - cost_it)
+        return {"is_candidate": True, "saving": saving, "is_with_it": False}
 
     def _cloud_account_names(self) -> Dict[str, str]:
         """
@@ -267,6 +259,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         excluded_pools = set((options.get("excluded_pools") or {}).keys())
         skip_accounts = set(options.get("skip_cloud_accounts") or [])
         ca_names = self._cloud_account_names()
+        employees = self.get_employees()
+        pools = self.get_pools()
 
         items: List[Dict[str, Any]] = []
         for ca in self.get_cloud_accounts():
@@ -293,15 +287,16 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "region": d.get("region"),
                     "cloud_account_id": d.get("cloud_account_id"),
                     "cloud_type": "aws_cnr",
-                    "owner": {"id": None, "name": None},
-                    "pool": {"id": d.get("pool_id"), "name": None, "purpose": None},
-                    "is_excluded": False,
+                    "owner": self._extract_owner(
+                        d.get("owner_id") or d.get("employee_id"), employees),
+                    "pool": self._extract_pool(
+                        d.get("pool_id"), pools),
+                    "is_excluded": d.get("pool_id") in excluded_pools,
                     "is_with_intelligent_tiering": eval_res["is_with_it"],
                     "detected_at": self.created_at,
                     "cloud_account_name": ca_names.get(d.get("cloud_account_id")),
                     "saving": round(eval_res["saving"], 2),
                 })
-        LOG.debug("it_list ok")
         return items
 
 
