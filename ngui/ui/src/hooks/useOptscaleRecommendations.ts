@@ -6,6 +6,7 @@ import AbandonedLoadBalancers from "containers/RecommendationsOverviewContainer/
 import AbandonedNebiusS3Buckets from "containers/RecommendationsOverviewContainer/recommendations/AbandonedNebiusS3Buckets";
 import AbandonedS3Buckets from "containers/RecommendationsOverviewContainer/recommendations/AbandonedS3Buckets";
 import CvocAgreementOpportunities from "containers/RecommendationsOverviewContainer/recommendations/CvocAgreementOpportunities";
+import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 import InactiveConsoleUsers from "containers/RecommendationsOverviewContainer/recommendations/InactiveConsoleUsers";
 import InactiveUsers from "containers/RecommendationsOverviewContainer/recommendations/InactiveUsers";
 import InsecureSecurityGroups from "containers/RecommendationsOverviewContainer/recommendations/InsecureSecurityGroups";
@@ -26,7 +27,9 @@ import RightsizingInstances from "containers/RecommendationsOverviewContainer/re
 import RightsizingRdsInstances from "containers/RecommendationsOverviewContainer/recommendations/RightsizingRdsInstances";
 import ShortLivingInstances from "containers/RecommendationsOverviewContainer/recommendations/ShortLivingInstances";
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
+import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
+import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 
 const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buckets, NebiusMigration];
 
@@ -54,6 +57,7 @@ export const useOptscaleRecommendations = () => {
       InactiveUsers,
       InactiveConsoleUsers,
       IntelligentTiering,
+      InactiveCloudWatchLogGroup,
       AbandonedS3Buckets,
       AbandonedKinesisStreams,
       AbandonedInstances,

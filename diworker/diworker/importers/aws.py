@@ -59,6 +59,34 @@ AWS_CUR_PREFIX_MAP = {
 EDP_DISCOUNTS = ['discount/EdpDiscount', 'discount/PrivateRateDiscount']
 
 
+class CloudWatchUtils:
+    """Shared utilities for CloudWatch metric processing"""
+
+    @staticmethod
+    def datapoint_value(dp: dict):
+        """Extract numeric value from CloudWatch datapoint"""
+        for k in (
+            'Sum',
+            'Maximum',
+            'Average',
+            'Minimum',
+            'SampleCount',
+                'Value'):
+            if k in dp:
+                return dp[k]
+        for k, v in dp.items():
+            if k not in ('Timestamp', 'Unit') and isinstance(v, (int, float)):
+                return v
+        return None
+
+    @staticmethod
+    def normalize_timestamp(ts):
+        """Normalize timestamp to UTC datetime"""
+        if isinstance(ts, datetime):
+            return ts.astimezone(timezone.utc)
+        return ts
+
+
 class AWSReportImporter(CSVBaseReportImporter):
     ITEM_TYPE_ID_FIELDS = {
         'Tax': ['lineItem/TaxType', 'product/ProductName'],
@@ -92,7 +120,15 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     @staticmethod
     def short_resource_id(resource_id):
-        return resource_id[resource_id.find('/') + 1:]
+        if not resource_id:
+            return resource_id
+        slash_pos = resource_id.find('/')
+        if slash_pos != -1:
+            short_id = resource_id[slash_pos + 1:]
+            return short_id or resource_id
+        if resource_id.startswith('arn:aws:s3:::'):
+            return resource_id.split(':::')[-1]
+        return resource_id
 
     @staticmethod
     def unzip_report(report_path, dest_dir):
@@ -137,7 +173,8 @@ class AWSReportImporter(CSVBaseReportImporter):
     def get_unique_field_list(include_date=True):
         # todo: if this is not enough, we may lose data on raw import
         # we need functional testing. at least verify count of records after
-        # import. also total sum from CSV must match total sum for clean records
+        # import. also total sum from CSV must match total sum for clean
+        # records
         unique_list = [
             'lineItem/LineItemDescription',
             'lineItem/LineItemType',
@@ -269,10 +306,11 @@ class AWSReportImporter(CSVBaseReportImporter):
         if billing_period:
             self.billing_periods.add(billing_period)
         if len(skipped_accounts) > 0:
-            LOG.warning('Import skipped for following accounts: %s. Looks like '
-                        'credentials for them weren\'t added or added '
-                        'incorrectly or they are not marked as linked',
-                        skipped_accounts)
+            LOG.warning(
+                'Import skipped for following accounts: %s. Looks like '
+                'credentials for them weren\'t added or added '
+                'incorrectly or they are not marked as linked',
+                skipped_accounts)
 
     def update_raw_records(self, chunk):
         for row in chunk:
@@ -509,7 +547,8 @@ class AWSReportImporter(CSVBaseReportImporter):
                         chunk[expense_num]['end_date'] = self._datetime_from_value(
                             value)
                     elif field_name == 'lineItem/BlendedCost':
-                        chunk[expense_num]['cost'] = float(value) if value else 0
+                        chunk[expense_num]['cost'] = float(
+                            value) if value else 0
                     elif field_name in EDP_DISCOUNTS:
                         if self.use_edp_discount:
                             chunk[expense_num]['cost'] += float(value or 0)
@@ -526,7 +565,8 @@ class AWSReportImporter(CSVBaseReportImporter):
             expenses = [x for x in chunk
                         if chunk.index(x) not in skipped_rows and
                         x.get('cloud_account_id') is not None and
-                        # RIFee is created once a month and is updated every day
+                        # RIFee is created once a month and is updated every
+                        # day
                         (x['start_date'] >= self.min_date_import_threshold or
                          x['lineItem/LineItemType'] == 'RIFee')]
             for expense in expenses:
@@ -611,7 +651,8 @@ class AWSReportImporter(CSVBaseReportImporter):
                 last_seen = end_date
 
             product = e.get('lineItem/ProductCode')
-            if product and any(k in product.lower() for k in ['aws', 'amazon']):
+            if product and any(k in product.lower()
+                               for k in ['aws', 'amazon']):
                 service_name = product
             elif service_name is None:
                 service_name = e.get('bill/BillingEntity')
@@ -778,10 +819,10 @@ class AWSReportImporter(CSVBaseReportImporter):
                             ('BoxUsage' in usage_type or instance_type in
                              operation)),
             snapshot_type: usage_type and operation and (
-                    snapshot_type in usage_type or snapshot_type in operation),
+                snapshot_type in usage_type or snapshot_type in operation),
             volume_type: usage_type and volume_type in usage_type,
             'Bucket': product and 'AmazonS3' in product and (
-                    bool(resource_id) and bucket_type in operation),
+                bool(resource_id) and bucket_type in operation),
             ip_address_type: (extract_type_by_product_type(ip_address_type) or
                               usage_type and 'PublicIP' in usage_type),
             sp_type: bool(sp_id) and 'SavingsPlan' in item_type,
@@ -900,15 +941,15 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def get_raw_expenses_by_filters(self, filters):
         return self.mongo_raw.aggregate([
-                {'$match': {
-                    '$and': filters,
-                }},
-                {'$group': self._get_group_by_day_pipeline()},
-                {'$replaceRoot': {'newRoot': {
-                    '$mergeObjects': ["$root", "$$ROOT"]}
-                }},
-                {'$project': {"root": 0}}
-            ], allowDiskUse=True)
+            {'$match': {
+                '$and': filters,
+            }},
+            {'$group': self._get_group_by_day_pipeline()},
+            {'$replaceRoot': {'newRoot': {
+                '$mergeObjects': ["$root", "$$ROOT"]}
+            }},
+            {'$project': {"root": 0}}
+        ], allowDiskUse=True)
 
     def _get_billing_period_filters(self, billing_period):
         return {
@@ -944,9 +985,18 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def _get_cloud_extras(self, info):
         res = defaultdict(dict)
-        for k in ['os', 'preinstalled', 'payment_option', 'offering_type',
-                  'purchase_term', 'applied_region', 'start', 'end', 'platform',
-                  'instance_type', 'zone']:
+        for k in [
+            'os',
+            'preinstalled',
+            'payment_option',
+            'offering_type',
+            'purchase_term',
+            'applied_region',
+            'start',
+            'end',
+            'platform',
+            'instance_type',
+                'zone']:
             val = info.get(k)
             if val:
                 res['meta'][k] = val
@@ -967,3 +1017,90 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def create_risp_processing_tasks(self):
         self._create_risp_processing_tasks()
+
+    def discover_region_log_groups(self, region):
+        """
+        Yield discovered CloudWatch LogGroupResource objects for the given region.
+        The importer delegates to the cloud adapter to create log group resources,
+        processes their metrics (persisting raw docs and summarised points) and
+        yields each resource for further processing. The function is a generator
+        and should not raise on per-resource errors; those are handled inside
+        process_log_group_metrics.
+        :param region: AWS region name (string)
+        :yield: LogGroupResource instances
+        """
+        log_groups = self.cloud_adapter.create_log_group_resources(region)
+        LOG.debug('cw_log_groups fetch_ok')
+        for log_group in log_groups:
+            # Process metrics before yielding the resource
+            self.process_log_group_metrics(log_group)
+            yield log_group
+
+    def _prepare_raw_metric_docs(self, log_group_resource):
+        """Prepare raw metric documents for MongoDB"""
+        raw_docs = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                value = CloudWatchUtils.datapoint_value(dp)
+                if value is None:
+                    continue
+
+                ts = CloudWatchUtils.normalize_timestamp(dp.get('Timestamp'))
+                raw_docs.append({
+                    'cloud_account_id': self.cloud_acc_id,
+                    'region': getattr(log_group_resource, 'region', None),
+                    'log_group_name': log_group_resource.name,
+                    'cloud_resource_id': log_group_resource.cloud_resource_id,
+                    'metric_name': metric_name,
+                    'timestamp': ts,
+                    'value': float(value),
+                    'retention_in_days': getattr(log_group_resource, 'retention_in_days', None),
+                    'stored_bytes': getattr(log_group_resource, 'stored_bytes', None),
+                    'arn': getattr(log_group_resource, 'arn', None),
+                    'collected_at': opttime.utcnow()
+                })
+        return raw_docs
+
+    def _prepare_summary_metrics(self, log_group_resource):
+        """Prepare summary metrics for ClickHouse"""
+        metrics_data = []
+        for metric_name, datapoints in log_group_resource.metrics.items():
+            for dp in datapoints:
+                value = CloudWatchUtils.datapoint_value(dp)
+                if value is None:
+                    continue
+
+                ts = dp.get('Timestamp')
+                if isinstance(ts, datetime):
+                    ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+
+                metrics_data.append([
+                    self.cloud_acc_id,
+                    log_group_resource.cloud_resource_id,
+                    metric_name,
+                    ts,
+                    float(value)
+                ])
+
+        return metrics_data
+
+    def process_log_group_metrics(self, log_group_resource):
+        """Process and persist CloudWatch metrics for a log group"""
+        if not hasattr(log_group_resource, 'metrics'):
+            return
+
+        # Process raw metrics for MongoDB
+        raw_docs = self._prepare_raw_metric_docs(log_group_resource)
+        if raw_docs:
+            try:
+                self.mongo_cloudwatch.insert_many(raw_docs)
+            except Exception as exc:
+                LOG.warning('cw_metrics mongo_error: %s', str(exc))
+            else:
+                LOG.debug('cw_metrics mongo_ok')
+
+        # Process summary metrics for ClickHouse
+        metrics_data = self._prepare_summary_metrics(log_group_resource)
+        if metrics_data:
+            self.save_cloudwatch_metrics(metrics_data)
+            LOG.debug('cw_metrics clickhouse_ok')
