@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Callable, Dict
 from unittest.mock import Mock
+import copy
 
 import pytest  # type: ignore
 
@@ -10,7 +11,36 @@ from bumiworker.modules.recommendations.inactive_cloud_watch_log_group import (
 )
 
 
-NOW_FIXED = datetime(2025, 11, 1, 12, 0, 0, tzinfo=timezone.utc)
+NOW_FIXED = datetime(2025, 11, 7, 0, 0, 0, tzinfo=timezone.utc)
+
+# Base resource template for tests
+RESOURCE_LOG_GROUP = {
+    "_id": "1",
+    "cloud_account_id": "account_1",
+    "cloud_resource_id": "resource_1",
+    "applied_rules": [],
+    "created_at": 1730430000,
+    "deleted_at": 0,
+    "employee_id": "employee_1",
+    "first_seen": 1730430000,
+    "last_seen": 1761681929,
+    "meta": {
+        "name": "name_1",
+        "stored_bytes": 0,
+        "creation_time": "2020-09-01T18:26:08.993000+00:00",
+        "arn": "arn_1",
+        "metrics": {
+            "ingestion": [],
+            "storage": [],
+            "incoming_events": [],
+            "query": []
+        }
+    },
+    "pool_id": "pool_1",
+    "region": "us-east-1",
+    "resource_type": "Log Group",
+    "tags": {}
+}
 
 
 @pytest.fixture
@@ -61,35 +91,182 @@ class TestParseTs:
     def test_tc_04_invalid(self, module_factory):
         pytest.skip("Implement TC-04: invalid value.")
 
-
-class TestCountAndSum:
-    """RQ-02 / RQ-03 — Counting and summation of metrics (TC-05 to TC-09)."""
-
-    def test_tc_05_count_within_threshold(self, module_factory):
-        pytest.skip("Implement TC-05: count within threshold.")
-
-    def test_tc_06_point_outside_window(self, module_factory):
-        """
-        TC-06 — Point outside the 7-day threshold window
-        Plan reference:
-          now fixed: 2025-11-01T12:00:00Z
-          input series: [{timestamp: '2025-10-20T00:00:00Z'}], days_threshold=7
-          expected: count == 0
-        """
+class TestHasRecentMetrics:
+    def test_no_metrics(self, module_factory):
         mod = module_factory()
-        series = [{"timestamp": "2025-10-20T00:00:00Z", "value": 123}]
+        series = []
+        assert mod._has_recent_metrics(series, days_threshold=7) is False
+        assert mod._count_occurrences_in_threshold(series, days_threshold=7) == 0
+
+    def test_metrics_outside_threshold(self, module_factory):
+        mod = module_factory()
+        series= [{
+                "timestamp" : "2025-10-21T12:15:00+00:00",
+                "value" : 2000
+        },
+        {
+                "timestamp" : "2025-10-07T12:35:00+00:00",
+                "value" : 1000
+        } ]
+        assert mod._has_recent_metrics(series, days_threshold=7) is False
+    
+    def test_metrics_within_threshold(self, module_factory):
+        mod = module_factory()
+        series= [{
+                "timestamp" : "2025-11-04T22:01:00+00:00",
+                "value" : 500
+        },
+        {
+                "timestamp" : "2025-11-01T16:05:00+00:00",
+                "value" : 2500
+        } ]
+        assert mod._has_recent_metrics(series, days_threshold=7) is True
+
+    def test_metrics_exact_threshold(self, module_factory):
+        mod = module_factory()
+        series= [{
+            "timestamp" : "2025-11-01T12:00:00+00:00",
+            "value" : 2500
+        } ]
+        assert mod._has_recent_metrics(series, days_threshold=7) is True
+
+class TestCountOccurrencesInThreshold:
+
+    def test_missing_timestamp(self, module_factory):
+        mod = module_factory()
+        series = [{"value": 123}]
         count = mod._count_occurrences_in_threshold(series, days_threshold=7)
         assert count == 0
-        assert mod._has_recent_metrics(series, days_threshold=7) is False
 
-    def test_tc_07_missing_timestamp(self, module_factory):
-        pytest.skip("Implement TC-07: point without timestamp.")
+    def test_no_metrics(self, module_factory):
+        mod = module_factory()
+        series = []
+        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        assert count == 0
 
-    def test_tc_08_sum_30_days_ingestion(self, module_factory):
-        pytest.skip("Implement TC-08: 30-day ingestion sum.")
+    def test_metrics_within_threshold_7_days(self, module_factory):
+        mod = module_factory()
+        series= [{
+            "timestamp" : "2025-11-04T22:01:00+00:00",
+            "value" : 500
+        } ]
+        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        assert count == 1
+    
+    def test_metrics_within_threshold_30_days(self, module_factory):
+        mod = module_factory()
+        series= [{
+                "timestamp" : "2025-10-21T12:15:00+00:00",
+                "value" : 2000
+        },
+        {
+                "timestamp" : "2025-10-08T12:35:00+00:00",
+                "value" : 1000
+        } ]
+        count = mod._count_occurrences_in_threshold(series, days_threshold=30)
+        assert count == 2
 
-    def test_tc_09_sum_30_days_query(self, module_factory):
-        pytest.skip("Implement TC-09: 30-day query sum.")
+    def test_metrics_within_and_outside_threshold(self, module_factory):
+        mod = module_factory()
+        series= [{
+                "timestamp" : "2025-11-04T22:01:00+00:00",
+                "value" : 500
+        },
+        {
+                "timestamp" : "2025-10-21T12:15:00+00:00",
+                "value" : 2000
+        },
+        {
+                "timestamp" : "2025-10-08T12:35:00+00:00",
+                "value" : 1000
+        } ]
+        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        assert count == 1
+
+class TestSumMetricsLastMonth:
+
+    def test_no_metrics(self, module_factory):
+        mod = module_factory()
+        series = []
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 0
+
+    def test_metrics_within_7_days(self, module_factory):
+        mod = module_factory()
+        series= [{
+            "timestamp" : "2025-11-04T22:22:01+00:00",
+            "value" : 500
+        } ]
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 500
+
+    def test_metrics_within_30_days(self, module_factory):
+        mod = module_factory()
+        series= [{
+            "timestamp" : "2025-11-01T00:00:00+00:00",
+            "value" : 3000
+        } ]
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 3000
+
+    def test_metrics_exact_30_days(self, module_factory):
+        mod = module_factory()
+        series= [{
+            "timestamp" : "2025-10-08T00:00:00+00:00",
+            "value" : 1500
+        } ]
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 1500
+
+    def test_metrics_outside_threshold(self, module_factory):
+        mod = module_factory()
+        series= [{
+                "timestamp" : "2025-08-07T08:15:00+00:00",
+                "value" : 1000
+        },
+        {
+                "timestamp" : "2025-08-07T00:00:00+00:00",
+                "value" : 1500
+        } ]
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 0
+
+    def test_metrics_within_and_outside_threshold(self, module_factory):
+        mod = module_factory()
+        series= [ {
+                "timestamp" : "2025-11-04T22:01:00+00:00",
+                "value" : 500
+        },
+        {
+                "timestamp" : "2025-11-01T16:05:00+00:00",
+                "value" : 2500
+        },
+        {
+            "timestamp" : "2025-11-01T00:00:00+00:00",
+                "value" : 3000
+        },
+        {
+                "timestamp" : "2025-10-21T12:15:00+00:00",
+                "value" : 2000
+        },
+        {
+                "timestamp" : "2025-10-08T12:35:00+00:00",
+                "value" : 1000
+        },
+        {
+                "timestamp" : "2025-10-08T00:00:00+00:00",
+                "value" : 1500
+        },
+        {
+                "timestamp" : "2025-08-07T08:15:00+00:00",
+                "value" : 1000
+        },
+        {
+                "timestamp" : "2025-08-07T00:00:00+00:00",
+                "value" : 1500
+        }]
+        sum = mod._sum_metrics_last_month(series)
+        assert sum == 10500
 
 
 class TestInactivity:
@@ -116,6 +293,17 @@ class TestInactivity:
 
 class TestSaving:
     """RQ-05 — Saving calculation (TC-16 to TC-20)."""
+
+    def test_ingestion_last_month_0(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [ {
+            "timestamp" : "2025-10-21T12:15:00+00:00",
+            "value" : 2000
+        } ]
+        saving = mod._estimate_saving(resource)
+        assert saving == pytest.approx(9.31e-07, rel=1e-3)
+    
 
     def test_tc_16_storage_only(self, module_factory):
         pytest.skip("Implement TC-16: storage only.")
