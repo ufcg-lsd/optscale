@@ -36,7 +36,7 @@ const columns = [
       </TextWithDataTestId>
     ),
     accessorKey: "is_with_intelligent_tiering",
-    cell: ({ cell }: { cell: { getValue: () => any } }) => {
+    cell: ({ cell }: { cell: { getValue: () => boolean } }) => {
       const value = cell.getValue();
 
       return <FormattedMessage id={value ? "yes" : "no"} />;
@@ -71,8 +71,8 @@ class IntelligentTiering extends BaseRecommendation {
   static resourceDescriptionMessageId = "intelligentTieringResourceRecommendation";
 
   get previewItems() {
-    return this.items.map((item: any) => [
-      { key: `${item.cloud_resource_id}-label`, value: <RecommendationListItemResourceLabel key={item.id} item={item} /> },
+    return this.items.map((item) => [
+      { key: `${item.cloud_resource_id}-label`, value: <RecommendationListItemResourceLabel item={item} /> },
       {
         key: `${item.cloud_resource_id}-${item.resource_id}-saving`,
         value: <FormattedMoney type={FORMATTED_MONEY_TYPES.COMMON} value={item.saving} />
