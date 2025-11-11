@@ -3,7 +3,7 @@ import sys
 from setuptools import setup
 
 
-requirements = ["requests==2.32.4", "retrying==1.3.3"]
+requirements = ["requests==2.32.4", "retrying==1.4.1"]
 
 setup(name='report-client',
       description='OptScale Report Client',

@@ -1,24 +1,11 @@
-/**
- * IntelligentTiering.tsx
- * 
- * This file defines the IntelligentTiering recommendation class that extends BaseRecommendation.
- * It provides the structure and configuration for displaying intelligent tiering recommendations
- * in the OptScale frontend.
- * 
- * The file contains:
- * - Column definitions for the recommendations table display
- * - Class properties for recommendation type, name, title, and metadata
- * - Preview items configuration for card view display
- * 
- */
-
 import { FormattedMessage } from "react-intl";
+import FormattedMoney from "components/FormattedMoney";
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import FormattedMoney from "components/FormattedMoney";
 import { AWS_S3 } from "hooks/useRecommendationServices";
-import { detectedAt, poolOwner, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
+import { detectedAt, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
+import { TODO } from "utils/types";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
 const columns = [
@@ -36,7 +23,7 @@ const columns = [
       </TextWithDataTestId>
     ),
     accessorKey: "is_with_intelligent_tiering",
-    cell: ({ cell }: { cell: { getValue: () => any } }) => {
+    cell: ({ cell }: { cell: { getValue: () => boolean } }) => {
       const value = cell.getValue();
 
       return <FormattedMessage id={value ? "yes" : "no"} />;
@@ -60,7 +47,7 @@ class IntelligentTiering extends BaseRecommendation {
 
   emptyMessageId = "noIntelligentTiering";
 
-  services = [AWS_S3];  
+  services = [AWS_S3];
 
   appliedDataSources = [AWS_CNR];
 
@@ -71,7 +58,7 @@ class IntelligentTiering extends BaseRecommendation {
   static resourceDescriptionMessageId = "intelligentTieringResourceRecommendation";
 
   get previewItems() {
-    return this.items.map((item: any) => [
+    return this.items.map((item: TODO) => [
       { key: `${item.cloud_resource_id}-label`, value: <RecommendationListItemResourceLabel key={item.id} item={item} /> },
       {
         key: `${item.cloud_resource_id}-${item.resource_id}-saving`,

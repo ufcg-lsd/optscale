@@ -1,18 +1,17 @@
 from datetime import datetime, timezone
-from kombu.log import get_logger
-from requests.exceptions import SSLError
+
+from insider.insider_worker.http_client.client import Client
+from insider.insider_worker.processors.base import BasePriceProcessor
 from kombu import Connection as QConnection
 from kombu import Exchange
+from kombu.log import get_logger
 from kombu.pools import producers
 from optscale_client.rest_api_client.client_v2 import Client as RestClient
-from insider.insider_worker.processors.base import BasePriceProcessor
-from insider.insider_worker.http_client.client import Client
-
+from requests.exceptions import SSLError
 
 ACTIVITIES_EXCHANGE_NAME = 'activities-tasks'
 ACTIVITIES_EXCHANGE = Exchange(ACTIVITIES_EXCHANGE_NAME, type='topic')
 LOG = get_logger(__name__)
-PRICES_PER_REQUEST = 100
 PRICES_COUNT_TO_LOG = 1000
 
 
@@ -81,16 +80,19 @@ class AzurePriceProcessor(BasePriceProcessor):
 
     def process_prices(self):
         last_discovery = self.get_last_discovery()
-        old_prices = self.prices.find(
-            {'last_seen': {'$gte': last_discovery.get('started_at', 0)}},
-            {k: 1 for k in self.UNIQUE_FIELDS + self.CHANGE_FIELDS + ['last_seen']}
-        )
-        old_prices_map = {self.unique_values(p): p for p in old_prices}
 
         http_client = Client()
-        processed_keys = {}
-        prices_counter = 0
         for currency in self._get_currencies_list():
+            LOG.info('Processing Azure prices for currency: %s', currency)
+
+            old_prices = self.prices.find(
+                {'last_seen': {'$gte': last_discovery.get('started_at', 0)}, 'currencyCode': currency},
+                {k: 1 for k in self.UNIQUE_FIELDS + self.CHANGE_FIELDS + ['last_seen']}
+            )
+            old_prices_map = {self.unique_values(p): p for p in old_prices}
+            processed_keys = {}
+            prices_counter = 0
+
             next_page = 'https://prices.azure.com/api/retail/prices'
             next_page += '?currencyCode=%s' % currency
             while True:
@@ -116,7 +118,7 @@ class AzurePriceProcessor(BasePriceProcessor):
                              'cloud: %s', prices_counter)
                     break
                 next_page = new_url
-                prices_counter += PRICES_PER_REQUEST
+                prices_counter += response.get('Count', 0)
 
     def update_price_records(self, new_prices_map, old_prices_map,
                              processed_keys):

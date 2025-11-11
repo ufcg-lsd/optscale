@@ -8,6 +8,7 @@ dependencies = [
     "pymongo==4.6.3",
     "requests==2.32.4",
     "restapi-client",
+    "retrying>=1.4",
 ]
 
 [tool.uv.sources]
