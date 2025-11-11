@@ -99,7 +99,7 @@ def _exp_backoff_jitter(self, func, *args, max_attempts=10, base_delay=0.25, max
             return func(*args, **kwargs)
         except Exception as e:
             attempt += 1
-            if not self._is_throttling_or_retryable(e) or attempt >= max_attempts:
+            if not _is_throttling_or_retryable(self, e) or attempt >= max_attempts:
                 raise
 
             exp = base_delay * (2 ** (attempt - 1))
