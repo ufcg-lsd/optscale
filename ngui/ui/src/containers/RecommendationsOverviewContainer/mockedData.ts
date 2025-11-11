@@ -3,7 +3,7 @@ const MOCKED_DATA = {
   optimizations: {
     s3_intelligent_tiering: {
       count: 1,
-      saving: 125.50,
+      saving: 125.5,
       options: {
         excluded_pools: {},
         skip_cloud_accounts: []
@@ -22,7 +22,7 @@ const MOCKED_DATA = {
           is_with_intelligent_tiering: false,
           detected_at: 1682054418,
           cloud_account_name: "AWS HQ",
-          saving: 125.50
+          saving: 125.5
         }
       ],
       limit: 3
