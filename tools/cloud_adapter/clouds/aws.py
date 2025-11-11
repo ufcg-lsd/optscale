@@ -1126,7 +1126,6 @@ class Aws(S3CloudMixin):
                                 cloud_account_id=self.cloud_account_id,
                                 region=region,
                                 name=lb.get('LoadBalancerName'),
-                                dns_name=lb.get('DNSName'),
                                 scheme=lb.get('Scheme'),
                                 tags=tags,
                                 organization_id=self.organization_id
@@ -1168,7 +1167,6 @@ class Aws(S3CloudMixin):
                                 cloud_account_id=self.cloud_account_id,
                                 region=region,
                                 name=lb.get('LoadBalancerName'),
-                                dns_name=lb.get('DNSName'),
                                 scheme=lb.get('Scheme'),
                                 tags=tags,
                                 organization_id=self.organization_id
