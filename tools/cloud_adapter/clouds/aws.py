@@ -2213,7 +2213,7 @@ class Aws(S3CloudMixin):
             if next_token:
                 params['nextToken'] = next_token
 
-            resp = _exp_backoff_jitter(logs_client.describe_log_groups, **params)
+            resp = _exp_backoff_jitter(self, logs_client.describe_log_groups, **params)
             for g in resp.get('logGroups', []):
                 yield g
 
