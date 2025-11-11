@@ -1,21 +1,18 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /src
-ENV PYTHONPATH=/src
 
-COPY optscale_client/herald_client optscale_client/herald_client
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/insider_client optscale_client/insider_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
-COPY tools/cloud_adapter tools/cloud_adapter
-COPY tools/optscale_data tools/optscale_data
-COPY tools/optscale_time tools/optscale_time
+COPY optscale_client optscale_client
+COPY tools tools
 
 COPY diworker/*.py diworker/
-COPY diworker/requirements.txt diworker/requirements.txt
-RUN pip install --no-cache-dir -r diworker/requirements.txt
+COPY diworker/pyproject.toml diworker/pyproject.toml
+COPY diworker/uv.lock diworker/uv.lock
 COPY diworker/diworker diworker/diworker
+
+RUN uv --project diworker sync --locked --no-dev
 
 # used to store the report being processed. Automatically deleted
 VOLUME ["/src/reports"]
 
-CMD ["/src/diworker/diworker/main.py"]
+CMD ["uv", "run", "--project", "diworker", "/src/diworker/diworker/main.py"]

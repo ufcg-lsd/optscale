@@ -28,6 +28,14 @@ class TestFlavorPricesApi(TestBase):
             'cloud_type': 'alibaba',
             'region': 'Singapore',
             'flavor': 'cs.t5-lc1m2.large',
+            'os_type': 'linux',
+            'quantity': 12,
+            'billing_method': 'subscription'
+        }
+        self.gcp_valid_params = {
+            'cloud_type': 'gcp',
+            'region': 'us-central1',
+            'flavor': 'e2-small',
             'os_type': 'linux'
         }
         self.valid_aws_family_params = {
@@ -49,6 +57,19 @@ class TestFlavorPricesApi(TestBase):
         self.alibaba_cad = patch(
             'insider.insider_api.controllers.flavor_price.'
             'AlibabaProvider.cloud_adapter').start()
+        self.gcp_cad = patch(
+            'insider.insider_api.controllers.flavor_price.'
+            'GcpProvider.cloud_adapter').start()
+        patch(
+            'insider.insider_api.controllers.flavor_price.'
+            'GcpProvider.cloud_adapter.get_regions_coordinates',
+            return_value={'us-central1': {'name': 'US West (Oregon)'}}
+        ).start()
+        patch(
+            'insider.insider_api.controllers.flavor_price.'
+            'AlibabaProvider.cloud_adapter.get_regions_coordinates',
+            return_value={'Singapore': {'name': 'US West (Oregon)'}}
+        ).start()
         super().setUp()
         patch('insider.insider_api.controllers.flavor_price.'
               'BaseProvider.mongo_client',
@@ -427,6 +448,30 @@ class TestFlavorPricesApi(TestBase):
         for pricing in pricings:
             self.mongo_client.insider.alibaba_prices.insert_one(pricing)
 
+    def insert_gcp_pricing(self, ts):
+        pricings = [
+            {
+                "region": "us-central1",
+                "flavor": "e2-small",
+                "updated_at": utcfromtimestamp(ts),
+                "price": 1.1
+            },
+            {
+                "region": "eu-central1",
+                "flavor": "e2-small",
+                "updated_at": utcfromtimestamp(ts),
+                "price": 2.2
+            },
+            {
+                "region": "eu-central1",
+                "flavor": "m3-medium-164",
+                "updated_at": utcfromtimestamp(ts),
+                "price": 2.2
+            }
+        ]
+        for pricing in pricings:
+            self.mongo_client.insider.gcp_prices.insert_one(pricing)
+
     def test_invalid_parameters(self):
         for params in [self.aws_valid_params, self.azure_valid_params,
                        self.alibaba_valid_params]:
@@ -598,6 +643,27 @@ class TestFlavorPricesApi(TestBase):
                          alibaba_valid_params['os_type'])
         self.assertEqual(price['price'], 19.53)
 
+    def test_gcp_valid_params(self):
+        now = utcnow_timestamp()
+        cost = 1.1
+        self.insert_gcp_pricing(now)
+        code, res = self.client.get_flavor_prices(**self.gcp_valid_params)
+        self.assertEqual(code, 200)
+        self.assertEqual(len(res.get('prices', [])), 1)
+        price = res['prices'][0]
+        self.assertEqual(price['flavor'], self.gcp_valid_params['flavor'])
+        self.assertEqual(price['region'], self.gcp_valid_params['region'])
+        self.assertEqual(price['price'], cost)
+
+        gcp_valid_params = self.gcp_valid_params.copy()
+        gcp_valid_params['currency_conversion_rate'] = 2.1
+        code, res = self.client.get_flavor_prices(**gcp_valid_params)
+        self.assertEqual(code, 200)
+        self.assertEqual(len(res.get('prices', [])), 1)
+        price = res['prices'][0]
+        self.assertEqual(price['price'], cost * gcp_valid_params[
+            'currency_conversion_rate'])
+
     def test_aws_valid_params_empty(self):
         with patch('insider.insider_api.controllers.flavor_price.AwsProvider.'
                    'cloud_adapter.get_prices', return_value=[]):
@@ -620,6 +686,13 @@ class TestFlavorPricesApi(TestBase):
 
     def test_alibaba_valid_params_empty(self):
         code, res = self.client.get_flavor_prices(**self.alibaba_valid_params)
+        self.assertEqual(code, 200)
+        self.assertListEqual(res.get('prices'), [])
+
+    def test_alibaba_with_cloud_account_id(self):
+        params = self.alibaba_valid_params.copy()
+        params['cloud_account_id'] = 'test'
+        code, res = self.client.get_flavor_prices(**params)
         self.assertEqual(code, 200)
         self.assertListEqual(res.get('prices'), [])
 

@@ -14,9 +14,9 @@ import SummaryList from "components/SummaryList";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { intl } from "translations/react-intl-config";
 import { getMlTaskDetailsUrl } from "urls";
-import { isEmpty as isEmptyArray, isLastItem } from "utils/arrays";
+import { isEmptyArray, isLastItem } from "utils/arrays";
 import { OPTSCALE_CAPABILITY } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const Details = ({
   dataSources,

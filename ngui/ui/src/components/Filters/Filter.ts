@@ -1,5 +1,5 @@
 import { intl } from "translations/react-intl-config";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EMPTY_UUID, LINEAR_SELECTOR_ITEMS_TYPES } from "utils/constants";
 
 class Filter {

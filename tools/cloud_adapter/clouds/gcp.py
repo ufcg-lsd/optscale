@@ -3,6 +3,7 @@ from functools import cached_property
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Tuple
 from datetime import datetime, timezone, timedelta
+from typing import Dict
 import hashlib
 import logging
 
@@ -370,6 +371,13 @@ class GcpInstance(tools.cloud_adapter.model.InstanceResource, GcpResource):
         network_id = self._cloud_adapter.network_name_to_id.get(network_name)
         return network_id, network_name, network_link
 
+    @staticmethod
+    def _get_architecture(flavor: str) -> str:
+        flavor = flavor.lower()
+        if flavor.startswith("t2a-"):
+            return "arm64"
+        return "x86_64"
+
     def __init__(self, cloud_instance: compute.Instance, cloud_adapter: "Gcp"):
         GcpResource.__init__(self, cloud_instance, cloud_adapter)
 
@@ -383,7 +391,7 @@ class GcpInstance(tools.cloud_adapter.model.InstanceResource, GcpResource):
         network_id, network_name, network_link = self._extract_network()
         security_groups = list(cloud_instance.tags.items)
         zone_id = self._last_path_element(self._cloud_object.zone)
-
+        architecture = self._get_architecture(flavor)
         super().__init__(
             **self._common_fields,
             flavor=flavor,
@@ -394,7 +402,8 @@ class GcpInstance(tools.cloud_adapter.model.InstanceResource, GcpResource):
             cloud_created_at=cloud_created_at,
             vpc_id=network_id,
             vpc_name=network_name,
-            zone_id=zone_id
+            zone_id=zone_id,
+            architecture=architecture
         )
 
     def _new_labels_request(self, key, value):
@@ -900,6 +909,20 @@ class Gcp(CloudBase):
             raise tools.cloud_adapter.exceptions.CloudSettingNotSupported(
                 'Currency "%s" is not supported' % dict(result).get("currency")
             )
+        if self.pricing_data:
+            query = f"""
+                SELECT pricing_unit
+                FROM `{self._pricing_table_full_name()}`
+                WHERE TIMESTAMP_TRUNC(_PARTITIONTIME, DAY) >= TIMESTAMP("{dt}")
+                LIMIT 1
+            """
+            query_job = self.bigquery_client.query(query, **DEFAULT_KWARGS)
+            try:
+                list(query_job.result())[0]
+            except Exception as e:
+                raise tools.cloud_adapter.exceptions.CloudSettingNotSupported(
+                    f'Invalid pricing data table: {str(e)}'
+                )
 
     def _validate_billing_type(self):
         if not self.billing_table.startswith(STANDARD_BILLING_PREFIX):
@@ -1419,13 +1442,13 @@ class Gcp(CloudBase):
                 sku_desription_pattern = self._build_sku_description_pattern(
                     sku_text, location, wildcard_prefix=True
                 )
-                instance_family_prices = _get_prices(sku_desription_pattern,
-                                                     instance_family_prices)
-                sku_desription_pattern = self._build_sku_description_pattern(
-                    sku_text, location, wildcard_prefix=True, custom=True
-                )
-                instance_family_prices.update(
-                    _get_prices(sku_desription_pattern, instance_family_prices))
+                for row in self._query_prices(sku_desription_pattern):
+                    machine_family = self._parse_machine_family(row)
+                    if not machine_family:
+                        continue
+                    price = self._parse_price(row, usd)
+                    instance_family_prices[machine_family].set_price(
+                        sku_text, price)
         self._update_m2_prices(instance_family_prices)
         return instance_family_prices
 

@@ -214,6 +214,14 @@ class AvailableFiltersAsyncHandler(FilteredExpensesBaseAsyncHandler):
             collectionFormat: multi
             items:
                 type: string
+        -   name: meta
+            in: query
+            description: meta key
+            required: false
+            type: array
+            collectionFormat: multi
+            items:
+                type: string
         responses:
             200:
                 description: Available filters data
@@ -472,6 +480,17 @@ class AvailableFiltersAsyncHandler(FilteredExpensesBaseAsyncHandler):
                                                 type: string
                                                 description: cloud type
                                                 example: aws_cnr
+                                meta:
+                                    type: array
+                                    description: >
+                                        list of meta keys which can be used
+                                        for filtering in the same date range
+                                    items:
+                                        type: string
+                                        description: meta key
+                                    example:
+                                        - flavor
+                                        - vpc_id
             400:
                 description: |
                     Wrong arguments:

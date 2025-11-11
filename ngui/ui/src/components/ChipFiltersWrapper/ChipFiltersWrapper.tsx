@@ -1,6 +1,6 @@
 import Chip from "components/Chip";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import useStyles from "./ChipFiltersWrapper.styles";
 
 const renderButtons = (buttonsDefinition) =>
@@ -20,7 +20,7 @@ const ChipFiltersWrapper = ({ chips, buttonsDefinition = [] }) => {
           size="medium"
         />
       ))}
-      {!isEmpty(buttonsDefinition) ? renderButtons(buttonsDefinition) : null}
+      {!isEmptyArray(buttonsDefinition) ? renderButtons(buttonsDefinition) : null}
     </div>
   );
 };

@@ -1,0 +1,31 @@
+[project]
+name = "diproxy"
+version = "0.1.0"
+requires-python = ">=3.12.11,<3.13"
+dependencies = [
+    "apispec==6.3.1",
+    "async-lru==1.0.3",
+    "config-client",
+    "pyyaml==6.0.1",
+    "requests==2.32.4",
+    "restapi-client",
+    "tornado==6.5",
+]
+
+[tool.uv.sources]
+config-client = { path = "../optscale_client/config_client" }
+restapi-client = { path = "../optscale_client/rest_api_client" }
+
+[dependency-groups]
+dev = [
+    "coverage==4.2",
+    "pycodestyle==2.11.1",
+    "pylint==3.0.2",
+]
+[build-system]
+requires = ["uv_build==0.8.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ".."
+module-name = "diproxy"

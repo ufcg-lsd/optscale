@@ -37,7 +37,7 @@ import { useApiData } from "hooks/useApiData";
 import { useApiState } from "hooks/useApiState";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { isError } from "utils/api";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { ModelVersionWithModel } from "./MlModelsService";
 
 const useGetAll = () => {
@@ -108,7 +108,7 @@ const useGetTaskRecommendation = ({ taskId, type, status }) => {
             return;
           }
           const ids = recommendation.items.map(({ resource_id: resourceId }) => resourceId).filter(Boolean);
-          if (!isEmpty(ids)) {
+          if (!isEmptyArray(ids)) {
             dispatch(getResourceAllowedActions(ids));
           }
         });

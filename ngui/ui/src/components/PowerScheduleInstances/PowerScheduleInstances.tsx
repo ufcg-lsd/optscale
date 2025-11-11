@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { AddInstanceToScheduleModal, RemoveInstancesFromScheduleModal } from "components/SideModalManager/SideModals";
 import Table from "components/Table";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { powerScheduleInstance, resourceLocation, resourcePoolOwner, size, tags } from "utils/columns";
 
 type PowerScheduleInstance = {

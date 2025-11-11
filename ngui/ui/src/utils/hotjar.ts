@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 export const initialize = (id, sv = 6) => {
   (function (h, o, t, j, a, r) {
@@ -32,7 +32,7 @@ export const initialize = (id, sv = 6) => {
 
 export const tag = (tags) => {
   const { hj } = window;
-  if (hj && !isEmpty(tags)) {
+  if (hj && !isEmptyArray(tags)) {
     hj("tagRecording", tags);
   }
 };

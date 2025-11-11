@@ -17,8 +17,8 @@ from tools.optscale_exceptions.common_exc import (
     NotFoundException, WrongArgumentsException)
 
 ENV_DEFAULT_HOURLY_COST = 0.05
-K8S_DEFAULT_CPU_HOURLY_COST = 0.002
-K8S_DEFAULT_MEMORY_HOURLY_COST = 0.001
+K8S_DEFAULT_CPU_HOURLY_COST = 0.02
+K8S_DEFAULT_MEMORY_HOURLY_COST = 0.01
 LOG = logging.getLogger(__name__)
 
 

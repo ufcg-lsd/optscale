@@ -1,4 +1,5 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
@@ -10,12 +11,13 @@ RUN apt-get update && apt-get install \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY herald/requirements.txt .
-COPY tools/optscale_exceptions tools/optscale_exceptions
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/auth_client optscale_client/auth_client
+COPY herald/pyproject.toml herald/pyproject.toml
+COPY herald/uv.lock herald/uv.lock
+COPY herald/__init__.py herald/__init__.py
+COPY tools tools
+COPY optscale_client optscale_client
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv --project herald sync --locked --no-dev
 
 WORKDIR /usr/src/app/herald/herald_server
 
@@ -30,6 +32,5 @@ COPY herald/herald_server/alembic.template .
 COPY herald/modules/email_generator ../modules/email_generator
 COPY herald/modules/email_sender ../modules/email_sender
 
-ENV PYTHONPATH=/usr/src/app/
-CMD ["python", "-u", "run.py"]
+CMD ["uv", "run", "--project", "herald", "python", "-u", "run.py"]
 EXPOSE 8906

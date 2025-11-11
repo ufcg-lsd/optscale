@@ -8,7 +8,7 @@ import {
   useTaskSelectedLeaderboardId
 } from "reducers/taskBreakdown/useTaskSelectedLeaderboardId";
 import MlLeaderboardsService from "services/MlLeaderboardsService";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const MlTaskLeaderboardsContainer = ({ task }) => {
   const { taskId } = useParams() as { taskId: string };

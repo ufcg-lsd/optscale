@@ -1,7 +1,8 @@
 ARG BUILDTAG=build
 FROM diproxy:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
-COPY diproxy/test-requirements.txt diproxy/.pylintrc diproxy/.coveragerc diproxy/
-RUN pip install --no-cache-dir -r diproxy/test-requirements.txt
+COPY diproxy/pyproject.toml diproxy/uv.lock diproxy/.pylintrc diproxy/.coveragerc diproxy/
+RUN uv --project diproxy sync --locked
 COPY diproxy/diproxy/tests diproxy/diproxy/tests

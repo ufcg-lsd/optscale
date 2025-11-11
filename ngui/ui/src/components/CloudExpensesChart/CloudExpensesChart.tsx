@@ -8,7 +8,7 @@ import CloudLabel from "components/CloudLabel";
 import FormattedMoney from "components/FormattedMoney";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import Tooltip from "components/Tooltip";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { getColorScale } from "utils/charts";
 import { FORMATTED_MONEY_TYPES } from "utils/constants";
 import { getPoolColorStatus } from "utils/layouts";
@@ -96,7 +96,7 @@ const CloudExpensesChart = ({ cloudAccounts, limit, forecast, isLoading = false 
     </Tooltip>
   );
 
-  const renderChart = !isEmpty(cloudAccounts) ? (
+  const renderChart = !isEmptyArray(cloudAccounts) ? (
     <Box
       sx={{
         // Allocate space for marker labels

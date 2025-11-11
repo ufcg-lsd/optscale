@@ -185,12 +185,13 @@ class AvailableFiltersController(CleanExpenseController):
     def _get_filter_values(self, uniq_values_map, filters):
         filter_values = {}
         for field, values in uniq_values_map.items():
-            if filters.get(field, []):
-                filter_values[field] = []
-            else:
-                if isinstance(values, dict):
-                    values = values.values()
-                filter_values[field] = list(values)
+            if field in self.JOINED_ENTITY_MAP and filters.get(field, []):
+                values = [
+                    v for k, v in values.items() if k in filters.get(field, [])
+                ]
+            if isinstance(values, dict):
+                values = values.values()
+            filter_values[field] = list(values)
         for src_k, dst_k in [('tag', 'without_tag'), ('without_tag', 'tag')]:
             if filters.get(src_k):
                 filter_values[dst_k] = list(set(
@@ -236,6 +237,7 @@ class AvailableFiltersController(CleanExpenseController):
                     '$divide': ['$first_seen', DAY_IN_SECONDS]}},
             },
             'tags': {'$addToSet': '$tags.k'},
+            'meta': {'$addToSet': '$meta.k'},
             'cloud_resource_ids': {'$addToSet': '$cloud_resource_id'},
         })
         return self.resources_collection.aggregate([
@@ -243,6 +245,11 @@ class AvailableFiltersController(CleanExpenseController):
             {'$addFields': {'tags': {'$objectToArray': "$tags"}}},
             {'$unwind': {
                 'path': "$tags",
+                'preserveNullAndEmptyArrays': True
+            }},
+            {'$addFields': {'meta': {'$objectToArray': "$meta"}}},
+            {'$unwind': {
+                'path': "$meta",
                 'preserveNullAndEmptyArrays': True
             }},
             {'$group': group_stage}

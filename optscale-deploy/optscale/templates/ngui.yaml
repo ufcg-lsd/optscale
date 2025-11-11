@@ -72,4 +72,8 @@ spec:
           value: {{ $config.env.ganalytics_id }}
         - name: VITE_HOTJAR_ID
           value: {{ $config.env.hotjar_id | quote }}
+        - name: VITE_ON_INITIALIZE_ORGANIZATION_SETUP_MODE
+          value: {{ $config.env.on_initialize_organization_setup_mode }}
+        - name: VITE_FINOPS_IN_PRACTICE_PORTAL_OVERVIEW
+          value: {{ $config.env.finops_in_practice_portal_overview }}
 {{ include "ready_probe" $config | indent 8 }}

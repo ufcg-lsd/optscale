@@ -22,7 +22,7 @@ import { useDownloadRecommendationItems } from "hooks/useDownloadRecommendationI
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { DOCS_HYSTAX_CLEANUP_SCRIPTS } from "urls";
 import { DOWNLOAD_FILE_FORMATS, SCOPE_TYPES } from "utils/constants";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import RecommendationDetailsService from "../RecommendationDetailsService";
 
 const useActionBarItems = ({ downloadLimit, recommendation, dataSourceIds, withDownload = false }) => {
@@ -172,7 +172,7 @@ const Details = ({ type, limit, status, data, dataSourceIds = [], withDownload }
     withDownload
   });
 
-  if (isEmpty(data)) {
+  if (isEmptyObject(data)) {
     return null;
   }
 

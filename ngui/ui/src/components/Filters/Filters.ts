@@ -1,4 +1,4 @@
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import Suggestions from "./Suggestions/Suggestions";
 
 class Filters {

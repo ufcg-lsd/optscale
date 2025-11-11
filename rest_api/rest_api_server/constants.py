@@ -128,6 +128,7 @@ class UrlsV2(Urls):
         'organization_limit_hits_collection': r"%s/organizations/(?P<organization_id>[^/]+)/organization_limit_hits",
         'organization_limit_hits': r"%s/organization_limit_hits/(?P<id>[^/]+)",
         'breakdown_tags': r"%s/organizations/(?P<organization_id>[^/]+)/breakdown_tags",
+        'breakdown_meta': r"%s/organizations/(?P<organization_id>[^/]+)/breakdown_meta",
         'org_resource_policies_collection': r"%s/organizations/(?P<organization_id>["r"^/]+)/resource_policies",
         'org_resource_constraints_collection': r"%s/organizations/(?P<organization_id>["r"^/]+)/resource_constraints",
         'summary_expenses': r"%s/organizations/(?P<organization_id>["r"^/]+)/summary_expenses",

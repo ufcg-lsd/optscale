@@ -2,7 +2,7 @@ import { removeKey, idx } from "./objects";
 
 export const getLength = (array) => +Array.isArray(array) && array.length;
 
-export const isEmpty = (array) => !(Array.isArray(array) && array.length);
+export const isEmptyArray = (array: unknown) => !(Array.isArray(array) && array.length);
 
 export const getValuesByObjectKey = (array, key) => array.map((item) => item[key]);
 
@@ -137,8 +137,7 @@ export const setObjectsOrder = (arrayOfObject, order, objectKey) =>
     return resultArray;
   }, arrayOfObject);
 
-// TODO - can use getChunks ???
-export const splitIntoTwoChunks = (array, firstChunkLength) => [
+export const splitIntoTwoChunks = <T>(array: T[], firstChunkLength: number): [T[], T[]] => [
   array.slice(0, firstChunkLength),
   array.slice(firstChunkLength, array.length)
 ];
@@ -195,7 +194,7 @@ export const createGroupsObjectFromArray = (array, iteratee) =>
     return grs;
   }, {});
 
-export const getFirstAndLastElements = (array) => (!isEmpty(array) ? [array[0], array[array.length - 1]] : []);
+export const getFirstAndLastElements = (array) => (!isEmptyArray(array) ? [array[0], array[array.length - 1]] : []);
 
 export const getElementsSum = (numbers) => numbers.reduce((sum, number) => sum + number, 0);
 

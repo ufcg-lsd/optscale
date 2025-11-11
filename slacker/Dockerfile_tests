@@ -1,8 +1,9 @@
 ARG BUILDTAG=build
 FROM slacker:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 COPY tools/check_alembic_down_revisions tools/check_alembic_down_revisions
 COPY optscale_client/slacker_client optscale_client/slacker_client
-COPY slacker/test-requirements.txt slacker/.pylintrc slacker/.coveragerc ./slacker/
+COPY slacker/pyproject.toml slacker/uv.lock slacker/.pylintrc slacker/.coveragerc ./slacker/
 COPY slacker/slacker_server/tests slacker/slacker_server/tests
-RUN pip install --no-cache-dir -r slacker/test-requirements.txt
+RUN uv --project slacker sync --locked

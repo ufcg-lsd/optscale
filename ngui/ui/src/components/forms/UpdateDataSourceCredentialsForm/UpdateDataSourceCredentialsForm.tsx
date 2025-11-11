@@ -442,11 +442,24 @@ const getConfig = (type, config) => {
       };
     case GCP_CNR:
       return {
-        getDefaultFormValues: () => ({
-          [GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET]: config.billing_data?.dataset_name,
-          [GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]: config.billing_data?.table_name,
-          [GCP_CREDENTIALS_FIELD_NAMES.CREDENTIALS]: ""
-        }),
+        getDefaultFormValues: () => {
+          const hasPricingData = !!config.pricing_data;
+
+          return {
+            [GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET]: config.billing_data.dataset_name,
+            [GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]: config.billing_data.table_name,
+            [GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_PROJECT_ID]: config.billing_data.project_id,
+            [GCP_CREDENTIALS_FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA]: !hasPricingData,
+            ...(hasPricingData
+              ? {
+                  [GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_DATASET]: config.pricing_data?.dataset_name,
+                  [GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_TABLE]: config.pricing_data?.table_name,
+                  [GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_PROJECT_ID]: config.pricing_data?.project_id
+                }
+              : {}),
+            [GCP_CREDENTIALS_FIELD_NAMES.CREDENTIALS]: ""
+          };
+        },
         parseFormDataToApiParams: async (formData) => {
           // TODO: the form validates the file itself, not the content.
           // Try to do both to avoid parsing the string here.
@@ -457,19 +470,40 @@ const getConfig = (type, config) => {
               credentials: JSON.parse(credentials),
               billing_data: {
                 dataset_name: formData[GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET],
-                table_name: formData[GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]
-              }
+                table_name: formData[GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE],
+                project_id: formData[GCP_CREDENTIALS_FIELD_NAMES.BILLING_DATA_PROJECT_ID] || undefined
+              },
+              ...(formData[GCP_CREDENTIALS_FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA]
+                ? {}
+                : {
+                    pricing_data: {
+                      dataset_name: formData[GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_DATASET],
+                      table_name: formData[GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_TABLE],
+                      project_id: formData[GCP_CREDENTIALS_FIELD_NAMES.PRICING_DATA_PROJECT_ID] || undefined
+                    }
+                  })
             }
           };
         }
       };
     case GCP_TENANT:
       return {
-        getDefaultFormValues: () => ({
-          [GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET]: config.billing_data.dataset_name,
-          [GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]: config.billing_data.table_name,
-          [GCP_TENANT_CREDENTIALS_FIELD_NAMES.CREDENTIALS]: ""
-        }),
+        getDefaultFormValues: () => {
+          const hasPricingData = !!config.pricing_data;
+
+          return {
+            [GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET]: config.billing_data.dataset_name,
+            [GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]: config.billing_data.table_name,
+            [GCP_TENANT_CREDENTIALS_FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA]: !hasPricingData,
+            ...(hasPricingData
+              ? {
+                  [GCP_TENANT_CREDENTIALS_FIELD_NAMES.PRICING_DATA_DATASET]: config.pricing_data?.dataset_name,
+                  [GCP_TENANT_CREDENTIALS_FIELD_NAMES.PRICING_DATA_TABLE]: config.pricing_data?.table_name
+                }
+              : {}),
+            [GCP_TENANT_CREDENTIALS_FIELD_NAMES.CREDENTIALS]: ""
+          };
+        },
         parseFormDataToApiParams: async (formData) => {
           // TODO: the form validates the file itself, not the content.
           // Try to do both to avoid parsing the string here.
@@ -481,7 +515,15 @@ const getConfig = (type, config) => {
               billing_data: {
                 dataset_name: formData[GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_DATASET],
                 table_name: formData[GCP_TENANT_CREDENTIALS_FIELD_NAMES.BILLING_DATA_TABLE]
-              }
+              },
+              ...(formData[GCP_TENANT_CREDENTIALS_FIELD_NAMES.AUTOMATICALLY_DETECT_PRICING_DATA]
+                ? {}
+                : {
+                    pricing_data: {
+                      dataset_name: formData[GCP_TENANT_CREDENTIALS_FIELD_NAMES.PRICING_DATA_DATASET],
+                      table_name: formData[GCP_TENANT_CREDENTIALS_FIELD_NAMES.PRICING_DATA_TABLE]
+                    }
+                  })
             }
           };
         }

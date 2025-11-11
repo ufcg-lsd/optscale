@@ -120,7 +120,7 @@ class TestExpensesApi(TestApiBase):
                               region=None, created_by_kind=None, created_by_name=None,
                               host_ip=None, instance_address=None, k8s_namespace=None,
                               k8s_node=None, pod_ip=None, first_seen=None, k8s_service=None,
-                              service_name=None, resource_hash=None):
+                              service_name=None, resource_hash=None, meta=None):
         now = utcnow_timestamp()
         resource = {
             'cloud_resource_id': self.gen_id(),
@@ -132,7 +132,7 @@ class TestExpensesApi(TestApiBase):
             'first_seen': first_seen or now,
             'region': region,
             'service_name': service_name,
-            'meta': {}
+            'meta': meta or {}
         }
 
         if tags:
@@ -3052,7 +3052,7 @@ class TestExpensesApi(TestApiBase):
         self.assertFalse('world' in response_tags)
         filter_with_tags = response.get('filter_values', {}).get('tag')
         filter_without_tags = response.get('filter_values', {}).get('without_tag')
-        self.assertListEqual(filter_with_tags, [])
+        self.assertListEqual(filter_with_tags, ['hello'])
         self.assertListEqual(filter_without_tags, [])
 
         code, response = self.get_expenses_with_available_filters(
@@ -5836,7 +5836,13 @@ class TestExpensesApi(TestApiBase):
         code, response = self.client.available_filters_get(
             self.org_id, time, time + 1, {'traffic_from': 'from_1:aws_cnr'})
         self.assertEqual(code, 200)
-        self.assertEqual(response['filter_values']['traffic_from'], [])
+        self.assertEqual(len(response['filter_values']['traffic_from']), 3)
+        for t in response['filter_values']['traffic_from']:
+            self.assertTrue(t in [
+                {'name': 'from_1', 'cloud_type': 'aws_cnr'},
+                {'name': 'from_2', 'cloud_type': 'aws_cnr'},
+                'ANY'
+            ])
         self.assertEqual(response['filter_values']['traffic_to'],
                          [{'name': 'to_1', 'cloud_type': 'aws_cnr'}, 'ANY'])
         code, response = self.client.clean_expenses_get(
@@ -6272,3 +6278,88 @@ class TestExpensesApi(TestApiBase):
             self.assertListEqual(resp_ids, expected_resources)
             self.assertEqual(resp['total_count'], 4)
             self.assertEqual(resp['total_cost'], 650)
+
+    def test_clean_expenses_meta(self):
+        day_in_month = datetime(2020, 1, 14)
+        time = int(day_in_month.timestamp())
+        _, resource1 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_1', first_seen=time, region='region_1',
+            service_name='service_name_1', resource_type='resource_type_1',
+            meta={'m_1': 'v1', 'link': 'some'})
+        _, resource2 = self.create_cloud_resource(
+            self.cloud_acc2['id'], self.employee2['id'], self.org['pool_id'],
+            name='name_2', first_seen=time, region='region_2',
+            service_name='service_name_2', resource_type='resource_type_2',
+            meta={'m_1': 'v2'})
+        _, resource3 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_3', first_seen=time, region='region_1',
+            service_name='service_name_1', resource_type='resource_type_1',
+            meta={'m_2': 'v3'})
+        expenses = [
+            {
+                'cost': 150, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-east',
+                'resource_id': resource1['id'],
+                'owner_id': self.employee1['id'],
+                'pool_id': self.org['pool_id'],
+            },
+            {
+                'cost': 300, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc2['id'],
+                'region': 'us-east',
+                'resource_id': resource2['id'],
+                'owner_id': self.employee2['id'],
+                'pool_id': self.org['pool_id'],
+            },
+            {
+                'cost': 70, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-west',
+                'resource_id': resource3['id'],
+                'pool_id': self.org['pool_id'],
+                'owner_id': self.employee1['id'],
+            },
+        ]
+
+        for e in expenses:
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1)
+        self.assertEqual(code, 200)
+        meta_values = response['filter_values']['meta']
+        self.assertEqual(len(meta_values), 3)
+        for m in meta_values:
+            self.assertTrue(m in ['m_1', 'm_2', 'link'])
+
+        code, response = self.client.clean_expenses_get(
+            self.org_id, time, time + 1, {'meta': ['m_1', 'm_3']})
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_count'], 2)
+        for e in response['clean_expenses']:
+            self.assertTrue(e['cloud_resource_id'] in [
+                resource1['cloud_resource_id'],
+                resource2['cloud_resource_id']
+            ])
+        self.assertEqual(response['total_cost'], 450)
+
+        code, response = self.client.clean_expenses_get(
+            self.org_id, time, time + 1, {'meta': 'link'})
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_count'], 1)
+        self.assertEqual(response['total_cost'], 150)
+
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1, {'meta': 'link'})
+        self.assertEqual(len(response['filter_values']['meta']), 2)
+        for x in response['filter_values']['meta']:
+            self.assertTrue(x in ['m_1', 'link'])

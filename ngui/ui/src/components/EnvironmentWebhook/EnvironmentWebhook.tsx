@@ -16,7 +16,7 @@ import EditEnvironmentWebhookFormContainer from "containers/EditEnvironmentWebho
 import { useIsAllowed } from "hooks/useAllowedActions";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
 import { ACTIONS } from "services/WebhooksService";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const WebhookLabel = ({ labelColor, labelMessageId }) => (
   <FormLabel style={{ color: labelColor }} component="p">
@@ -80,7 +80,7 @@ const EnvironmentWebhook = ({ webhook, action, resourceId, isLoadingProps = {} }
     <InputLoader />
   ) : (
     <>
-      {isEmpty(webhook) ? (
+      {isEmptyObject(webhook) ? (
         <>
           <WebhookLabel labelColor={theme.palette.text.primary} labelMessageId={ACTIONS[action]} />
           <WebhookForm

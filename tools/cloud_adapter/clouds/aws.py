@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from datetime import timedelta
 import time
 from concurrent.futures import as_completed
-from datetime import timedelta
 import enum
 import urllib.parse
 from collections import defaultdict
@@ -397,11 +396,22 @@ class Aws(S3CloudMixin):
             # Use retry wrapper on describe_instances
             described = self._retry(ec2.describe_instances, **params)
             next_token = described.get('NextToken')
-            # describe_instances returns Reservations -> Instances
-            for reservation in described.get('Reservations', []):
-                for inst in reservation.get('Instances', []):
-                    inst_resource = InstanceResource(
-                        cloud_resource_id=inst['InstanceId'],
+            for reservation in described['Reservations']:
+                for instance in reservation['Instances']:
+                    sg_ids = [x['GroupId'] for x in instance.get(
+                        'SecurityGroups', [])]
+                    dates = [x['Ebs']['AttachTime'] for x in instance[
+                        'BlockDeviceMappings'] if 'Ebs' in x]
+                    dates.extend(list(map(
+                        lambda x: x['Attachment']['AttachTime'],
+                        instance.get('NetworkInterfaces', []))))
+                    cloud_created = min(
+                        dates, default=None) or instance['LaunchTime']
+                    spotted = instance.get('InstanceLifecycle') == 'spot'
+                    vpc_id = instance.get('VpcId')
+                    architecture = instance.get('Architecture')
+                    instance_resource = InstanceResource(
+                        cloud_resource_id=instance['InstanceId'],
                         cloud_account_id=self.cloud_account_id,
                         region=region,
                         name=self._extract_tag(inst, 'Name'),
@@ -505,7 +515,14 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_log_groups, (r,))
                 for r in self.list_regions()]
 
-    def _handle_specific_error(self, exc, error_code, additional_allowed=None):
+    def log_group_discovery_calls(self):
+        """
+        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
+        """
+        return [(self.discover_region_log_groups, (r,))
+                for r in self.list_regions()]    
+    
+    def _handle_specific_error(self, exc, error_code):
         exc_error_code = exc.response['Error'].get('Code')
         allowed = {error_code}
         if additional_allowed:
@@ -2240,7 +2257,13 @@ class Aws(S3CloudMixin):
 
     def get_log_groups_details(self, log_group_names, region):
         """
-        Retrieve details for provided log group names by scanning pages once with retry.
+        Retrieve details for the provided CloudWatch Log Group names.
+        :param log_group_names: iterable of log group names (strings)
+        :param region: AWS region name (string)
+        :return: dict mapping log_group_name -> dict with keys:
+                 'name', 'stored_bytes', 'retention_in_days', 'creation_time', 'arn', 'kms_key_id'
+                 If a group's details cannot be obtained, the value will be None.
+        :raises: ClientError propagated for unexpected AWS errors; ValueError for invalid parameter
         """
         try:
             target = set(log_group_names or [])
@@ -2274,18 +2297,16 @@ class Aws(S3CloudMixin):
             raise
 
 
-    def create_log_group_resources(self, region, cloud_resource_id_generator=None, pasted_days=7):
+    def create_log_group_resources(self, region, cloud_resource_id_generator=None, past_days=90):
         """
         Build LogGroupResource objects for all CloudWatch Log Groups in a region.
-
         This fetches available log group names, details and metrics, then
         constructs LogGroupResource instances. If cloud_resource_id_generator
         is provided it is used to produce cloud_resource_id values; otherwise
         the log group name is used.
-
         :param region: AWS region name (string)
         :param cloud_resource_id_generator: optional callable returning a unique id
-        :param pasted_days: number of days to fetch metrics for (int)
+        :param past_days: number of days to fetch metrics for (int)
         :return: list of LogGroupResource objects
         :raises: propagates exceptions for unexpected failures
         """
@@ -2296,7 +2317,7 @@ class Aws(S3CloudMixin):
                 return []
 
             details = self.get_log_groups_details(log_group_names, region)
-            metrics = self.get_log_groups_metrics(log_group_names, region, pasted_days)
+            metrics = self.get_log_groups_metrics(log_group_names, region, past_days)
             resources = []
 
             for lg_name in log_group_names:
@@ -2336,7 +2357,6 @@ class Aws(S3CloudMixin):
     def discover_region_log_groups(self, region):
         """
         Generator that yields LogGroupResource objects for the specified region.
-
         Delegates to create_log_group_resources to build resources and yields
         them one by one. Errors are logged and discovery for the region is
         aborted gracefully.
@@ -2354,7 +2374,6 @@ class Aws(S3CloudMixin):
     def get_log_group_tags(self, logs_client, log_group_name):
         """
         Retrieve tags for a specific CloudWatch Log Group.
-
         :param logs_client: boto3 logs client
         :param log_group_name: CloudWatch log group name (string)
         :return: dict of tags (may be empty)
@@ -2371,7 +2390,6 @@ class Aws(S3CloudMixin):
     def get_log_groups_metrics(self, log_group_names, region, days_ago=90, max_workers=10):
         """
         Collect CloudWatch metrics for multiple log groups in parallel.
-
         :param log_group_names: iterable of log group names (strings)
         :param region: AWS region name (string)
         :param days_ago: integer days range to collect metrics for (int)
@@ -2454,7 +2472,6 @@ class Aws(S3CloudMixin):
     def _generate_log_group_cloud_link(self, region, log_group_name):
         """
         Generate a console URL that links to the log group in CloudWatch logs v2.
-
         :param region: AWS region name (string)
         :param log_group_name: CloudWatch log group name (string)
         :return: fully formed console URL string

@@ -10,7 +10,13 @@ class TestRISPWorker(unittest.TestCase):
         self.conn = MagicMock()
         self.config_cl = MagicMock()
         self.worker = RISPWorker(self.conn, self.config_cl)
-        self.task_body = {'cloud_account_id': 'cloud_account_id'}
+        self.insert_ch_exp_m = patch(
+            'risp.risp_worker.processors.base.'
+            'RispProcessorBase.insert_clickhouse_expenses').start()
+        self.task_body = {
+            'cloud_account_id': 'cloud_account_id',
+            'cloud_type': 'aws_cnr'
+        }
         self.rabbit_message = MagicMock()
         self._ri_raw_expenses = []
         self._sp_raw_expenses = []
@@ -28,33 +34,30 @@ class TestRISPWorker(unittest.TestCase):
         super().tearDown()
 
     def mock_common(self):
-        patch('risp.risp_worker.worker.RISPWorker.clickhouse_client',
+        patch('risp.risp_worker.processors.base.'
+              'RispProcessorBase.clickhouse_client',
               new_callable=PropertyMock).start()
-        self.worker.get_ri_sp_usage_expenses = MagicMock()
-        self.worker.get_uncovered_usage_expenses = MagicMock()
-        self.worker.insert_clickhouse_expenses = MagicMock()
-
-        patch('risp.risp_worker.worker.RISPWorker.mongo_client',
+        patch('risp.risp_worker.processors.base.'
+              'RispProcessorBase.mongo_client',
               new_callable=PropertyMock).start()
-        self.worker.get_offers_expenses_by_type = MagicMock()
-        self.worker.get_resources_ids_map = MagicMock()
-        self.worker.get_uncovered_raw_expenses = MagicMock()
-        self.worker._ri_expected_cost_per_day = MagicMock()
-        self.worker._sp_expected_cost_per_day = MagicMock()
-
-        patch('risp.risp_worker.worker.RISPWorker.rest_cl',
+        patch('risp.risp_worker.processors.base.'
+              'RispProcessorBase.rest_cl',
               new_callable=PropertyMock).start()
         self.worker.rest_cl.risp_processing_task_list = MagicMock()
 
     def mock_ri_sp_ch_expenses(self, ri_sp_rows=None):
         if not ri_sp_rows:
             ri_sp_rows = []
-        self.worker.get_ri_sp_usage_expenses.return_value = ri_sp_rows
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor.get_ri_sp_usage_expenses',
+              return_value=ri_sp_rows).start()
 
     def mock_uncovered_ch_expenses(self, uncovered_rows=None):
         if not uncovered_rows:
             uncovered_rows = []
-        self.worker.get_uncovered_usage_expenses.return_value = uncovered_rows
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor.get_uncovered_usage_expenses',
+              return_value=uncovered_rows).start()
 
     @property
     def ri_raw_expenses(self):
@@ -112,13 +115,23 @@ class TestRISPWorker(unittest.TestCase):
         return self.uncovered_raw_expenses
 
     def mock_mongo_raw(self):
-        self.worker.get_offers_expenses_by_type.side_effect = self.ri_sp_side_eff
-        self.worker.get_uncovered_raw_expenses.side_effect = self.uncover_side_eff
-        self.worker._ri_expected_cost_per_day.side_effect = self.ri_expected_side_eff
-        self.worker._sp_expected_cost_per_day.side_effect = self.sp_expected_side_eff
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor.get_offers_expenses_by_type',
+              side_effect=self.ri_sp_side_eff).start()
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor.get_uncovered_raw_expenses',
+              side_effect=self.uncover_side_eff).start()
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor._ri_expected_cost_per_day',
+              side_effect=self.ri_expected_side_eff).start()
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor._sp_expected_cost_per_day',
+              side_effect=self.sp_expected_side_eff).start()
 
     def mock_mongo_uncovered_expenses(self):
-        self.worker.get_uncovered_raw_expenses.side_effect = self.uncover_side_eff
+        patch('risp.risp_worker.processors.aws.'
+              'AwsProcessor.get_uncovered_raw_expenses',
+              side_effect=self.uncover_side_eff).start()
 
     def mock_risp_tasks(self, tasks=None):
         if not tasks:
@@ -144,7 +157,7 @@ class TestRISPWorker(unittest.TestCase):
         self.worker.rest_cl.risp_processing_task_list.return_value = (
             200, {'risp_processing_tasks': []})
         self.worker.process_task(self.task_body, self.rabbit_message)
-        self.worker.insert_clickhouse_expenses.assert_not_called()
+        self.insert_ch_exp_m.assert_not_called()
 
     def test_no_cloud_account(self):
         self.worker.rest_cl.risp_processing_task_list.return_value = (
@@ -153,12 +166,12 @@ class TestRISPWorker(unittest.TestCase):
             self.worker._process_task(self.task_body)
         except Exception as e:
             self.assertIsInstance(e, ValueError)
-        self.worker.insert_clickhouse_expenses.assert_not_called()
+        self.insert_ch_exp_m.assert_not_called()
 
     def test_no_ri_sp_expenses(self):
         self.mock_valid_risp_task()
         self.worker.process_task(self.task_body, self.rabbit_message)
-        self.worker.insert_clickhouse_expenses.assert_not_called()
+        self.insert_ch_exp_m.assert_not_called()
 
     def test_generate_ri_expenses(self):
         self.mock_valid_risp_task()
@@ -196,7 +209,7 @@ class TestRISPWorker(unittest.TestCase):
             'resource_id': 'cloud_ri_id'
         }]
         self.worker.process_task(self.task_body, self.rabbit_message)
-        call_args = self.worker.insert_clickhouse_expenses.call_args_list[0][0]
+        call_args = self.insert_ch_exp_m.call_args_list[0][0]
         self.assertEqual(call_args[0], [{
             'cloud_account_id': 'cloud_account_id',
             'resource_id': 'cloud_resource_id_1',
@@ -239,7 +252,7 @@ class TestRISPWorker(unittest.TestCase):
                 'sp_rate': '123'
             }]
         self.worker.process_task(self.task_body, self.rabbit_message)
-        self.worker.insert_clickhouse_expenses.assert_called_once_with([{
+        self.insert_ch_exp_m.assert_called_once_with([{
             'cloud_account_id': 'cloud_account_id',
             'resource_id': 'cloud_resource_id_1',
             'date': datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc),
@@ -285,7 +298,7 @@ class TestRISPWorker(unittest.TestCase):
             'savingsPlan/TotalCommitmentToDate': 100
         }]
         self.worker.process_task(self.task_body, self.rabbit_message)
-        call_args = self.worker.insert_clickhouse_expenses.call_args_list[0][0]
+        call_args = self.insert_ch_exp_m.call_args_list[0][0]
         self.assertEqual(call_args[0], [{
             'cloud_account_id': 'cloud_account_id',
             'resource_id': 'cloud_resource_id_1',
@@ -338,7 +351,7 @@ class TestRISPWorker(unittest.TestCase):
         ]
         self.mock_ri_sp_ch_expenses([ch_expense])
         self.worker.process_task(self.task_body, self.rabbit_message)
-        call_args = self.worker.insert_clickhouse_expenses.call_args_list[0][0]
+        call_args = self.insert_ch_exp_m.call_args_list[0][0]
         self.assertEqual(call_args[0], [
                 {
                     'cloud_account_id': 'cloud_account_id',
@@ -435,7 +448,7 @@ class TestRISPWorker(unittest.TestCase):
                       123, 123, 123, 123, 123, 1)
         self.mock_ri_sp_ch_expenses([ch_expense])
         self.worker.process_task(self.task_body, self.rabbit_message)
-        call_args = self.worker.insert_clickhouse_expenses.call_args_list[0][0]
+        call_args = self.insert_ch_exp_m.call_args_list[0][0]
         self.assertEqual(call_args[0], [
                 {
                     'cloud_account_id': 'cloud_account_id',
@@ -524,7 +537,7 @@ class TestRISPWorker(unittest.TestCase):
                       123, 1)
         self.mock_uncovered_ch_expenses([ch_expense])
         self.worker.process_task(self.task_body, self.rabbit_message)
-        self.worker.insert_clickhouse_expenses.assert_called_once_with([
+        self.insert_ch_exp_m.assert_called_once_with([
                 {
                     'cloud_account_id': 'cloud_account_id',
                     'date': datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc),
@@ -564,7 +577,10 @@ class TestRISPWorker(unittest.TestCase):
 
     def test_generate_empty(self):
         self.mock_valid_risp_task()
-        self.worker._get_offer_date_map = MagicMock()
+        patch('risp.risp_worker.processors.base.'
+              'RispProcessorBase._get_offer_date_map',
+              return_value={'cloud_sp': [
+                  datetime(2023, 1, 1, tzinfo=timezone.utc)]}).start()
         self.sp_exp_cost_raw_expenses = [{
             'start_date': datetime(2023, 1, 1, tzinfo=timezone.utc),
             'resource_id': 'cloud_sp',
@@ -574,11 +590,8 @@ class TestRISPWorker(unittest.TestCase):
             'resource_id': 'cloud_sp',
             'savingsPlan/TotalCommitmentToDate': 22
         }]
-        self.worker._get_offer_date_map.return_value = {
-            'cloud_sp': [datetime(2023, 1, 1, tzinfo=timezone.utc)]
-        }
         self.worker.process_task(self.task_body, self.rabbit_message)
-        self.worker.insert_clickhouse_expenses.assert_called_once_with([{
+        self.insert_ch_exp_m.assert_called_once_with([{
             'cloud_account_id': 'cloud_account_id',
             'resource_id': '',
             'date': datetime(2023, 1, 2, 0, 0, tzinfo=timezone.utc),

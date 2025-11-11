@@ -3,7 +3,7 @@ import MlRunsetConfiguration from "components/MlRunsetConfiguration";
 import MlRunsetsService from "services/MlRunsetsService";
 import MlRunsetTemplatesService from "services/MlRunsetTemplatesService";
 import { getMlRunsetTemplateUrl } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const useLatestRunset = () => {
   const { templateId } = useParams();

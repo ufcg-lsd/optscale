@@ -1,5 +1,6 @@
 ARG BUILDTAG=build
 FROM bumiworker:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY bumiworker/test-requirements.txt bumiworker/.pylintrc ./bumiworker/
-RUN pip install --no-cache-dir -r bumiworker/test-requirements.txt
+COPY bumiworker/pyproject.toml bumiworker/uv.lock bumiworker/.pylintrc ./bumiworker/
+RUN uv --project bumiworker sync --locked

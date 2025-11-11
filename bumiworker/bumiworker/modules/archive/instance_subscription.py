@@ -79,7 +79,7 @@ class InstanceSubscription(ArchiveBase, InstanceSubscriptionRecommendation):
                     reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
                 elif any(x is None for x in self.get_subscriptions_costs(
                             cloud_resource_id, instance['meta']['flavor'],
-                            instance['region'])):
+                            instance['region'], cloud_account_id)):
                     reason = ArchiveReason.FAILED_DEPENDENCY
                 else:
                     reason = ArchiveReason.OPTIONS_CHANGED

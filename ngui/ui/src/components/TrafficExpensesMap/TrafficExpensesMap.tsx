@@ -13,7 +13,7 @@ import FromToArrowLabel from "components/FromToArrowLabel";
 import InlineSeverityAlert from "components/InlineSeverityAlert";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import TrafficMapMarker from "components/TrafficMapMarker";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { EXPENSES_MAP_OBJECT_TYPES, FORMATTED_MONEY_TYPES } from "utils/constants";
 import { getEnvironmentVariable } from "utils/env";
 import { SPACING_2 } from "utils/layouts";
@@ -89,7 +89,7 @@ function getTooltipState(info) {
                 }}
               />
             </Typography>
-            {!isEmpty(object.location.expenses) && (
+            {!isEmptyArray(object.location.expenses) && (
               <>
                 <Typography variant="caption" component="div">
                   <FormattedMessage id="to" />
@@ -232,6 +232,7 @@ const TrafficExpensesMap = ({ markers, defaultZoom, defaultCenter, onMapClick = 
   }
 
   const externalMarker = data?.externalLocations.length ? data?.externalLocations[0] : null;
+  const intercontinentalMarker = data?.interContinental;
   const interRegionMarker = data?.interRegion;
 
   const key = getEnvironmentVariable("VITE_GOOGLE_MAP_API_KEY");
@@ -283,6 +284,15 @@ const TrafficExpensesMap = ({ markers, defaultZoom, defaultCenter, onMapClick = 
               lat={interRegionMarker.latitude}
               lng={interRegionMarker.longitude}
               type={EXPENSES_MAP_OBJECT_TYPES.INTER_REGION_MARKER}
+              onClick={onMapClick}
+            />
+          )}
+          {intercontinentalMarker && (
+            <TrafficMapMarker
+              key={`marker-${intercontinentalMarker.id}-${intercontinentalMarker.name}`}
+              lat={intercontinentalMarker.latitude}
+              lng={intercontinentalMarker.longitude}
+              type={EXPENSES_MAP_OBJECT_TYPES.INTER_CONTINENTAL_MARKER}
               onClick={onMapClick}
             />
           )}

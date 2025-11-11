@@ -1,7 +1,0 @@
-pycodestyle==2.11.1
-pylint==3.0.2
-coverage==4.2
-mongomock==3.19.0
-setuptools==80.9.0
-
--e optscale_client/report_client

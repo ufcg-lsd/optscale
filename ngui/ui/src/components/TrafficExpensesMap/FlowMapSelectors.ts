@@ -1,9 +1,18 @@
 import FlowmapSelectors from "@flowmap.gl/data/dist/FlowmapSelectors";
 import { scaleLinear } from "d3-scale";
 import { createSelector } from "reselect";
-import { EXTERNAL_LAT, EXTERNAL_LON, INTER_REGION_LAT, INTER_REGION_LON } from "utils/maps";
+import {
+  EXTERNAL_LAT,
+  EXTERNAL_LON,
+  INTER_CONTINENTAL_LAT,
+  INTER_CONTINENTAL_LON,
+  INTER_REGION_LAT,
+  INTER_REGION_LON
+} from "utils/maps";
 
 const isExternalLocation = (location) => location.latitude === EXTERNAL_LAT && location.longitude === EXTERNAL_LON;
+const isIntercontinentalLocation = (location) =>
+  location.latitude === INTER_CONTINENTAL_LAT && location.longitude === INTER_CONTINENTAL_LON;
 const isInterRegion = (location) => location.latitude === INTER_REGION_LAT && location.longitude === INTER_REGION_LON;
 
 const getFlowThicknessScale = (magnitudeExtent) => {
@@ -30,7 +39,7 @@ export default class FlowMapSelectors extends FlowmapSelectors {
     (locations, circleSizeScale, locationTotals) => (locationId) => {
       const total = locationTotals?.get(locationId);
       const location = locations?.find((loc) => loc.id === locationId);
-      if (isExternalLocation(location) || isInterRegion(location)) {
+      if (isExternalLocation(location) || isInterRegion(location) || isIntercontinentalLocation(location)) {
         return 0;
       }
       if (total && circleSizeScale) {

@@ -5,7 +5,7 @@ import ButtonGroup from "components/ButtonGroup";
 import FormContentDescription from "components/FormContentDescription";
 import { Selector } from "components/forms/common/fields";
 import { ItemContent } from "components/Selector";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import CreateSshKeyNameField from "./CreateSshKeyNameField";
 import CreateSshKeyValueField from "./CreateSshKeyValueField";
 
@@ -26,7 +26,7 @@ type EnvironmentSshKeyProps = {
 
 const EnvironmentSshKeyField = ({ sshKeys = [], isGetSshKeysReady, defaultKeyId }: EnvironmentSshKeyProps) => {
   const intl = useIntl();
-  const userHaveSshKeys = !isEmpty(sshKeys);
+  const userHaveSshKeys = !isEmptyArray(sshKeys);
   const [activeTab, setActiveTab] = useState(userHaveSshKeys ? MY_KEYS : ADD_KEY);
 
   const defaultKeyText = `[${intl.formatMessage({ id: "default" }).toLowerCase()}]`;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getIntersection, isEmpty as isEmptyArray } from "utils/arrays";
+import { getIntersection, isEmptyArray } from "utils/arrays";
 import { getSearchParams, updateSearchParams } from "utils/network";
 import { setTaskOverviewBreakdown } from "./actionCreator";
 import { TASK_BREAKDOWN, STORE_ACCESSORS } from "./reducer";

@@ -1,7 +1,7 @@
 import { FormattedMessage } from "react-intl";
 import AnomalyRunChartCell from "components/AnomalyRunChartCell";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const anomalyStatusChart = ({ constraint, headerMessageId = "statusAtHit", todayMessageId = "hit" }) => ({
   header: (
@@ -13,7 +13,7 @@ const anomalyStatusChart = ({ constraint, headerMessageId = "statusAtHit", today
   cell: ({ cell }) => {
     const value = cell.getValue();
 
-    if (!value || isEmpty(value)) {
+    if (!value || isEmptyObject(value)) {
       return "-";
     }
 

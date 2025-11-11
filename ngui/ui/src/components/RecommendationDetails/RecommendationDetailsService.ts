@@ -8,8 +8,8 @@ import { useAllRecommendations } from "hooks/useAllRecommendations";
 import { useApiData } from "hooks/useApiData";
 import { useApiState } from "hooks/useApiState";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
+import { isEmptyArray } from "utils/arrays";
 import { RESOURCE_VISIBILITY_ACTIONS } from "utils/constants";
-import { isEmpty as isEmptyArray } from "utils/objects";
 
 const useGetOptimizations = ({ type, limit, status, cloudAccountIds }) => {
   const dispatch = useDispatch();

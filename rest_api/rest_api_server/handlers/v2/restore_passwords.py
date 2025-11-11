@@ -48,11 +48,6 @@ class RestorePasswordAsyncCollectionHandler(BaseAsyncCollectionHandler):
             schema:
                 type: object
                 properties:
-                    email:
-                        type: string
-                        description: Contact email
-                        required: true
-                        example: example@mail.com
                     link_params:
                         type: object
                         description: Query parameters added to link
@@ -66,7 +61,6 @@ class RestorePasswordAsyncCollectionHandler(BaseAsyncCollectionHandler):
                     type: object
                     example:
                         status: ok
-                        email: example@email.com
             400:
                 description: |
                     Wrong arguments:
@@ -84,4 +78,4 @@ class RestorePasswordAsyncCollectionHandler(BaseAsyncCollectionHandler):
         await run_task(self.controller.restore_password, email=email,
                        link_params=data.get('link_params', {}))
         self.set_status(201)
-        self.write(json.dumps({'status': 'ok', 'email': email}))
+        self.write(json.dumps({'status': 'ok'}))

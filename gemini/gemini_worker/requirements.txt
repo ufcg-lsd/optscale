@@ -1,7 +1,0 @@
-kombu==5.3.4
-boto3==1.34.7
-clickhouse-connect==0.8.15
-pymongo==4.6.3
-# OptScale packages
--e optscale_client/config_client
--e optscale_client/rest_api_client
