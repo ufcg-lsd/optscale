@@ -1,5 +1,4 @@
 from enum import Enum
-from datetime import datetime
 
 """
 Domain models for discovered cloud resources.
@@ -29,7 +28,7 @@ Note: the model layer is cloud-agnostic; AWS-specific discovery populates the
 bucket intelligent-tiering and CloudWatch-derived metrics.
 """
 
-NONEXISTENT_VOLUME_ID = "vol-ffffffff"
+NONEXISTENT_VOLUME_ID = 'vol-ffffffff'
 
 
 class ResourceTypes(Enum):
@@ -384,41 +383,39 @@ class SnapshotResource(CloudResource):
 
 
 class BucketResource(CloudResource):
-    __slots__ = (
-        "name",
-        "is_public_policy",
-        "is_public_acls",
-        "folder_id",
-        "intelligent_tiering_enabled",
-        "intelligent_tiering_configs",
-        "lifecycle_rules",
-        "storage_class_analysis",
-        "metrics_configurations",
-        "total_size_bytes",
-        "object_count",
-        "it_status_bucket",
-        "tiers",
-        "last_checked",
-    )
+    __slots__ = ('name',
+                 'is_public_policy',
+                 'is_public_acls',
+                 'folder_id',
+                 'intelligent_tiering_enabled',
+                 'intelligent_tiering_configs',
+                 'lifecycle_rules',
+                 'storage_class_analysis',
+                 'metrics_configurations',
+                 'total_size_bytes',
+                 'object_count',
+                 'it_status_bucket',
+                 'tiers',
+                 'last_checked',
+                )
 
-    def __init__(
-        self,
-        name=None,
-        is_public_policy=False,
-        is_public_acls=False,
-        folder_id=None,
-        intelligent_tiering_enabled=False,
-        intelligent_tiering_configs=None,
-        lifecycle_rules=None,
-        storage_class_analysis=None,
-        metrics_configurations=None,
-        total_size_bytes=None,
-        object_count=None,
-        it_status_bucket=None,
-        tiers=None,
-        last_checked=None,
-        **kwargs,
-    ):
+    def __init__(self,
+                name=None,
+                is_public_policy=False,
+                is_public_acls=False,
+                folder_id=None,
+                intelligent_tiering_enabled=False,
+                intelligent_tiering_configs=None,
+                lifecycle_rules=None,
+                storage_class_analysis=None,
+                metrics_configurations=None,
+                total_size_bytes=None,
+                object_count=None,
+                it_status_bucket=None,
+                tiers=None,
+                last_checked=None,
+                **kwargs
+            ):
         """
         Representation of an object storage bucket (S3 / compatible).
 
@@ -481,23 +478,21 @@ class BucketResource(CloudResource):
     def meta(self):
         """Return meta information for bucket resources."""
         meta = super().meta
-        meta.update(
-            {
-                "is_public_policy": self.is_public_policy,
-                "is_public_acls": self.is_public_acls,
-                "folder_id": self.folder_id,
-                "intelligent_tiering_enabled": self.intelligent_tiering_enabled,
-                "intelligent_tiering_configs": self.intelligent_tiering_configs,
-                "lifecycle_rules": self.lifecycle_rules,
-                "storage_class_analysis": self.storage_class_analysis,
-                "metrics_configurations": self.metrics_configurations,
-                "total_size_bytes": self.total_size_bytes,
-                "object_count": self.object_count,
-                "it_status_bucket": self.it_status_bucket,
-                "tiers": self.tiers,
-                "last_checked": self.last_checked,
-            }
-        )
+        meta.update({
+            'is_public_policy': self.is_public_policy,
+            'is_public_acls': self.is_public_acls,
+            'folder_id': self.folder_id,
+            'intelligent_tiering_enabled': self.intelligent_tiering_enabled,
+            'intelligent_tiering_configs': self.intelligent_tiering_configs,
+            'lifecycle_rules': self.lifecycle_rules,
+            'storage_class_analysis': self.storage_class_analysis,
+            'metrics_configurations': self.metrics_configurations,
+            'total_size_bytes': self.total_size_bytes,
+            'object_count': self.object_count,
+            'it_status_bucket': self.it_status_bucket,
+            'tiers': self.tiers,
+            'last_checked': self.last_checked,
+        })
         return meta
 
 
