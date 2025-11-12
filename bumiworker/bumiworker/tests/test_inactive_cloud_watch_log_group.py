@@ -294,7 +294,14 @@ class TestInactivity:
 class TestSaving:
     """RQ-05 — Saving calculation (TC-16 to TC-20)."""
 
-    def test_ingestion_last_month_0(self, module_factory):
+    def test_no_metrics(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        
+        saving = mod._estimate_saving(resource)
+        assert saving == 0
+
+    def test_ingestion_last_month(self, module_factory):
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [ {
@@ -304,21 +311,58 @@ class TestSaving:
         saving = mod._estimate_saving(resource)
         assert saving == pytest.approx(9.31e-07, rel=1e-3)
     
+    def test_query_last_month(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-23T15:25:00+00:00",
+        "value" : 2500
+        }]
+        saving = mod._estimate_saving(resource)
+        assert saving == pytest.approx(1.12e-08, rel=5e-2)
 
-    def test_tc_16_storage_only(self, module_factory):
-        pytest.skip("Implement TC-16: storage only.")
+    def test_storage_only(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
+        saving = mod._estimate_saving(resource)
+        assert saving == pytest.approx(0.0135, rel=1e-3)
 
-    def test_tc_17_with_ingestion(self, module_factory):
-        pytest.skip("Implement TC-17: ingestion adds cost.")
+    def test_query_and_ingestion_and_storage(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
+        resource["meta"]["metrics"]["ingestion"] = [ {
+        "timestamp" : "2025-10-21T12:15:00+00:00",
+        "value" : 2000
+        }]
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-23T15:25:00+00:00",
+        "value" : 2500
+        }]
+        saving = mod._estimate_saving(resource)
 
-    def test_tc_18_with_query(self, module_factory):
-        pytest.skip("Implement TC-18: query adds cost.")
+        assert saving == pytest.approx(0.013500943, rel=1e-3)
 
-    def test_tc_19_bytes_to_gib_conversion(self, module_factory):
-        pytest.skip("Implement TC-19: bytes→GiB conversion.")
+    def test_ingestion_not_recently(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+        "timestamp" : "2025-08-07T08:15:00+00:00",
+        "value" : 1000
+    }]
+        saving = mod._estimate_saving(resource)
+        assert saving == 0
 
-    def test_tc_20_safe_exception(self, module_factory):
-        pytest.skip("Implement TC-20: safe 0.0 on exceptions.")
+    def test_query_not_recently(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-08-07T15:15:00+00:00",
+        "value" : 500
+    }]
+        saving = mod._estimate_saving(resource)
+        assert saving == 0
 
 
 class TestUtilsContract:
