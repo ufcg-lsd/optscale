@@ -1,9 +1,7 @@
 """add_log_group_to_discovery_info
-
 Revision ID: add_log_group_to_discovery_info
 Revises: c9f036cdbcce
 Create Date: 2025-08-10 15:00:00.000000
-
 """
 from alembic import op
 import sqlalchemy as sa

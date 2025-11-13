@@ -58,8 +58,8 @@ class IntelligentTiering extends BaseRecommendation {
   static resourceDescriptionMessageId = "intelligentTieringResourceRecommendation";
 
   get previewItems() {
-    return this.items.map((item: TODO) => [
-      { key: `${item.cloud_resource_id}-label`, value: <RecommendationListItemResourceLabel key={item.id} item={item} /> },
+    return this.items.map((item) => [
+      { key: `${item.cloud_resource_id}-label`, value: <RecommendationListItemResourceLabel item={item} /> },
       {
         key: `${item.cloud_resource_id}-${item.resource_id}-saving`,
         value: <FormattedMoney type={FORMATTED_MONEY_TYPES.COMMON} value={item.saving} />

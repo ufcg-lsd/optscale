@@ -147,7 +147,10 @@ class ResourceFormatMixin:
         }
         if resource.get('_id'):
             resource['id'] = resource.pop('_id')
-        hidden_keys = list(filter(lambda x: x.startswith('_'), resource.keys()))
+        hidden_keys = list(
+            filter(
+                lambda x: x.startswith('_'),
+                resource.keys()))
         for k in hidden_keys:
             resource.pop(k, None)
         for nullable_field in optional_params:
@@ -158,7 +161,8 @@ class ResourceFormatMixin:
         if not active:
             resource['meta']['cloud_console_link'] = None
         resource['tags'] = encoded_tags(resource.get('tags'), True)
-        resource['env_properties'] = encoded_map(resource.get('env_properties'), True)
+        resource['env_properties'] = encoded_map(
+            resource.get('env_properties'), True)
         if resource.get('meta', {}).get('name') and not resource.get('name'):
             resource['name'] = resource['meta']['name']
 

@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 import { IntlShape, useIntl } from "react-intl";
-import { formatApproximatelyZero } from "components/ApproximatelyZero";
 import { formatCompactNumber } from "components/CompactFormattedNumber";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
-import { FORMATTED_MONEY_TYPES, ONE_CENT } from "utils/constants";
+import { FORMATTED_MONEY_TYPES } from "utils/constants";
 
 const ONE_DOLLAR = 1;
 const COMPACT_VALUE_THRESHOLD = 1000;
@@ -38,7 +37,7 @@ const formatCompact =
     if (absoluteValue >= COMPACT_VALUE_THRESHOLD) {
       return formatCompactMoney(formatter)({ value, format });
     }
-    return absoluteValue < ONE_CENT ? formatApproximatelyZero(formatter)({ format }) : formatter(value, { format });
+    return absoluteValue < ONE_DOLLAR ? formatLessThanOne(formatter)({ format }) : formatter(value, { format });
   };
 
 const formatTiny =

@@ -9,16 +9,8 @@ import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
 const columns = [
   resource({
-    headerDataTestId: "lbl_iclw_resource"
+    headerDataTestId: "lbl_iclw_log_group_name"
   }),
-  {
-    header: (
-      <TextWithDataTestId dataTestId="lbl_log_group_name">
-        <FormattedMessage id="logGroupName" />
-      </TextWithDataTestId>
-    ),
-    accessorKey: "log_group_name"
-  },
   resourceLocation({
     headerDataTestId: "lbl_iclw_location"
   }),
@@ -64,7 +56,7 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
 
   descriptionMessageId = "inactiveCloudWatchLogGroupDescription";
 
-  emptyMessageId = "noInactiveCloudWatchLogGroup";
+  emptyMessageId = "noInactiveCloudWatchLogGroups";
 
   services = [AWS_EC2, AWS_S3];
 
@@ -73,6 +65,12 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
   categories = [CATEGORY.COST];
 
   static resourceDescriptionMessageId = "inactiveCloudWatchLogGroupResourceRecommendation";
+
+  get descriptionMessageValues() {
+    const { days_threshold: daysThreshold } = this.options;
+
+    return { daysThreshold };
+  }
 
   columns = columns;
 
