@@ -187,7 +187,7 @@ class Aws(S3CloudMixin):
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
             LoadBalancerResource: self.load_balancer_discovery_calls,
-            LogGroupResource: self.log_group_discovery_calls,
+            LogGroupResource: self.log_group_discovery_calls
         }
 
     @property
