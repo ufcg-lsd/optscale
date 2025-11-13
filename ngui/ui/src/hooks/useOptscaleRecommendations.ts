@@ -6,14 +6,15 @@ import AbandonedLoadBalancers from "containers/RecommendationsOverviewContainer/
 import AbandonedNebiusS3Buckets from "containers/RecommendationsOverviewContainer/recommendations/AbandonedNebiusS3Buckets";
 import AbandonedS3Buckets from "containers/RecommendationsOverviewContainer/recommendations/AbandonedS3Buckets";
 import CvocAgreementOpportunities from "containers/RecommendationsOverviewContainer/recommendations/CvocAgreementOpportunities";
+import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 import InactiveConsoleUsers from "containers/RecommendationsOverviewContainer/recommendations/InactiveConsoleUsers";
 import InactiveUsers from "containers/RecommendationsOverviewContainer/recommendations/InactiveUsers";
 import InsecureSecurityGroups from "containers/RecommendationsOverviewContainer/recommendations/InsecureSecurityGroups";
+import InstanceSubscription from "containers/RecommendationsOverviewContainer/recommendations/InstanceSubscription";
 import InstancesForShutdown from "containers/RecommendationsOverviewContainer/recommendations/InstancesForShutdown";
 import InstancesGenerationUpgrade from "containers/RecommendationsOverviewContainer/recommendations/InstancesGenerationUpgrade";
 import InstancesInStoppedStateForALongTime from "containers/RecommendationsOverviewContainer/recommendations/InstancesInStoppedStateForALongTime";
 import InstancesMigration from "containers/RecommendationsOverviewContainer/recommendations/InstancesMigration";
-import InstanceSubscription from "containers/RecommendationsOverviewContainer/recommendations/InstanceSubscription";
 import IntelligentTiering from "containers/RecommendationsOverviewContainer/recommendations/IntelligentTiering";
 import NebiusMigration from "containers/RecommendationsOverviewContainer/recommendations/NebiusMigration";
 import ObsoleteImages from "containers/RecommendationsOverviewContainer/recommendations/ObsoleteImages";
@@ -27,7 +28,6 @@ import RightsizingRdsInstances from "containers/RecommendationsOverviewContainer
 import ShortLivingInstances from "containers/RecommendationsOverviewContainer/recommendations/ShortLivingInstances";
 import VolumesNotAttachedForLongTime from "containers/RecommendationsOverviewContainer/recommendations/VolumesNotAttachedForLongTime";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
-import InactiveCloudWatchLogGroup from "containers/RecommendationsOverviewContainer/recommendations/InactiveCloudWatchLogGroup";
 
 const NEBIUS_RECOMMENDATIONS = [CvocAgreementOpportunities, AbandonedNebiusS3Buckets, NebiusMigration];
 
