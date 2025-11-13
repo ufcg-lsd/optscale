@@ -270,29 +270,142 @@ class TestSumMetricsLastMonth:
 
 
 class TestInactivity:
-    """RQ-04 — Inactivity determination (TC-10 to TC-15)."""
 
-    def test_tc_10_inactive_true(self, module_factory):
-        pytest.skip("Implement TC-10: resource is inactive.")
+    def test_empty_resource(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        assert mod._is_inactive(resource, 7) is True
 
-    def test_tc_11_has_lifecycle(self, module_factory):
-        pytest.skip("Implement TC-11: retention is defined.")
+    def test_has_lifecycle(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["retention_in_days"] = 3
+        assert mod._is_inactive(resource, 7) is False
 
-    def test_tc_12_has_recent_ingestion(self, module_factory):
-        pytest.skip("Implement TC-12: recent ingestion.")
+    def test_recent_ingestion(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+         "timestamp" : "2025-11-04T22:01:00+00:00",
+          "value" : 500
+        }]
+        assert mod._is_inactive(resource, 7) is False
 
-    def test_tc_13_has_recent_query(self, module_factory):
-        pytest.skip("Implement TC-13: recent query.")
+    def test_ingestion_exact_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+         "timestamp" : "2025-10-31T00:00:00+00:00",
+          "value" : 2500
+        }]
+        assert mod._is_inactive(resource, 7) is False
 
-    def test_tc_14_corrupted_data(self, module_factory):
-        pytest.skip("Implement TC-14: malformed resource.")
+    def test_ingestion_outside_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+        "timestamp" : "2025-10-21T12:15:00+00:00",
+        "value" : 2000
+        },
+        {
+        "timestamp" : "2025-10-07T12:35:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is True
 
-    def test_tc_15_custom_threshold(self, module_factory):
-        pytest.skip("Implement TC-15: custom threshold.")
+    def test_ingestion_inside_and_outside_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+         "timestamp" : "2025-11-04T22:01:00+00:00",
+          "value" : 500
+        },
+        {
+        "timestamp" : "2025-10-07T12:35:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is False
+
+    def test_recent_query(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-11-04T18:30:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is False
+
+    def test_query_exact_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-31T00:00:00+00:00",
+        "value" : 2000
+        }]
+        assert mod._is_inactive(resource, 7) is False
+
+    def test_query_outside_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-23T15:25:00+00:00",
+        "value" : 2500
+        },
+        {
+        "timestamp" : "2025-10-07T13:35:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is True
+
+    def test_query_inside_and_outside_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-11-04T18:30:00+00:00",
+        "value" : 1000
+        },
+        {
+        "timestamp" : "2025-10-07T13:35:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is False
+
+    def test_recent_query_and_ingestion(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+         "timestamp" : "2025-11-04T22:01:00+00:00",
+          "value" : 500
+        }]
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-31T17:55:00+00:00",
+        "value" : 1500
+        }]
+        assert mod._is_inactive(resource, 7) is False
+
+    def test_querry_and_ingestion_outside_threshold(self, module_factory):
+        mod = module_factory()
+        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
+        resource["meta"]["metrics"]["ingestion"] = [{
+        "timestamp" : "2025-10-21T12:15:00+00:00",
+        "value" : 2000
+        },
+        {
+        "timestamp" : "2025-10-07T12:35:00+00:00",
+        "value" : 1000
+        }]
+        resource["meta"]["metrics"]["query"] = [{
+        "timestamp" : "2025-10-23T15:25:00+00:00",
+        "value" : 2500
+        },
+        {
+        "timestamp" : "2025-10-07T13:35:00+00:00",
+        "value" : 1000
+        }]
+        assert mod._is_inactive(resource, 7) is True
 
 
 class TestSaving:
-    """RQ-05 — Saving calculation (TC-16 to TC-20)."""
 
     def test_no_metrics(self, module_factory):
         mod = module_factory()
