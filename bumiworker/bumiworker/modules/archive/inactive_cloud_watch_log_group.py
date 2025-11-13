@@ -4,7 +4,7 @@ from bumiworker.bumiworker.consts import ArchiveReason
 from bumiworker.bumiworker.modules.base import ArchiveBase
 from bumiworker.bumiworker.modules.recommendations.inactive_cloud_watch_log_group import (
     InactiveCloudWatchLogGroup as InactiveCloudWatchLogGroupRecommendation,
-    DEFAULT_DAYS_THRESHOLD,
+    DEAD_RESOURCE_DAYS_DEFAULT,
     SUPPORTED_CLOUD_TYPES,
 )
 
@@ -33,11 +33,17 @@ class InactiveCloudWatchLogGroup(ArchiveBase, InactiveCloudWatchLogGroupRecommen
 
     def _get(self, previous_options, optimizations, cloud_accounts_map, **kwargs):
         current_options = self.get_options()
-        current_days_threshold = current_options.get("days_threshold", DEFAULT_DAYS_THRESHOLD)
+        current_dead_resource_days = current_options.get(
+            "dead_resource_days",
+            current_options.get("days_threshold", DEAD_RESOURCE_DAYS_DEFAULT),
+        )
         current_excluded_pools = set((current_options.get("excluded_pools") or {}).keys())
         current_skip_accounts = set(current_options.get("skip_cloud_accounts") or [])
 
-        previous_days_threshold = previous_options.get("days_threshold", DEFAULT_DAYS_THRESHOLD)
+        previous_dead_resource_days = previous_options.get(
+            "dead_resource_days",
+            previous_options.get("days_threshold", DEAD_RESOURCE_DAYS_DEFAULT),
+        )
 
         docs_cache: Dict[str, Dict[str, Dict]] = {}
         resources_collection = self.mongo_client.restapi.resources
@@ -88,16 +94,16 @@ class InactiveCloudWatchLogGroup(ArchiveBase, InactiveCloudWatchLogGroupRecommen
                 continue
 
             inactive_with_previous_threshold = self._is_inactive(
-                log_group_doc, previous_days_threshold
+                log_group_doc, previous_dead_resource_days
             )
             inactive_with_current_threshold = self._is_inactive(
-                log_group_doc, current_days_threshold
+                log_group_doc, current_dead_resource_days
             )
 
             if not inactive_with_previous_threshold:
                 reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
             elif not inactive_with_current_threshold:
-                if current_days_threshold != previous_days_threshold:
+                if current_dead_resource_days != previous_dead_resource_days:
                     reason = ArchiveReason.OPTIONS_CHANGED
                 else:
                     reason = ArchiveReason.RECOMMENDATION_IRRELEVANT
