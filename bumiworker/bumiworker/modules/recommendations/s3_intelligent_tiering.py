@@ -1,8 +1,10 @@
 import logging
 from typing import Any, Dict, List, Union, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
+from bumiworker.bumiworker.modules.base import DAYS_IN_MONTH
+from tools.cloud_adapter.cloud import Cloud as CloudAdapter
 from .constants import (
     PRICES,
     IT_MONITOR_FEE_PER_1000,
@@ -139,6 +141,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             "excluded_pools": {"default": {}, "clean_func": self.clean_excluded_pools},
             "skip_cloud_accounts": {"default": []},
         }
+        self._adapter_cache: Dict[str, Any] = {}
+        self._it_price_cache: Dict[str, float] = {}
 
     def _aggregate_resources(self, cloud_account_id: str) -> List[Dict[str, Any]]:
         """
@@ -158,6 +162,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "cloud_account_id": 1,
                 "bucket_name": {"$ifNull": ["$name", "$cloud_resource_id"]},
                 "it_status_bucket": "$meta.it_status_bucket",
+                "size_gb": "$meta.size_gb",
                 "tiers": "$meta.tiers",
                 "object_count": "$meta.object_count",
                 "pool_id": 1,
@@ -177,7 +182,11 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         LOG.debug("it_docs ok")
         return docs
 
-    def _candidate_and_saving(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+    def _candidate_and_saving(
+        self,
+        doc: Dict[str, Any],
+        cloud_account: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Core decision point: determine if bucket is an IT candidate and compute saving.
 
@@ -226,13 +235,184 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             eligible_objects = object_count
             cost_now = _current_monthly_cost(total_gb, tiers_gb)
             cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
-
             saving = max(0.0, cost_now - cost_it)
+
+            real_saving = self._real_saving_payload(
+                doc, total_gb, today, cloud_account)
+            if real_saving:
+                saving = real_saving["saving"]
+            else:
+                real_saving = {}
             LOG.debug("it_eval ok")
-            return {"is_candidate": True, "saving": saving, "is_with_it": False}
+            result = {"is_candidate": True, "saving": saving, "is_with_it": False}
+            result.update(real_saving)
+            return result
         except Exception as exc:
             LOG.warning("it_eval error: %s", str(exc))
             return false_candidate
+
+    def _real_saving_payload(
+        self,
+        doc: Dict[str, Any],
+        total_gb: float,
+        today: date,
+        cloud_account: Optional[Dict[str, Any]]
+    ) -> Optional[Dict[str, float]]:
+        """
+        Build a dict with real saving metrics using ClickHouse expenses and Pricing API data.
+        """
+        if not cloud_account:
+            return None
+        resource_id = doc.get("resource_id")
+        cloud_account_id = doc.get("cloud_account_id")
+        if not resource_id or not cloud_account_id:
+            return None
+
+        size_gb = doc.get("size_gb", total_gb)
+        try:
+            size_gb_value = float(size_gb)
+        except (TypeError, ValueError):
+            size_gb_value = float(total_gb)
+        if size_gb_value <= 0.0:
+            return None
+
+        real_cost = self._bucket_monthly_cost(cloud_account_id, resource_id, today)
+        if real_cost is None:
+            return None
+
+        price_it = self._get_intelligent_tiering_price(cloud_account)
+        if price_it is None:
+            return None
+
+        cost_if_it = size_gb_value * price_it
+        saving_real = real_cost - cost_if_it
+        return {
+            "saving": max(0.0, saving_real),
+            "current_cost_month": real_cost,
+            "cost_if_intelligent_tiering": cost_if_it,
+            "size_gb": size_gb_value,
+            "price_intelligent_tiering": price_it,
+        }
+
+    def _bucket_monthly_cost(
+        self,
+        cloud_account_id: str,
+        resource_id: str,
+        today: date
+    ) -> Optional[float]:
+        """
+        Sum daily costs for the bucket over the last month (ClickHouse expenses).
+        """
+        if not cloud_account_id or not resource_id:
+            return None
+        start_date = today - timedelta(days=DAYS_IN_MONTH)
+        query = """
+            SELECT date, sum(cost)
+            FROM expenses
+            WHERE cloud_account_id = %(cloud_account_id)s
+              AND resource_id = %(resource_id)s
+              AND date >= %(start_date)s
+              AND date < %(end_date)s
+            GROUP BY date
+        """
+        try:
+            rows = self.clickhouse_client.query(
+                query=query,
+                parameters={
+                    "cloud_account_id": cloud_account_id,
+                    "resource_id": resource_id,
+                    "start_date": start_date,
+                    "end_date": today,
+                }
+            ).result_rows
+        except Exception as exc:
+            LOG.warning("it_clickhouse error for %s: %s", resource_id, str(exc))
+            return None
+        total = 0.0
+        for _, cost in rows:
+            try:
+                total += float(cost)
+            except (TypeError, ValueError):
+                continue
+        return total
+
+    def _get_intelligent_tiering_price(
+        self,
+        cloud_account: Dict[str, Any]
+    ) -> Optional[float]:
+        """
+        Fetch Intelligent-Tiering GB-month price using the CloudAdapter Pricing API.
+        """
+        cloud_account_id = self._extract_cloud_account_id(cloud_account)
+        if not cloud_account_id:
+            return None
+        cached = self._it_price_cache.get(cloud_account_id)
+        if cached is not None:
+            return cached
+
+        adapter = self._cloud_adapter_for_account(cloud_account_id, cloud_account)
+        if not adapter:
+            return None
+        try:
+            price_payload = adapter.get_prices({
+                "resource_type": "Bucket",
+                "storage_class": "INTELLIGENT_TIERING",
+            })
+        except Exception as exc:
+            LOG.warning("it_price lookup failed for %s: %s", cloud_account_id, str(exc))
+            return None
+
+        entry: Optional[Dict[str, Any]] = None
+        if isinstance(price_payload, list) and price_payload:
+            entry = price_payload[0]
+        elif isinstance(price_payload, dict):
+            entry = price_payload
+        if not entry:
+            return None
+        price_value = self._normalize_price_value(entry.get("price"))
+        if price_value is None:
+            return None
+        self._it_price_cache[cloud_account_id] = price_value
+        return price_value
+
+    def _cloud_adapter_for_account(
+        self,
+        cloud_account_id: str,
+        cloud_account: Dict[str, Any]
+    ):
+        cached = self._adapter_cache.get(cloud_account_id)
+        if cached:
+            return cached
+        config = dict(cloud_account or {})
+        nested_cfg = config.pop("config", None)
+        if isinstance(nested_cfg, dict):
+            config.update(nested_cfg)
+        try:
+            adapter = CloudAdapter.get_adapter(config)
+        except Exception as exc:
+            LOG.warning("it_adapter error for %s: %s", cloud_account_id, str(exc))
+            return None
+        self._adapter_cache[cloud_account_id] = adapter
+        return adapter
+
+    @staticmethod
+    def _normalize_price_value(raw_price: Any) -> Optional[float]:
+        if isinstance(raw_price, dict):
+            for key in ("USD", "usd"):
+                price_candidate = raw_price.get(key)
+                if price_candidate is not None:
+                    try:
+                        return float(price_candidate)
+                    except (TypeError, ValueError):
+                        pass
+            try:
+                return float(next(iter(raw_price.values())))
+            except (StopIteration, (TypeError, ValueError)):
+                return None
+        try:
+            return float(raw_price)
+        except (TypeError, ValueError):
+            return None
 
     def _cloud_account_names(self) -> Dict[str, str]:
         """
@@ -274,7 +454,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         pools = self.get_pools()
 
         items: List[Dict[str, Any]] = []
-        for ca in self.get_cloud_accounts():
+        cloud_accounts = self.get_cloud_accounts()
+        for ca in cloud_accounts.values():
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
                 LOG.warning("Skipping cloud account with unknown structure: %r", ca)
@@ -287,11 +468,11 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 if excluded_pools and d.get("pool_id") in excluded_pools:
                     continue
 
-                eval_res = self._candidate_and_saving(d)
+                eval_res = self._candidate_and_saving(d, ca)
                 if not eval_res["is_candidate"]:
                     continue
 
-                items.append({
+                item = {
                     "resource_id": d.get("resource_id"),
                     "resource_name":  d.get("bucket_name"),
                     "cloud_resource_id":  d.get("bucket_name"),
@@ -307,7 +488,18 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "detected_at": self.created_at,
                     "cloud_account_name": ca_names.get(d.get("cloud_account_id")),
                     "saving": round(eval_res["saving"], 2),
-                })
+                }
+                if "current_cost_month" in eval_res:
+                    item["current_cost_month"] = round(eval_res["current_cost_month"], 2)
+                if "cost_if_intelligent_tiering" in eval_res:
+                    item["cost_if_intelligent_tiering"] = round(
+                        eval_res["cost_if_intelligent_tiering"], 2)
+                if "size_gb" in eval_res:
+                    item["size_gb"] = round(eval_res["size_gb"], 3)
+                if "price_intelligent_tiering" in eval_res:
+                    item["price_intelligent_tiering"] = round(
+                        eval_res["price_intelligent_tiering"], 6)
+                items.append(item)
         LOG.debug("it_list ok")
         return items
 
