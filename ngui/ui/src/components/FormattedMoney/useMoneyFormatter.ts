@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { IntlShape, useIntl } from "react-intl";
-import { formatCompactNumber } from "components/CompactFormattedNumber";
 import { formatApproximatelyZero } from "components/ApproximatelyZero";
+import { formatCompactNumber } from "components/CompactFormattedNumber";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
 import { FORMATTED_MONEY_TYPES, ONE_CENT } from "utils/constants";
 

@@ -1,8 +1,8 @@
+import { FormattedMessage } from "react-intl";
 import FormattedMoney from "components/FormattedMoney";
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import { AWS_EC2, AWS_S3 } from "hooks/useRecommendationServices";
-import { FormattedMessage } from "react-intl";
 import { detectedAt, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
