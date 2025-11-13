@@ -149,6 +149,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             {"$match": {
                 "resource_type": "Bucket",
                 "cloud_account_id": cloud_account_id,
+                "active": True,
                 "deleted_at": 0
             }},
             {"$project": {
@@ -160,6 +161,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "tiers": "$meta.tiers",
                 "object_count": "$meta.object_count",
                 "pool_id": 1,
+                "owner_id": "$owner_id",
+                "employee_id": "$employee_id",
                 "region": 1,
                 "last_checked": "$meta.last_checked",
                 "has_lifecycle": "$meta.has_lifecycle",
@@ -267,6 +270,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         excluded_pools = set((options.get("excluded_pools") or {}).keys())
         skip_accounts = set(options.get("skip_cloud_accounts") or [])
         ca_names = self._cloud_account_names()
+        employees = self.get_employees()
+        pools = self.get_pools()
 
         items: List[Dict[str, Any]] = []
         for ca in self.get_cloud_accounts():
@@ -293,9 +298,11 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "region": d.get("region"),
                     "cloud_account_id": d.get("cloud_account_id"),
                     "cloud_type": "aws_cnr",
-                    "owner": {"id": None, "name": None},
-                    "pool": {"id": d.get("pool_id"), "name": None, "purpose": None},
-                    "is_excluded": False,
+                    "owner": self._extract_owner(
+                        d.get("owner_id") or d.get("employee_id"), employees),
+                    "pool": self._extract_pool(
+                        d.get("pool_id"), pools),
+                    "is_excluded": d.get("pool_id") in excluded_pools,
                     "is_with_intelligent_tiering": eval_res["is_with_it"],
                     "detected_at": self.created_at,
                     "cloud_account_name": ca_names.get(d.get("cloud_account_id")),

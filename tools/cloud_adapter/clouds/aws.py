@@ -55,7 +55,7 @@ BUCKET_ACCEPTED_URIS = [
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers'
 ]
 # maximum value for MaxResults (AWS limitation)
-MAX_RESULTS = 1000
+MAX_RESULTS = 399
 CSV_FORMAT_PATTERN = r'\.csv.(gz|zip)$'
 PARQUET_FORMAT_PATTERN = r'\.snappy.parquet$'
 GROUP_DATES_PATTERNS = {
@@ -187,7 +187,6 @@ class Aws(S3CloudMixin):
             IpAddressResource: self.ip_address_discovery_calls,
             BucketResource: self.bucket_discovery_calls,
             LoadBalancerResource: self.load_balancer_discovery_calls,
-            LogGroupResource: self.log_group_discovery_calls
         }
 
     @property
@@ -471,12 +470,6 @@ class Aws(S3CloudMixin):
         return [(self.discover_region_snapshots, (r,))
                 for r in self.list_regions()]
     
-    def log_group_discovery_calls(self):
-        """
-        Return list of discovery calls (func, args) where func yields LogGroupResource objects.
-        """
-        return [(self.discover_region_log_groups, (r,))
-                for r in self.list_regions()]
 
     def _handle_specific_error(self, exc, error_code, additional_allowed=None):
         exc_error_code = exc.response['Error'].get('Code')
@@ -913,7 +906,7 @@ class Aws(S3CloudMixin):
                         {'Name': 'BucketName', 'Value': bucket_name},
                         {'Name': 'FilterId', 'Value': 'EntireBucket'}
                     ],
-                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=30),
+                    StartTime=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=90),
                     EndTime=datetime.utcnow().replace(tzinfo=timezone.utc),
                     Period=24 * 60 * 60,
                     Statistics=['Sum']
@@ -933,7 +926,7 @@ class Aws(S3CloudMixin):
                     LOG.info(f"[IT] Bucket {bucket_name} had object GETs on dates: {metadata['last_checked']}")
                 else:
                     metadata['last_checked'] = []
-                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 30 days")
+                    LOG.info(f"[IT] Bucket {bucket_name} had no object GETs in the last 90 days")
                     
             except Exception as exc:
                 LOG.warning(f"[IT] Failed to get {get_requests_metric} metrics for bucket {bucket_name}: {str(exc)}")
@@ -2332,6 +2325,12 @@ class Aws(S3CloudMixin):
             },
             'incoming_events': {
                 'MetricName': 'IncomingLogEvents',
+                'Period': 86400,
+                'Stat': 'Sum',
+                'Unit': 'Count'
+            },
+            'query': {
+                'MetricName': 'QueryBytes',
                 'Period': 86400,
                 'Stat': 'Sum',
                 'Unit': 'Count'
