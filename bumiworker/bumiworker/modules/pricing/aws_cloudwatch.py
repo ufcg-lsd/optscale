@@ -6,7 +6,6 @@ See: https://aws.amazon.com/cloudwatch/pricing/ (values may vary by region)
 from dataclasses import dataclass
 
 
-
 @dataclass(frozen=True)
 class CloudWatchLogsPricing:
     storage_usd_per_gb_month: float

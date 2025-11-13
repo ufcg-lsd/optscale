@@ -21,6 +21,7 @@ class MetricKey(str, Enum):
     EVENTS = "IncomingLogEvents"
     QUERY = "QueryBytes"
 
+
 class InactiveCloudWatchLogGroup(ModuleBase):
     """
     Identify inactive CloudWatch Log Groups and estimate potential savings.
