@@ -71,34 +71,28 @@ def module_factory(monkeypatch) -> Callable[[], InactiveCloudWatchLogGroup]:
 
     return _factory
 
+@pytest.fixture
+def mod_base(module_factory):
+    """ Basic module with default options."""
+    mod = module_factory()
+    mod.get_options_values = Mock(return_value=(7, set(), set()))
+    return mod
 
 #
 # Note: No module-level skip to allow running implemented tests (e.g., TC-06).
 
-
-class TestParseTs:
-    """RQ-01 — Timestamp parser (TC-01 to TC-04)."""
-
-    def test_tc_01_epoch_seconds(self, module_factory):
-        pytest.skip("Implement TC-01: epoch seconds.")
-
-    def test_tc_02_iso_without_tz(self, module_factory):
-        pytest.skip("Implement TC-02: ISO without timezone.")
-
-    def test_tc_03_iso_with_z(self, module_factory):
-        pytest.skip("Implement TC-03: ISO with Z suffix.")
-
-    def test_tc_04_invalid(self, module_factory):
-        pytest.skip("Implement TC-04: invalid value.")
-
 class TestHasRecentMetrics:
+    """Tests for `_has_recent_metrics` method."""
+
     def test_no_metrics(self, module_factory):
+        """No metrics."""
         mod = module_factory()
         series = []
         assert mod._has_recent_metrics(series, days_threshold=7) is False
         assert mod._count_occurrences_in_threshold(series, days_threshold=7) == 0
 
     def test_metrics_outside_threshold(self, module_factory):
+        """Metrics outside the threshold."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-10-21T12:15:00+00:00",
@@ -111,6 +105,7 @@ class TestHasRecentMetrics:
         assert mod._has_recent_metrics(series, days_threshold=7) is False
     
     def test_metrics_within_threshold(self, module_factory):
+        """Metrics within the threshold."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -123,6 +118,7 @@ class TestHasRecentMetrics:
         assert mod._has_recent_metrics(series, days_threshold=7) is True
 
     def test_metrics_exact_threshold(self, module_factory):
+        """Metrics exactly on the threshold edge."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-01T12:00:00+00:00",
@@ -131,20 +127,24 @@ class TestHasRecentMetrics:
         assert mod._has_recent_metrics(series, days_threshold=7) is True
 
 class TestCountOccurrencesInThreshold:
+    """Tests for `_count_occurrences_in_threshold` method."""
 
     def test_missing_timestamp(self, module_factory):
+        """Metric entry missing 'timestamp' key."""
         mod = module_factory()
         series = [{"value": 123}]
         count = mod._count_occurrences_in_threshold(series, days_threshold=7)
         assert count == 0
 
     def test_no_metrics(self, module_factory):
+        """No metrics."""
         mod = module_factory()
         series = []
         count = mod._count_occurrences_in_threshold(series, days_threshold=7)
         assert count == 0
 
     def test_metrics_within_threshold_7_days(self, module_factory):
+        """Metrics within 7 days."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -154,6 +154,7 @@ class TestCountOccurrencesInThreshold:
         assert count == 1
     
     def test_metrics_within_threshold_30_days(self, module_factory):
+        """Metrics within 30 days."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-10-21T12:15:00+00:00",
@@ -167,6 +168,7 @@ class TestCountOccurrencesInThreshold:
         assert count == 2
 
     def test_metrics_within_and_outside_threshold(self, module_factory):
+        """Metrics both within and outside the 7-day threshold."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -184,14 +186,17 @@ class TestCountOccurrencesInThreshold:
         assert count == 1
 
 class TestSumMetricsLastMonth:
+    """Tests for `_sum_metrics_last_month` method."""
 
     def test_no_metrics(self, module_factory):
+        """No metrics."""
         mod = module_factory()
         series = []
         sum = mod._sum_metrics_last_month(series)
         assert sum == 0
 
     def test_metrics_within_7_days(self, module_factory):
+        """Metrics within 7 days."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-04T22:22:01+00:00",
@@ -201,6 +206,7 @@ class TestSumMetricsLastMonth:
         assert sum == 500
 
     def test_metrics_within_30_days(self, module_factory):
+        """Metrics within 30 days."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-01T00:00:00+00:00",
@@ -210,6 +216,7 @@ class TestSumMetricsLastMonth:
         assert sum == 3000
 
     def test_metrics_exact_30_days(self, module_factory):
+        """Metrics exactly 30 days ago."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-10-08T00:00:00+00:00",
@@ -219,6 +226,7 @@ class TestSumMetricsLastMonth:
         assert sum == 1500
 
     def test_metrics_outside_threshold(self, module_factory):
+        """Metrics outside the 30-day threshold."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-08-07T08:15:00+00:00",
@@ -232,6 +240,7 @@ class TestSumMetricsLastMonth:
         assert sum == 0
 
     def test_metrics_within_and_outside_threshold(self, module_factory):
+        """Metrics both within and outside the 30-day threshold."""
         mod = module_factory()
         series= [ {
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -268,21 +277,24 @@ class TestSumMetricsLastMonth:
         sum = mod._sum_metrics_last_month(series)
         assert sum == 10500
 
-
 class TestInactivity:
+    """Tests for `_is_inactive` method."""
 
     def test_empty_resource(self, module_factory):
+        """No lifecycle and no metrics."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         assert mod._is_inactive(resource, 7) is True
 
     def test_has_lifecycle(self, module_factory):
+        """Has retention policy."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["retention_in_days"] = 3
         assert mod._is_inactive(resource, 7) is False
 
     def test_recent_ingestion(self, module_factory):
+        """Ingestion metrics in the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -292,6 +304,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_ingestion_exact_threshold(self, module_factory):
+        """Ingestion metrics on the threshold edge."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -301,6 +314,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_ingestion_outside_threshold(self, module_factory):
+        """Ingestion metrics outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -314,6 +328,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is True
 
     def test_ingestion_inside_and_outside_threshold(self, module_factory):
+        """Ingestion metrics both inside and outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -327,6 +342,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_recent_query(self, module_factory):
+        """Query metrics in the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -336,6 +352,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_query_exact_threshold(self, module_factory):
+        """Query metrics on the threshold edge."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -345,6 +362,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_query_outside_threshold(self, module_factory):
+        """Query metrics outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -358,6 +376,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is True
 
     def test_query_inside_and_outside_threshold(self, module_factory):
+        """Query metrics both inside and outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -371,6 +390,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_recent_query_and_ingestion(self, module_factory):
+        """Both query and ingestion metrics in the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -384,6 +404,7 @@ class TestInactivity:
         assert mod._is_inactive(resource, 7) is False
 
     def test_querry_and_ingestion_outside_threshold(self, module_factory):
+        """Both query and ingestion metrics outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -404,10 +425,11 @@ class TestInactivity:
         }]
         assert mod._is_inactive(resource, 7) is True
 
-
 class TestSaving:
+    """Tests for `_estimate_saving` method."""
 
     def test_no_metrics(self, module_factory):
+        """No metrics or storage."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         
@@ -415,6 +437,7 @@ class TestSaving:
         assert saving == 0
 
     def test_ingestion_last_month(self, module_factory):
+        """Ingestion metrics in the last month."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [ {
@@ -425,6 +448,7 @@ class TestSaving:
         assert saving == pytest.approx(9.31e-07, rel=1e-3)
     
     def test_query_last_month(self, module_factory):
+        """Query metrics in the last month."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -435,6 +459,7 @@ class TestSaving:
         assert saving == pytest.approx(1.12e-08, rel=5e-2)
 
     def test_storage_only(self, module_factory):
+        """Storage metrics only."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
@@ -442,6 +467,7 @@ class TestSaving:
         assert saving == pytest.approx(0.0135, rel=1e-3)
 
     def test_query_and_ingestion_and_storage(self, module_factory):
+        """Storage, ingestion and query metrics."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
@@ -458,6 +484,7 @@ class TestSaving:
         assert saving == pytest.approx(0.013500943, rel=1e-3)
 
     def test_ingestion_not_recently(self, module_factory):
+        """Ingestion metrics not recent."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -468,6 +495,7 @@ class TestSaving:
         assert saving == 0
 
     def test_query_not_recently(self, module_factory):
+        """Query metrics not recent."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -477,43 +505,112 @@ class TestSaving:
         saving = mod._estimate_saving(resource)
         assert saving == 0
 
-
-class TestUtilsContract:
-    """RQ-06 / RQ-07 — Extraction and reading utilities (TC-21 to TC-25)."""
-
-    def test_tc_21_extract_cloud_account_id_str(self, module_factory):
-        pytest.skip("Implement TC-21: _extract_cloud_account_id (str).")
-
-    def test_tc_22_extract_cloud_account_id_dict(self, module_factory):
-        pytest.skip("Implement TC-22: _extract_cloud_account_id (dict).")
-
-    def test_tc_23_get_from_resource_prefers_resource(self, module_factory):
-        pytest.skip("Implement TC-23: resource[key] has priority.")
-
-    def test_tc_24_get_from_resource_falls_back_to_meta(self, module_factory):
-        pytest.skip("Implement TC-24: meta[key] as fallback.")
-
-    def test_tc_25_get_metrics_with_fallback(self, module_factory):
-        pytest.skip("Implement TC-25: fallback to meta.metrics.")
-
-
 class TestIntegration:
-    """RQ-08 — Integration of `_get` with `_aggregate_resources`."""
+    """Tests for the `_get` method."""
 
-    def test_tc_26_basic_pipeline(self, module_factory):
-        pytest.skip("Implement TC-26: basic pipeline and output structure.")
+    def test__basic_resource(self, mod_base):
+        """Basic resource aggregation test."""
+        mod = mod_base
 
-    def test_tc_27_filter_excluded_pools(self, module_factory):
-        pytest.skip("Implement TC-27: exclusion by pool.")
+        ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
+        mod.get_cloud_accounts = Mock(return_value=ca_map)
+        mod._extract_cloud_account_id = Mock(return_value="acc1")
+        mod._aggregate_resources = Mock(return_value=([{
+            "resource_id": "r1",
+            "name": "log-group-1",
+            "cloud_account_id": "acc1",
+            "log_group_name": "group1",
+            "region": "us-east-1",
+            "pool_id": "p1",
+            "stored_bytes": 12345,
+            "retention_in_days": 7,
+        }]))
+        mod._is_inactive = Mock(return_value=True)
+        mod._estimate_saving = Mock(return_value=0.5)
+        mod._get_metrics = Mock(return_value={
+            MetricKey.INGESTION.value: [],
+            MetricKey.QUERY.value: [],
+        })
+        mod._count_occurrences_in_threshold = Mock(return_value=2)
 
-    def test_tc_28_skip_cloud_accounts(self, module_factory):
-        pytest.skip("Implement TC-28: skipped cloud accounts.")
+        result = mod._get()
 
-    def test_tc_29_aggregated_metrics(self, module_factory):
-        pytest.skip("Implement TC-29: aggregated metrics in final item.")
+        assert len(result) == 1
+        item = result[0]
+        assert item["cloud_account_id"] == "acc1"
+        assert item["resource_id"] == "r1"
+        assert item["saving"] == 0.5
+        assert item["is_excluded"] is False
+        assert item["ingestion"] == 2
+        assert item["query"] == 2
+        assert item["cloud_account_name"] == "Account 1"
+        assert item["cloud_type"] == "aws"
 
-    def test_tc_30_aggregate_resources_projection(self, module_factory):
-        pytest.skip("Implement TC-30: aggregation pipeline contract.")
+    def test_filter_excluded_pools(self, mod_base):
+        """Filters out resources in excluded pools."""
+        mod = mod_base
+        excluded_pool = "pool_excl"
+        mod.get_options_values = Mock(return_value=(7, {excluded_pool}, set()))
+        ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
+        mod.get_cloud_accounts = Mock(return_value=ca_map)
+        mod._extract_cloud_account_id = Mock(return_value="acc1")
+        mod._aggregate_resources = Mock(return_value = ([
+            {"resource_id": "r1", "cloud_account_id": "acc1", "pool_id": excluded_pool}
+        ]))
+        mod._is_inactive = Mock(return_value=True)
+        mod._estimate_saving = Mock(return_value=0)
+        mod._get_metrics = Mock(return_value={MetricKey.INGESTION.value: [], MetricKey.QUERY.value: []})
+        mod._count_occurrences_in_threshold = Mock(return_value=0)
+
+        result = mod._get()
+        assert result[0]["is_excluded"] is True
+
+    def test_skip_cloud_accounts(self, mod_base):
+        """"Skips cloud accounts in `skip_cloud_accounts`."""
+        mod = mod_base
+        mod.get_options_values = Mock(return_value=(7, set(), {"acc1"}))
+        ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
+        mod.get_cloud_accounts = Mock(return_value=ca_map)
+        mod._extract_cloud_account_id = Mock(return_value="acc1")
+        mod._aggregate_resources = Mock(return_value = ([]))
+        result = mod._get()
+        assert result == []
+
+    def test_aggregated_metrics(self, mod_base):
+        """Verify that aggregated metrics are reflected in the final result."""
+        mod = mod_base
+        ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
+        mod.get_cloud_accounts = Mock(return_value=ca_map)
+        mod._extract_cloud_account_id = Mock(return_value="acc1")
+        mod._aggregate_resources = Mock(return_value = ([
+            {"resource_id": "r1", "cloud_account_id": "acc1", "pool_id": "p1"},
+        ]))
+        mod._is_inactive = Mock(return_value=True)
+        mod._estimate_saving = Mock(return_value=0.42)
+        mod._get_metrics = Mock(return_value={
+            MetricKey.INGESTION.value: [{"timestamp": "2025-11-04T00:00:00+00:00"}],
+            MetricKey.QUERY.value: [{"timestamp": "2025-11-03T00:00:00+00:00"}],
+        })
+        mod._count_occurrences_in_threshold = Mock(side_effect=[3, 5])
+
+        result = mod._get()
+        assert result[0]["ingestion"] == 3
+        assert result[0]["query"] == 5
+        assert result[0]["saving"] == 0.42
+
+    def test_aggregate_resources_projection(self, mod_base):
+        """Verify that `_aggregate_resources` is called correctly."""
+        mod = mod_base
+        ca_map = {"acc1": {"id": "acc1"}}
+        mod.get_cloud_accounts = Mock(return_value=ca_map)
+        mod._extract_cloud_account_id = Mock(return_value="acc1")
+        mod._aggregate_resources = Mock(return_value = ([]))
+        mod._is_inactive = Mock(return_value=False)
+
+        result = mod._get()
+
+        mod._aggregate_resources.assert_called_once_with("acc1")
+        assert result == []
 
 
 # Enum used in many scenarios — imported here to avoid unused symbol lint.
