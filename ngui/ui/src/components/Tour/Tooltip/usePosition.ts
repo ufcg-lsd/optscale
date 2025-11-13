@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 /**
  * Returns new rectangle object with replaced left and top using coordinates
@@ -210,7 +210,7 @@ const usePosition = (targetElementRect, tooltipRect, scrollHelpHeight) => {
   const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 
   useEffect(() => {
-    if (!isEmpty(tooltipRect)) {
+    if (!isEmptyObject(tooltipRect)) {
       // FOR OFFSCREEN ELEMENT (when tooltip "follows" it on the borders)
       // 1. Changing position if element is above/below/left/right the screen
       // 2. In "indeterminate" (?) sectors set position only if current one is opposite one

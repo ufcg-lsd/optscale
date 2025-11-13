@@ -43,13 +43,13 @@ const ChartTooltip = ({ points: allPoints, isOrganizationWeekend, breakdownBy })
   return (
     <>
       {renderTotalLabel()}
-      {allPoints.map(({ id: pointId, serieColor, data: pointData = {} }) => (
+      {allPoints.map(({ id: pointId, seriesColor, data: pointData = {} }) => (
         <KeyValueLabel
           key={pointId}
           gutterBottom
           keyText={
             <CircleLabel
-              figureColor={serieColor}
+              figureColor={seriesColor}
               label={pointData.translatedSerieId ?? <BreakdownLabel breakdownBy={breakdownBy} details={pointData.details} />}
               textFirst={false}
             />

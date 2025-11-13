@@ -3,7 +3,7 @@ import { FormattedMessage } from "react-intl";
 import ExpandableList from "components/ExpandableList";
 import LabelChip from "components/LabelChip";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 
 const ALIASED_VERSIONS_SHOW_MORE_LIMIT = 3;

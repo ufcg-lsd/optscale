@@ -1,4 +1,4 @@
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 export const getData = ({ breakdown = {}, milestones = [], stages = [] }) => {
   if (isEmptyObject(breakdown)) {

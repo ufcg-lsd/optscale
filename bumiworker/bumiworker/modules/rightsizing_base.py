@@ -227,7 +227,7 @@ class RightsizingBase(ModuleBase):
             region = params['region']
             family_specs = params['family_specs']
             flavor_params = params['flavor_params']
-            if cloud_account['type'] == 'nebius':
+            if cloud_account['type'] in ['alibaba_cnr', 'nebius']:
                 flavor_params['cloud_account_id'] = cloud_account['id']
             current_flavor = self._find_flavor(
                 cloud_account['type'], region, family_specs, 'current',
@@ -551,12 +551,23 @@ class RightsizingBase(ModuleBase):
 
     def get_base_gcp_instances_info(self, cloud_resources, cloud_account_ids):
         result = {}
+        rates = self.mongo_client.restapi.raw_expenses.aggregate([
+            {"$match": {"cloud_account_id": {"$in": cloud_account_ids}}},
+            {"$group": {
+                "_id": "$cloud_account_id",
+                "conversion_rate": {"$first": "$currency_conversion_rate"}}}])
+        cloud_acc_conversion_rate = {
+            x["_id"]: x["conversion_rate"] for x in rates
+        }
         for cloud_resource in cloud_resources:
             resource_id = cloud_resource["cloud_resource_id"]
+            cloud_account_id = cloud_resource["cloud_account_id"]
+            conversion_rate = cloud_acc_conversion_rate.get(cloud_account_id)
             current_flavor = self._find_flavor(
                 "gcp_cnr", cloud_resource["region"],
                 {"source_flavor_id": cloud_resource["meta"]["flavor"]},
-                'current')
+                "current", currency_conversion_rate=conversion_rate,
+                cloud_account_id=cloud_account_id)
             if not current_flavor:
                 # we do not currently support custom flavors,
                 # so insider might return empty response

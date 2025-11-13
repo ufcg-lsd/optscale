@@ -199,12 +199,10 @@ class TestRiBreakdownApi(TestApiBase):
     def test_not_aws_account(self):
         cloud_acc_az = {
             'name': 'cloud_acc_az',
-            'type': 'azure_cnr',
+            'type': 'gcp_cnr',
             'config': {
-                'subscription_id': 'id',
-                'secret': 'secret',
-                'client_id': 'id',
-                'tenant': 't',
+                'billing_data': {'dataset_name': 'test', 'table_name': 'test'},
+                'credentials': {'account_id': 'test'},
             }
         }
         _, cloud_acc = self.create_cloud_account(

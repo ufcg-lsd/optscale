@@ -13,18 +13,18 @@ do
 
     echo "Pycodestyle tests>>>"
     docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG} bash -c \
-        "pycodestyle --max-line-length=120 risp"
+        "uv --project risp/$SERVICE run pycodestyle --exclude=.venv --max-line-length=120 risp"
     echo "<<<Pycodestyle tests"
 
     echo "Pylint tests>>>"
     docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG} bash -c \
-        "pylint --rcfile=risp/.pylintrc --fail-under=8 --fail-on=E,F ./risp/${SERVICE}"
+        "uv --project risp/$SERVICE run pylint --rcfile=risp/.pylintrc --fail-under=8 --fail-on=E,F ./risp/${SERVICE}"
     echo "<<<Pylint tests"
 
     if [[ "${SERVICE}" == "risp_worker" ]]; then
         echo "Worker tests>>>"
         docker run -i --rm ${TEST_IMAGE}:${BUILD_TAG} \
-            bash -c "python3 risp/run_tests.py"
+            bash -c "uv --project risp/$SERVICE run python risp/run_tests.py"
         echo "<<Worker tests"
     fi
 

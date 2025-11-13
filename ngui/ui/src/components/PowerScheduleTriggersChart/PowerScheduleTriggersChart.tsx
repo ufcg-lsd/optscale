@@ -7,7 +7,7 @@ import { FormattedMessage } from "react-intl";
 import IconLabel from "components/IconLabel";
 import KeyValueLabel from "components/KeyValueLabel";
 import Tooltip from "components/Tooltip";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { POWER_SCHEDULE_ACTIONS } from "utils/constants";
 import {
   differenceInMinutes,

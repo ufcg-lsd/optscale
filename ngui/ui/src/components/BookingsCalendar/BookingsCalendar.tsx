@@ -5,7 +5,7 @@ import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
 import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { format, secondsToMilliseconds, MAX_UTC_DATE_TIMESTAMP } from "utils/datetime";
 import { getResourceDisplayedName } from "utils/resources";
 import useStyles from "./BookingsCalendar.styles";

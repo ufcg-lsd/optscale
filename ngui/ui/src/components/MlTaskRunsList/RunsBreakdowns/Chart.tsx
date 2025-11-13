@@ -33,7 +33,7 @@ const Chart = ({ runs = [], breakdownConfig = [], selectedBreakdowns = [], isLoa
             {points.map((point) => (
               <KeyValueLabel
                 key={point.id}
-                keyText={<CircleLabel figureColor={point.serieColor} label={point.data.formattedLineName} textFirst={false} />}
+                keyText={<CircleLabel figureColor={point.color} label={point.data.formattedLineName} textFirst={false} />}
                 value={point.data.formattedY}
                 gutterBottom
               />

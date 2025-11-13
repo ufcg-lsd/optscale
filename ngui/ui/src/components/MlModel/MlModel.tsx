@@ -31,11 +31,11 @@ import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useRefetchApis } from "hooks/useRefetchApis";
 import { ModelDetails } from "services/MlModelsService";
 import { ML_MODELS, getEditMlModelUrl } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { mlModelPath, mlModelVersion, run, utcTime } from "utils/columns";
 import { unixTimestampToDateTime } from "utils/datetime";
 import { SPACING_1, SPACING_2 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 import { PickRename } from "utils/types";
 

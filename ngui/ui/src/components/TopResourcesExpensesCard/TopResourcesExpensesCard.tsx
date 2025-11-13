@@ -21,7 +21,7 @@ import Tooltip from "components/Tooltip";
 import WrapperCard from "components/WrapperCard";
 import { useOrganizationPerspectives } from "hooks/coreData/useOrganizationPerspectives";
 import { getLast30DaysResourcesUrl, getResourcesExpensesUrl, RESOURCE_PERSPECTIVES } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FORMATTED_MONEY_TYPES } from "utils/constants";
 import { SPACING_1 } from "utils/layouts";
 import { percentXofY } from "utils/math";

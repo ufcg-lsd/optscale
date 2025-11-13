@@ -80,7 +80,9 @@ AWS_MEM_LIMIT_DIFF = 1024
 
 class FlavorGenerationController(FlavorController):
     def find_flavor_generation(self, cloud_type, region, current_flavor,
-                               **kwargs):
+                               cloud_account_id=None, **kwargs):
+        if cloud_account_id:
+            self.cloud_account_id = cloud_account_id
         find_flavor_function_map = {
             'aws_cnr': self.find_aws_flavor_generation,
             'azure_cnr': self.find_azure_flavor_generation,

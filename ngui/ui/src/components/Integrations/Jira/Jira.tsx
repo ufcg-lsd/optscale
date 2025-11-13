@@ -3,7 +3,7 @@ import ButtonLoader from "components/ButtonLoader";
 import TextBlock from "components/TextBlock";
 import JiraIcon from "icons/JiraIcon";
 import { JIRA_MARKETPLACE } from "urls";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import Integration from "../Integration";
 import Title from "../Title";
 
@@ -54,13 +54,13 @@ const Jira = ({
           messageId="noJiraWorkspacesAreConnected"
           isLoading={isGetJiraOrganizationStatusLoading}
           color="error"
-          isVisible={isEmpty(connectedWorkspaces)}
+          isVisible={isEmptyArray(connectedWorkspaces)}
         />,
         <TextBlock
           key="connectedWorkspacesTitle"
           messageId="connectedWorkspaces"
           isLoading={isGetJiraOrganizationStatusLoading}
-          isVisible={!isEmpty(connectedWorkspaces)}
+          isVisible={!isEmptyArray(connectedWorkspaces)}
         />,
         !isGetJiraOrganizationStatusLoading && (
           <ul key="connectedWorkspaces" style={{ marginTop: 0 }}>

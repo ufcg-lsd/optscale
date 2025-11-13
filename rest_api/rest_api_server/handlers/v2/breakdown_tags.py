@@ -204,6 +204,14 @@ class BreakdownTagsAsyncHandler(FilteredExpensesBaseAsyncHandler):
             collectionFormat: multi
             items:
                 type: string
+        -   name: meta
+            in: query
+            description: meta key
+            required: false
+            type: array
+            collectionFormat: multi
+            items:
+                type: string
         responses:
             200:
                 description: Breakdown tags data

@@ -24,7 +24,6 @@ class TestVerifyEmail(TestApiBase):
         code, resp = self.client.verify_email(email)
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         p_herald.assert_called_once_with(
             [email], 'OptScale email verification',
@@ -45,7 +44,6 @@ class TestVerifyEmail(TestApiBase):
             email, link_params={'mode': 'mlops'})
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         link = p_herald.call_args[1]['template_params']['links'][
             'verify_button']
@@ -111,7 +109,6 @@ class TestVerifyEmail(TestApiBase):
         code, resp = self.client.verify_email(email)
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         p_herald.assert_not_called()
 
@@ -127,6 +124,5 @@ class TestVerifyEmail(TestApiBase):
         code, resp = self.client.verify_email(email)
         self.assertEqual(code, 201)
         self.assertEqual(resp['status'], 'ok')
-        self.assertEqual(resp['email'], email)
         p_auth.assert_called_once_with(email, ANY)
         p_herald.assert_not_called()

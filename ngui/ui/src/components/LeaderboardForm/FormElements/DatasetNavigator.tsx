@@ -5,7 +5,7 @@ import { useIntl } from "react-intl";
 import Table from "components/Table";
 import TableCellActions from "components/TableCellActions";
 import TableLoader from "components/TableLoader";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { datasetTimespan, leaderboardDataset, leaderboardDatasetLabels, localTime } from "utils/columns";
 import { EN_FULL_FORMAT, format, secondsToMilliseconds } from "utils/datetime";
 import { FIELD_NAMES } from "../constants";
@@ -22,7 +22,7 @@ const DatasetNavigator = ({ datasets, isLoading = false }) => {
 
     const toTimeSpans = datasets.map((dataset) => dataset.timespan_to).filter(Boolean);
 
-    if (isEmpty(fromTimeSpans) || isEmpty(toTimeSpans)) {
+    if (isEmptyArray(fromTimeSpans) || isEmptyArray(toTimeSpans)) {
       return undefined;
     }
 

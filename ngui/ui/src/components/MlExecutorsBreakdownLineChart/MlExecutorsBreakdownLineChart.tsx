@@ -1,7 +1,7 @@
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import LineChart from "components/LineChart";
 import { EN_FORMAT_SHORT_YEAR, formatUTC } from "utils/datetime";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const getBreakdownLine = (breakdown) =>
   Object.entries(breakdown).map(([key, value]) => ({ x: formatUTC(key, EN_FORMAT_SHORT_YEAR), y: value }));

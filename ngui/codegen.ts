@@ -1,5 +1,4 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
-import { JSONObjectResolver } from "graphql-scalars";
 
 const auth = {
   "./server/graphql/__generated__/types/auth.ts": {
@@ -38,7 +37,7 @@ const restapi = {
       defaultScalarType: "unknown",
       contextType: "../../../server#ContextValue",
       scalars: {
-        JSONObject: JSONObjectResolver.extensions.codegenScalarType
+        JSONObject: "Record<string, unknown>"
       }
     }
   },
@@ -53,7 +52,10 @@ const restapi = {
       withHooks: true,
       withMutationFn: true,
       withRefetchFn: true,
-      reactApolloVersion: 3
+      reactApolloVersion: 3,
+      scalars: {
+        JSONObject: "Record<string, unknown>"
+      }
     }
   }
 };

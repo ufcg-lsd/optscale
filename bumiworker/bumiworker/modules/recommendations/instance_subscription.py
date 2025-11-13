@@ -74,14 +74,17 @@ class InstanceSubscription(ModuleBase):
             }
         ])
 
-    def get_subscriptions_costs(self, cloud_resource_id, flavor, region):
+    def get_subscriptions_costs(self, cloud_resource_id, flavor, region,
+                                cloud_account_id):
         try:
             _, monthly_flavor_prices = self.insider_cl.get_flavor_prices(
                 ALIBABA_CLOUD_TYPE, flavor, region, os_type='linux',
-                billing_method='subscription', quantity=1)
+                billing_method='subscription', quantity=1,
+                cloud_account_id=cloud_account_id)
             _, yearly_flavor_prices = self.insider_cl.get_flavor_prices(
                 ALIBABA_CLOUD_TYPE, flavor, region, os_type='linux',
-                billing_method='subscription', quantity=MONTHS_IN_YEAR)
+                billing_method='subscription', quantity=MONTHS_IN_YEAR,
+                cloud_account_id=cloud_account_id)
             monthly_subscription_cost = monthly_flavor_prices['prices'][0].get(
                 'price')
             yearly_subscription_cost = yearly_flavor_prices['prices'][0].get(
@@ -93,7 +96,8 @@ class InstanceSubscription(ModuleBase):
         return monthly_subscription_cost, yearly_subscription_cost
 
     def handle_account(self, cloud_account, instance_map, now, excluded_pools):
-        raw_expenses = self.get_raw_expenses(cloud_account['id'], now,
+        cloud_account_id = cloud_account['id']
+        raw_expenses = self.get_raw_expenses(cloud_account_id, now,
                                              list(instance_map.keys()))
         result = []
         for raw_info in raw_expenses:
@@ -122,7 +126,7 @@ class InstanceSubscription(ModuleBase):
             region = instance['region']
             (monthly_subscription_cost,
              yearly_subscription_cost) = self.get_subscriptions_costs(
-                cloud_resource_id, flavor, region)
+                cloud_resource_id, flavor, region, cloud_account_id)
             if not monthly_subscription_cost or not yearly_subscription_cost:
                 continue
             raw_cost = float(raw_info['daily_cost_without_discount'])

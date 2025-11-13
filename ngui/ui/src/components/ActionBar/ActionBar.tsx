@@ -18,7 +18,7 @@ import ButtonLoader from "components/ButtonLoader";
 import IconButton from "components/IconButton";
 import Popover from "components/Popover";
 import { useAllowedItems } from "hooks/useAllowedActions";
-import { isEmpty, splitIntoTwoChunks } from "utils/arrays";
+import { isEmptyArray, splitIntoTwoChunks } from "utils/arrays";
 import { SCOPE_TYPES } from "utils/constants";
 import useStyles from "./ActionBar.styles";
 import { COLLAPSE_MODE, HIDE_MODE, useHideActionsForSmallScreens } from "./useHideActionsForSmallScreens";
@@ -217,7 +217,7 @@ const ActionBar = ({ data, isPage = true }) => {
 
   const allowedItems = useAllowedItems({ ...getUseIsAllowedParameters(poolId), items });
   const showable = allowedItems.filter(({ show }) => show !== false);
-  const isEmptyActions = isEmpty(showable);
+  const isEmptyActions = isEmptyArray(showable);
 
   // need to use createRef, so reference object could trigger useEffect inside useHideActionsForSmallScreens
   // useRef will set all of them to null initially
@@ -252,7 +252,7 @@ const ActionBar = ({ data, isPage = true }) => {
             ) : null}
             {!isEmptyActions ? (
               <Box className={classes.itemsWrapper} ref={buttonsRef}>
-                {!isEmpty(hidden) && (
+                {!isEmptyArray(hidden) && (
                   <Box component="div" className={actionsClasses}>
                     <Popover
                       renderMenu={({ closeHandler }) => <DropDownMenu items={hidden} onClose={closeHandler} />}
@@ -260,7 +260,7 @@ const ActionBar = ({ data, isPage = true }) => {
                     />
                   </Box>
                 )}
-                {!isEmpty(visible) && (
+                {!isEmptyArray(visible) && (
                   <Box component="div" className={actionsClasses}>
                     {renderItems(visible)}
                   </Box>

@@ -202,7 +202,13 @@ class TestAvailableFiltersApi(TestApiBase):
         code, response = self.client.available_filters_get(
             self.org_id, min_timestamp, max_timestamp, filters)
         self.assertEqual(code, 200)
-        self.assertEqual(response['filter_values']['pool'], [])
+        self.assertEqual(response['filter_values']['pool'], [
+            {
+                'id': self.org['pool_id'],
+                'name': self.org['name'],
+                'purpose': 'business_unit'
+            }
+        ])
 
     def test_available_filters_no_cloud_account(self):
         _, org = self.client.organization_create(

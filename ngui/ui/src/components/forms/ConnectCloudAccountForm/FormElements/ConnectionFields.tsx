@@ -16,12 +16,9 @@ import {
   AwsExportType,
   AwsUseAwsEdpDiscount,
   GcpTenantCredentials,
-  AwsAssumedRoleInputs,
-  AWS_ROLE_CREDENTIALS_FIELD_NAMES,
-  AWS_BILLING_BUCKET_FIELD_NAMES
+  AwsAssumedRoleInputs
 } from "components/DataSourceCredentialFields";
 import { RadioGroup, Switch } from "components/forms/common/fields";
-import { FIELD_NAME as DATA_SOURCE_NAME_FIELD_NAME } from "components/forms/ConnectCloudAccountForm/FormElements/DataSourceNameField";
 import {
   BillingReportBucketDescription,
   BillingReportBucketTitle,
@@ -61,7 +58,7 @@ const AwsRootInputs = () => (
                 messageValues={{
                   break: <br />
                 }}
-                dataTestId="qmark_user_report"
+                dataTestId="qmark_data_export_detection"
               />
             }
           />
@@ -120,18 +117,7 @@ type ConnectionType = ObjectValues<typeof CONNECTION_TYPES>;
 const ConnectionInputs = ({ connectionType }: { connectionType: ConnectionType }) => {
   switch (connectionType) {
     case CONNECTION_TYPES.AWS_ROLE:
-      return (
-        <AwsAssumedRoleInputs
-          fieldsRequiredForRoleFetch={[
-            DATA_SOURCE_NAME_FIELD_NAME,
-            AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_ACCOUNT_ID,
-            AWS_ROLE_CREDENTIALS_FIELD_NAMES.ASSUME_ROLE_NAME,
-            AWS_BILLING_BUCKET_FIELD_NAMES.BUCKET_NAME,
-            AWS_BILLING_BUCKET_FIELD_NAMES.BUCKET_PREFIX,
-            AWS_BILLING_BUCKET_FIELD_NAMES.EXPORT_NAME
-          ]}
-        />
-      );
+      return <AwsAssumedRoleInputs showAssumedRoleCredentialsInModal />;
     case CONNECTION_TYPES.AWS_ROOT:
       return <AwsRootInputs />;
     case CONNECTION_TYPES.AWS_LINKED:

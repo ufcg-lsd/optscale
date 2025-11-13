@@ -137,25 +137,41 @@ class ResourcesSaver:
 
     def process_resource_obj(self, resources):
         flavors = {}
+        flavor_archs = {}
         resource_type = None
         for resource in resources:
-            if resource.cloud_type != 'azure_cnr' or type(resource) not in [
-                    InstanceResource, RdsInstanceResource]:
+            if type(resource) not in [InstanceResource, RdsInstanceResource]:
                 break
-            flavor = flavors.get(resource.flavor)
-            if not flavor:
-                if not resource_type:
-                    resource_type = getattr(
-                        ResourceTypes, self.MODEL_MAP_INVERTED[
-                            type(resource)]).name
-                _, flavor = self.insider_cl.find_flavor(
-                    resource.cloud_type, resource_type, resource.region,
-                    {'source_flavor_id': resource.flavor}, 'current',
-                    cloud_account_id=resource.cloud_account_id)
-            if flavor:
-                flavors[resource.flavor] = flavor
-                resource.cpu_count = flavor['cpu']
-                resource.ram = flavor['ram'] * BYTES_IN_MB
+            flavor_name = resource.flavor
+            if resource.cloud_type == 'azure_cnr':
+                flavor = flavors.get(flavor_name)
+                if not flavor:
+                    if not resource_type:
+                        resource_type = getattr(
+                            ResourceTypes, self.MODEL_MAP_INVERTED[
+                                type(resource)]).name
+                    _, flavor = self.insider_cl.find_flavor(
+                        resource.cloud_type, resource_type, resource.region,
+                        {'source_flavor_id': flavor_name}, 'current',
+                        cloud_account_id=resource.cloud_account_id)
+                if flavor:
+                    flavors[flavor_name] = flavor
+                    resource.cpu_count = flavor['cpu']
+                    resource.ram = flavor['ram'] * BYTES_IN_MB
+            if not resource.architecture and resource.cloud_type in [
+                'aws_cnr', 'azure_cnr', 'alibaba_cnr'
+            ]:
+                flavor_arch = flavor_archs.get(flavor_name)
+                if not flavor_arch:
+                    _, arch_info = self.insider_cl.get_architecture(
+                        cloud_type=resource.cloud_type,
+                        flavor=resource.flavor,
+                        region=resource.region,
+                        cloud_account_id=resource.cloud_account_id
+                    )
+                    flavor_arch = arch_info['architecture']
+                    flavor_archs[flavor_name] = flavor_arch
+                resource.architecture = flavor_arch
         return resources
 
     def save_bulk_resources(self, resources):

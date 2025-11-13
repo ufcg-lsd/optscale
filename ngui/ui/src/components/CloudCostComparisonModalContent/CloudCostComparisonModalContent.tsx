@@ -10,7 +10,7 @@ import IconButton from "components/IconButton";
 import Table from "components/Table";
 import Tooltip from "components/Tooltip";
 import { useSelectedSizes, useSelectionActions } from "reducers/cloudCostComparisonSelectedSizes/hooks";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FORMATTED_MONEY_TYPES } from "utils/constants";
 
 const ComparisonTable = ({ sizes }) => {

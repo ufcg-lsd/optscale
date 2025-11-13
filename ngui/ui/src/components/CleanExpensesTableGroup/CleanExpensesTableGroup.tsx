@@ -10,7 +10,7 @@ import PoolLabel from "components/PoolLabel";
 import { useReactiveSearchParams } from "hooks/useReactiveSearchParams";
 import { intl } from "translations/react-intl-config";
 import { GROUP_BY_PARAM_NAME, GROUP_TYPE_PARAM_NAME } from "urls";
-import { createGroupsObjectFromArray, getLength, isEmpty as isEmptyArray } from "utils/arrays";
+import { createGroupsObjectFromArray, getLength, isEmptyArray } from "utils/arrays";
 import {
   LINEAR_SELECTOR_ITEMS_TYPES,
   CLEAN_EXPENSES_GROUP_TYPES,
@@ -21,7 +21,7 @@ import {
 } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 import { updateSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { getPaginationQueryKey, getSearchQueryKey } from "utils/tables";
 import { TOTAL_EXPENSES, COUNT } from "./constant";
 import SortGroupsBySelector from "./SortGroupsBySelector";

@@ -1,6 +1,7 @@
+import { FILTER_TYPE } from "components/FilterComponents/constants";
 import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import { RESOURCES, RESOURCES_BREAKDOWN_BY_QUERY_PARAMETER_NAME } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   CLEAN_EXPENSES_BREAKDOWN_TYPES,
   END_DATE_FILTER,
@@ -38,7 +39,7 @@ const getFiltersParams = (constraint) => {
   const filterValues = getFilterValues(constraint);
 
   const filterKeyValuePairs = Object.values(FILTER_CONFIGS).flatMap((config) => {
-    if (config.type === "selection") {
+    if (config.type === FILTER_TYPE.SELECTION) {
       const appliedFilters = filterValues[config.apiName] ?? [];
 
       if (isEmptyArray(appliedFilters)) {
@@ -48,7 +49,7 @@ const getFiltersParams = (constraint) => {
       return [[config.id, appliedFilters.map((appliedFilter) => config.transformers.getValue(appliedFilter))]];
     }
 
-    if (config.type === "range") {
+    if (config.type === FILTER_TYPE.RANGE) {
       const from = filterValues[config.fromApiName];
       const to = filterValues[config.toApiName];
 

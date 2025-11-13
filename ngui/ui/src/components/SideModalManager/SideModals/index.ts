@@ -1,6 +1,7 @@
 import AddInstanceToScheduleModal from "./AddInstanceToScheduleModal";
 import AddPoolModal from "./AddPoolModal";
 import ApplyResourcePerspectiveModal from "./ApplyResourcePerspectiveModal";
+import AwsAssumedRoleCredentialsModal from "./AwsAssumedRolePoliciesModal";
 import BookEnvironmentModal from "./BookEnvironmentModal";
 import BucketDuplicatesModal from "./BucketDuplicatesModal";
 import CiCdIntegrationModal from "./CiCdIntegrationModal";
@@ -137,5 +138,6 @@ export {
   EditModelVersionTagsModal,
   MlDeleteArtifactModal,
   DataSourceBillingReimportModal,
-  ShareRunLinkModal
+  ShareRunLinkModal,
+  AwsAssumedRoleCredentialsModal
 };

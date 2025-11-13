@@ -1,7 +1,7 @@
 import { FormattedMessage } from "react-intl";
 import CollapsableTableCell from "components/CollapsableTableCell";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 
 const hyperparameters = ({ accessorKey = "hyperparameters" } = {}) => ({
@@ -13,7 +13,7 @@ const hyperparameters = ({ accessorKey = "hyperparameters" } = {}) => ({
   accessorKey,
   enableSorting: false,
   cell: ({ cell }) => {
-    if (isEmpty(hyperparameters)) {
+    if (isEmptyObject(hyperparameters)) {
       return CELL_EMPTY_VALUE;
     }
     return <CollapsableTableCell maxRows={5} tags={cell.getValue()} />;

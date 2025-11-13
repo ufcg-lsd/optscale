@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { FormattedMessage } from "react-intl";
 import QuestionMark from "components/QuestionMark";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import Actions from "../Actions";
 import RecommendationCard, { ServicesChipsGrid, TableContent, Header } from "../RecommendationCard";
 import { usePinnedRecommendations } from "../redux/pinnedRecommendations/hooks";
