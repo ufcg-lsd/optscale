@@ -5,7 +5,6 @@ import TextWithDataTestId from "components/TextWithDataTestId";
 import { AWS_S3 } from "hooks/useRecommendationServices";
 import { detectedAt, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
-import { TODO } from "utils/types";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
 const columns = [
