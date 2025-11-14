@@ -602,7 +602,7 @@ mongo:
     tag: *tag
   name: mongo
   replicaCount: 1
-  dataSize: 100Gi
+  dataSize: 300Gi
   service:
     externalPort: 80
     host: mongo

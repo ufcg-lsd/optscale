@@ -50,6 +50,7 @@ mongo:
   name: &mongo_name mongo
   replicaCount: 1
   cache_size: 1.0
+  dataSize: 100Gi
   statefulSet:
     spec:
       initContainers:
