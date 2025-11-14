@@ -3,7 +3,7 @@
 tag: &tag old
 
 global:
-  storageClass: gp2
+  storageclass: gp2
 
 auth:
   google_oauth_client_id: ""
@@ -850,7 +850,6 @@ ssl:
     issuer_type: issuer
   certificate_name: defaultcert
   force_redirect: true
-tag: local
 thanos_compactor:
   consistencyDelay: 4h
   cronJob:

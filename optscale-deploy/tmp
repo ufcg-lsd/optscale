@@ -376,81 +376,18 @@ metadata:
 data:
   component_versions.yaml: "optscale: local\nimages:\n  auth: local\n  bi_exporter: local\n  bi_scheduler: local\n  booking_observer: local\n  bumischeduler: local\n  bumiworker: local\n  calendar_observer: local\n  cleanelkdb: local\n  cleaninfluxdb: local\n  cleanmongodb: local\n  configurator: local\n  demo_org_cleanup: local\n  diproxy: local\n  diworker: local\n  elk: local\n  error_pages: local\n  etcd: local\n  failed_imports_dataset_generator: local\n  filebeat: local\n  gemini_scheduler: local\n  gemini_worker: local\n  grafana: local\n  grafana_nginx: local\n  herald: local\n  herald_executor: local\n  influxdb: local\n  insider_api: local\n  insider_scheduler: local\n  insider_worker: local\n  jira_bus: local\n  jira_ui: local\n  katara_service: local\n  katara_worker: local\n  keeper: local\n  keeper_executor: local\n  layout_cleaner: local\n  live_demo_generator: local\n  mariadb: local\n  metroculus_api: local\n  metroculus_scheduler: local\n  metroculus_worker: local\n  mongo: local\n  ngui: local\n  organization_violations: local\n  power_schedule: local\n  redis: local\n  resource_discovery: local\n  resource_observer: local\n  resource_violations: local\n  rest_api: local\n  risp_scheduler: local\n  risp_worker: local\n  slacker: local\n  slacker_executor: local\n  trapper_scheduler: local\n  trapper_worker: local\n  users_dataset_generator: local\n  webhook_executor: local\n  deactivatorg: local\n"
 ---
-# Source: optscale/templates/rabbitmq.yaml
-kind: PersistentVolume
+# Source: optscale/templates/mongodb.yaml
+kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: rabbitmq-storage
-  labels:
-    type: local
-  annotations:
-    volume.alpha.kubernetes.io/storage-class: rabbitmq-storage
+  name: mongo-claim
 spec:
-  storageClassName: rabbitmq-storage
-  capacity:
-    storage: 10Gi
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  hostPath:
-    path: "/optscale/rabbitmq"
----
-# Source: optscale/templates/thanos_compactor.yaml
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: thanos-compactor
-  labels:
-    type: local
-  annotations:
-    volume.alpha.kubernetes.io/storage-class: thanos-compactor-storage
-spec:
-  storageClassName: thanos-compactor-storage
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  hostPath:
-    path: "/optscale/thanos-compactor"
----
-# Source: optscale/templates/thanos_receive.yaml
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: thanos-receive
-  labels:
-    type: local
-  annotations:
-    volume.alpha.kubernetes.io/storage-class: thanos-receive-storage
-spec:
-  storageClassName: thanos-receive-storage
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  hostPath:
-    path: "/optscale/thanos-receive"
----
-# Source: optscale/templates/thanos_storegateway.yaml
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: thanos-storegateway
-  labels:
-    type: local
-  annotations:
-    volume.alpha.kubernetes.io/storage-class: thanos-storegateway-storage
-spec:
-  storageClassName: thanos-storegateway-storage
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  hostPath:
-    path: "/optscale/thanos-storegateway"
+  resources:
+    requests:
+      storage: 300Gi
 ---
 # Source: optscale/templates/rabbitmq.yaml
 kind: PersistentVolumeClaim
@@ -458,7 +395,7 @@ apiVersion: v1
 metadata:
   name: rabbitmq-claim
 spec:
-  storageClassName: rabbitmq-storage
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -471,7 +408,7 @@ apiVersion: v1
 metadata:
   name: thanos-compactor-claim
 spec:
-  storageClassName: thanos-compactor-storage
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -484,7 +421,7 @@ apiVersion: v1
 metadata:
   name: thanos-receive-claim
 spec:
-  storageClassName: thanos-receive-storage
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -497,7 +434,7 @@ apiVersion: v1
 metadata:
   name: thanos-storegateway-claim
 spec:
-  storageClassName: thanos-storegateway-storage
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -3889,9 +3826,8 @@ spec:
       - name: workdir
         emptyDir: {}
       - name: datadir
-        hostPath:
-          path: /optscale/mongo
-          type: DirectoryOrCreate
+        persistentVolumeClaim:
+          claimName: mongo-claim
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
