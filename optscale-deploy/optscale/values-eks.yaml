@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag latest
+tag: &tag old
 
 global:
   storageClass: gp2
@@ -11,7 +11,7 @@ auth:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/auth
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/auth
     tag: *tag
   microsoft_oauth_client_id: ""
   name: auth
@@ -25,7 +25,7 @@ bi_exporter:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bi_exporter
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_exporter
     tag: *tag
   name: bi-exporter
   replicaCount: 1
@@ -33,7 +33,7 @@ bi_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bi_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_scheduler
     tag: *tag
   name: bi-scheduler
   schedule: '*/5 * * * *'
@@ -45,7 +45,7 @@ bi_settings:
 booking_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/booking_observer
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/booking_observer
     tag: *tag
   name: booking-observer
   replicaCount: 2
@@ -61,7 +61,7 @@ bumischeduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bumischeduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumischeduler
     tag: *tag
   name: bumischeduler
   replicaCount: 1
@@ -69,14 +69,14 @@ bumiworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/bumiworker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumiworker
     tag: *tag
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/calendar_observer
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/calendar_observer
     tag: *tag
   name: calendar-observer
   replicaCount: 1
@@ -88,7 +88,7 @@ certificates:
 cleanelkdb:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleanelkdb
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanelkdb
     tag: *tag
   log_max_size: 5120
   name: cleanelkdb
@@ -98,7 +98,7 @@ cleaninfluxdb:
   days_to_store: 90
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleaninfluxdb
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleaninfluxdb
     tag: *tag
   influxdb_host: influxdb
   influxdb_port: 80
@@ -112,7 +112,7 @@ cleanmongodb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/cleanmongodb
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanmongodb
     tag: *tag
   name: cleanmongodb
   rows_limit: 10000
@@ -127,7 +127,7 @@ clickhouse:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/clickhouse
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/clickhouse
     tag: *tag
   name: clickhouse
   replicaCount: 1
@@ -144,7 +144,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/configurator
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
     tag: *tag
 databases:
 - auth-db
@@ -164,7 +164,7 @@ deactivatorg:
   enable: true
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/deactivatorg
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/deactivatorg
     tag: *tag
   name: deactivatorg
   schedule: 0 2 * * *
@@ -175,7 +175,7 @@ demo_org_cleanup:
   demo_org_lifetime_hrs: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/demo_org_cleanup
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/demo_org_cleanup
     tag: *tag
   name: demoorgcleanup
   schedule: 0 0 * * *
@@ -186,7 +186,7 @@ diproxy:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/diproxy
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diproxy
     tag: *tag
   name: diproxy
   replicaCount: 1
@@ -200,7 +200,7 @@ diworker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/diworker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diworker
     tag: *tag
   name: diworker
   replicaCount: 1
@@ -224,7 +224,7 @@ elk:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/elk
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/elk
     tag: *tag
   ls_heap_size: 2g
   name: elk
@@ -243,7 +243,7 @@ error_pages:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/error_pages
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/error_pages
     tag: *tag
   name: error-pages
   replicaCount: 1
@@ -258,11 +258,11 @@ etcd:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/etcd
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/etcd
     tag: *tag
   job:
     containers:
-      image: andrezavilar/configurator:latest
+      image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -283,7 +283,7 @@ failed_imports_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/failed_imports_dataset_generator
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/failed_imports_dataset_generator
     tag: *tag
   name: failed-imports-dataset-generator
   s3_path: null
@@ -294,7 +294,7 @@ filebeat:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/filebeat
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/filebeat
     tag: *tag
   name: filebeat
   service:
@@ -307,7 +307,7 @@ gemini_scheduler:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/gemini_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_scheduler
     tag: *tag
   name: gemini-scheduler
   schedule: '*/5 * * * *'
@@ -316,7 +316,7 @@ gemini_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/gemini_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_worker
     tag: *tag
   name: gemini-worker
   replicaCount: 1
@@ -343,13 +343,13 @@ grafana:
     image:
       id: null
       pullPolicy: Never
-      repository: andrezavilar/grafana
+      repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
       tag: *tag
     name: grafana-nginx
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/grafana
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
     tag: *tag
   internalPort: 3000
   name: grafana
@@ -362,7 +362,7 @@ grafana:
 grafana_nginx:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/grafana_nginx
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana_nginx
     tag: *tag
 herald:
   api:
@@ -374,7 +374,7 @@ herald:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/herald
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald
     tag: *tag
   name: herald
   service:
@@ -386,7 +386,7 @@ herald_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/herald_executor
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald_executor
     tag: *tag
   name: herald-executor
   replicaCount: 1
@@ -394,7 +394,7 @@ influxdb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/influxdb
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/influxdb
     tag: *tag
   name: influxdb
   replicaCount: 1
@@ -407,7 +407,7 @@ insider_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_api
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_api
     tag: *tag
   name: insider-api
   replicaCount: 1
@@ -419,7 +419,7 @@ insider_api:
 insider_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_scheduler
     tag: *tag
   name: insider-scheduler
   replicaCount: 1
@@ -429,7 +429,7 @@ insider_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/insider_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_worker
     tag: *tag
   name: insider-worker
   replicaCount: 1
@@ -438,7 +438,7 @@ jira_bus:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/jira_bus
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_bus
     tag: *tag
   name: jira-bus
   replicaCount: 1
@@ -451,7 +451,7 @@ jira_ui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/jira_ui
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_ui
     tag: *tag
   name: jira-ui
   replicaCount: 1
@@ -468,7 +468,7 @@ katara_service:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/katara_service
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_service
     tag: *tag
   name: katara
   scheduler:
@@ -483,7 +483,7 @@ katara_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/katara_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_worker
     tag: *tag
   name: kataraworker
   replicaCount: 1
@@ -491,7 +491,7 @@ keeper:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/keeper
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper
     tag: *tag
   name: keeper
   replicaCount: 1
@@ -504,7 +504,7 @@ keeper_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/keeper_executor
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper_executor
     tag: *tag
   name: keeper-executor
   replicaCount: 1
@@ -512,7 +512,7 @@ layout_cleaner:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/layout_cleaner
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/layout_cleaner
     tag: *tag
   name: layout-cleaner
   schedule: 0 3 * * *
@@ -520,7 +520,7 @@ layout_cleaner:
 live_demo_generator:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/live_demo_generator
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/live_demo_generator
     tag: *tag
   name: live-demo-generator
   replicaCount: 1
@@ -533,7 +533,7 @@ mariadb:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/mariadb
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb
     tag: *tag
   name: mariadb
   replicaCount: 1
@@ -546,7 +546,7 @@ metroculus_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_api
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_api
     tag: *tag
   name: metroculusapi
   replicaCount: 1
@@ -558,7 +558,7 @@ metroculus_api:
 metroculus_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_scheduler
     tag: *tag
   name: metroculusscheduler
   replicaCount: 1
@@ -568,7 +568,7 @@ metroculus_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/metroculus_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_worker
     tag: *tag
   name: metroculusworker
   replicaCount: 1
@@ -579,7 +579,7 @@ minio:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/minio
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/minio
     tag: *tag
   name: minio
   replicaCount: 1
@@ -598,7 +598,7 @@ mongo:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/mongo
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mongo
     tag: *tag
   name: mongo
   replicaCount: 1
@@ -624,7 +624,7 @@ ngui:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/ngui
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/ngui
     tag: *tag
   name: ngui
   replicaCount: 1
@@ -644,7 +644,7 @@ optscale_service_emails:
 organization_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/organization_violations
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/organization_violations
     tag: *tag
   name: organization-violations
   replicaCount: 1
@@ -666,7 +666,7 @@ phpmyadmin:
 power_schedule:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/power_schedule
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/power_schedule
     tag: *tag
   name: power-schedule
   replicaCount: 1
@@ -703,7 +703,7 @@ redis:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/redis
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/redis
     tag: *tag
   name: redis
   replicaCount: 1
@@ -717,7 +717,7 @@ report_import_scheduler:
   image:
     pullPolicy: IfNotPresent
     repository: curlimages/curl
-    tag: *tag
+    tag: latest
   name: report-import-scheduler
   startingDeadlineSeconds: 100
 report_import_schedules:
@@ -728,7 +728,7 @@ report_import_schedules:
 resource_discovery:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_discovery
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_discovery
     tag: *tag
   memory_limit: 1024
   name: resource-discovery
@@ -744,7 +744,7 @@ resource_discovery_settings:
 resource_observer:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_observer
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_observer
     tag: *tag
   name: resource-observer
   replicaCount: 1
@@ -753,7 +753,7 @@ resource_observer:
 resource_violations:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/resource_violations
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_violations
     tag: *tag
   name: resource-violations
   replicaCount: 1
@@ -763,7 +763,7 @@ rest_api:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/rest_api
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/rest_api
     tag: *tag
   name: restapi
   replicaCount: 1
@@ -775,7 +775,7 @@ rest_api:
 risp_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/risp_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_scheduler
     tag: *tag
   name: risp-scheduler
   replicaCount: 1
@@ -785,7 +785,7 @@ risp_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/risp_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_worker
     tag: *tag
   name: risp-worker
   replicaCount: 1
@@ -826,7 +826,7 @@ slacker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/slacker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker
     tag: *tag
   name: slacker
   replicaCount: 1
@@ -839,7 +839,7 @@ slacker_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/slacker_executor
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker_executor
     tag: *tag
   name: slacker-executor
   replicaCount: 1
@@ -954,7 +954,7 @@ token_expiration: 168
 trapper_scheduler:
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/trapper_scheduler
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_scheduler
     tag: *tag
   name: trapper-scheduler
   replicaCount: 1
@@ -964,7 +964,7 @@ trapper_worker:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/trapper_worker
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_worker
     tag: *tag
   name: trapper-worker
   replicaCount: 1
@@ -976,7 +976,7 @@ users_dataset_generator:
   filename: null
   image:
     pullPolicy: IfNotPresent
-    repository: andrezavilar/users_dataset_generator
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/users_dataset_generator
     tag: *tag
   name: users-dataset-generator
   s3_path: null
@@ -986,7 +986,7 @@ webhook_executor:
   image:
     id: null
     pullPolicy: IfNotPresent
-    repository: andrezavilar/webhook_executor
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/webhook_executor
     tag: *tag
   name: webhook-executor
   replicaCount: 1
