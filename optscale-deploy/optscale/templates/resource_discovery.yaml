@@ -37,6 +37,9 @@ spec:
         - name: FAKE_CAD_ENABLED
           value: {{ .Values.fake_cad_enabled | quote }}
         resources:
+          requests:
+            cpu: 15m
+            memory: 226M
           limits:
             memory: {{ $config.memory_limit }}Mi
 

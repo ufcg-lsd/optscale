@@ -1,5 +1,8 @@
 {{- if not .Values.mongo.external }}
 {{- $config := .Values.mongo -}}
+{{- $sc := default "" .Values.global.storageclass -}}
+{{- $useExternal := ne $sc "" -}}
+{{- $scName := ternary $sc (printf "%s-storage" $config.name) $useExternal -}}
 ---
 apiVersion: v1
 kind: Secret
@@ -73,6 +76,20 @@ spec:
   selector:
     app: {{ $config.name }}
     release: {{ .Release.Name }}
+{{- if $useExternal }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ $config.name }}-claim
+spec:
+  storageClassName: {{ $scName }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $config.dataSize }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -155,6 +172,10 @@ spec:
             secretKeyRef:
               name: "mongo-secret"
               key: password
+        resources:
+          requests:
+            cpu: 23m
+            memory: 1239M
         volumeMounts:
         - name: configdir
           mountPath: /data/configdb
@@ -220,9 +241,15 @@ spec:
         emptyDir: {}
       - name: workdir
         emptyDir: {}
+{{- if $useExternal }}
+      - name: datadir
+        persistentVolumeClaim:
+          claimName: {{ $config.name }}-claim
+{{- else }}
       - name: datadir
         hostPath:
           path: /optscale/mongo
           type: DirectoryOrCreate
+{{- end }}
 {{ include "anti-affinity" $config | indent 6 }}
 {{- end }}

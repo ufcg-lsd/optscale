@@ -68,4 +68,8 @@ spec:
           value: {{ $config.slack_client_id | quote }}
         - name: SLACK_CLIENT_SECRET
           value: {{ $config.slack_client_secret | quote }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
 {{ include "ready_probe" $config | indent 8 }}

@@ -64,6 +64,10 @@ spec:
           value: {{ $config.image.id }}
         - name: PMA_HOST
           value: {{ .Values.mariadb.service.name }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
         volumeMounts:
         - mountPath: /etc/php.ini
           name: configmap
@@ -72,4 +76,4 @@ spec:
       - name: configmap
         configMap:
           name: php-config-vol
-        
+

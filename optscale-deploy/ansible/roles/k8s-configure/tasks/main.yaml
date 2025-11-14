@@ -54,8 +54,8 @@
 
 - name: Add Helm repos
   kubernetes.core.helm_repository:
-    name: bitnami
-    repo_url: https://raw.githubusercontent.com/bitnami/charts/refs/heads/archive-full-index/bitnami/
+    name: ingress-nginx
+    repo_url: https://kubernetes.github.io/ingress-nginx
     force_update: true
 
 - name: Update Helm repos

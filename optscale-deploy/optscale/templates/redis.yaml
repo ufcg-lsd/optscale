@@ -61,3 +61,7 @@ spec:
         env:
         - name: IMAGE_ID
           value: {{ $config.image.id }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M

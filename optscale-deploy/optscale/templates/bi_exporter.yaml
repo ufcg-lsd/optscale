@@ -43,6 +43,10 @@ spec:
         volumeMounts:
           - name: bi-exporter-data-volume
             mountPath: /usr/src/app/bi_exporter/bi
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
       volumes:
         - name: bi-exporter-data-volume
           hostPath:

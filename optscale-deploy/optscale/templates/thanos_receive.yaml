@@ -141,6 +141,9 @@ spec:
               name: remote
               protocol: TCP
           resources:
+            requests:
+              cpu: 15m
+              memory: 105M
             limits:
               memory: {{ $config.memory_limit }}Mi
               cpu: {{ $config.cpu_limit }}

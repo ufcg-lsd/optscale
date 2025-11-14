@@ -97,3 +97,8 @@ spec:
           value: {{ .Values.etcd.service.externalPort | quote }}
         - name: HX_KATARA_ROLE
           value: {{ $config.api.role }}
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
+
