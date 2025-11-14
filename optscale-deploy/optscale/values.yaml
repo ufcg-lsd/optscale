@@ -3,7 +3,7 @@
 tag: &tag local
 
 global:
-  storageclass:
+  storageClass:
 
 etcd:
   name: &etcd_name etcd
