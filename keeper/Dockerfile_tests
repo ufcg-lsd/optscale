@@ -1,13 +1,14 @@
 ARG BUILDTAG=build
 FROM keeper:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 LABEL org.opencontainers.image.authors="Hystax"
 
-COPY keeper/test-requirements.txt ./
 COPY keeper/.pylintrc keeper/.coveragerc ./
+COPY keeper/pyproject.toml keeper/uv.lock keeper/__init__.py ./
 
 COPY optscale_client/report_client optscale_client/report_client
 
-RUN pip install --no-cache-dir -r test-requirements.txt
-
+RUN uv --project keeper sync --locked
 
 COPY keeper/report_server/tests keeper/report_server/tests

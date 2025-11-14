@@ -29,6 +29,7 @@ class FlavorsHandler(SecretHandler):
                            ('preinstalled', str),
                            ('meter_id', str),
                            ('currency', str),
+                           ('currency_conversion_rate', float),
                            ('cloud_account_id', str)]
 
         mode_params = {
@@ -105,6 +106,11 @@ class FlavorsHandler(SecretHandler):
         if preinstalled and cloud_type != 'aws_cnr':
             raise OptHTTPError(400, Err.OI0016, [cloud_type, 'preinstalled'])
 
+        conversion_rate = params.get('currency_conversion_rate')
+        if conversion_rate and cloud_type != 'gcp_cnr':
+            raise OptHTTPError(400, Err.OI0016,
+                               [cloud_type, 'currency_conversion_rate'])
+
         resource_type = params.get('resource_type')
         if resource_type not in family_specs_params[cloud_type]:
             raise OptHTTPError(400, Err.OI0013, [resource_type, cloud_type])
@@ -174,7 +180,10 @@ class FlavorsHandler(SecretHandler):
                     meter_id: {type: string,
                         description: "Pricing meter id (Azure only)"}
                     currency: {type: string,
-                        description: "Flavor price currency"}
+                        description: "Flavor price currency (Azure, Nebius)"}
+                    currency_conversion_rate: {type: number,
+                        description: "Currency conversion rate applied on USD
+                         flavor price (GCP only)"}
         responses:
             200:
                 description: suitable flavor info

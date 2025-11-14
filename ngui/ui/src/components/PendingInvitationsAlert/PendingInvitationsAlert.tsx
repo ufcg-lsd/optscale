@@ -7,7 +7,7 @@ import SnackbarAlert from "components/SnackbarAlert";
 import { useInvitations } from "hooks/coreData/useInvitations";
 import { SETTINGS_TABS } from "pages/Settings/Settings";
 import { getSettingsUrl } from "urls";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const PendingInvitationsAlert = () => {
   const invitations = useInvitations();
@@ -15,7 +15,7 @@ const PendingInvitationsAlert = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setOpen(!isEmpty(invitations));
+    setOpen(!isEmptyArray(invitations));
   }, [invitations]);
 
   const handleClose = (event, reason) => {

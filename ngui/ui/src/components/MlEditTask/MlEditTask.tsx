@@ -8,7 +8,7 @@ import MlEditTaskFormContainer from "containers/MlEditTaskFormContainer";
 import MlEditTaskLeaderboardTemplateContainer from "containers/MlEditTaskLeaderboardTemplateContainer";
 import MlEditTaskMetricsContainer from "containers/MlEditTaskMetricsContainer";
 import { ML_TASKS, getMlTaskDetailsUrl } from "urls";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const SETTING_TABS = Object.freeze({
   COMMON: "common",

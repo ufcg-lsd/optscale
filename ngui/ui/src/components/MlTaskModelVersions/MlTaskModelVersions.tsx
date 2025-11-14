@@ -7,7 +7,7 @@ import Table from "components/Table";
 import TableLoader from "components/TableLoader";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import { ModelVersionWithModel } from "services/MlModelsService";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { mlModelPath, mlModelVersion, model, run } from "utils/columns";
 import { SPACING_1 } from "utils/layouts";
 import { CELL_EMPTY_VALUE } from "utils/tables";
@@ -57,7 +57,7 @@ const MlTaskModelVersions = ({ modelVersions, isLoading }: MlTaskModelVersionsPr
         cell: ({ row: { original } }) => {
           const { aliases } = original;
 
-          if (isEmpty(aliases)) {
+          if (isEmptyArray(aliases)) {
             return CELL_EMPTY_VALUE;
           }
 

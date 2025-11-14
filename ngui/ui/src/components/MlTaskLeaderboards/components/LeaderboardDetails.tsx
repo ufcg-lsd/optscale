@@ -11,9 +11,9 @@ import QuestionMark from "components/QuestionMark";
 import SlicedText from "components/SlicedText";
 import SummaryList from "components/SummaryList";
 import TableLoader from "components/TableLoader";
-import { isEmpty as isEmptyArray, isLastItem } from "utils/arrays";
+import { isEmptyArray, isLastItem } from "utils/arrays";
 import { DATASET_NAME_LENGTH_LIMIT } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import LeaderboardCandidatesTable from "./LeaderboardCandidatesTable";
 
 const METRIC_NAME_LENGTH_LIMIT = 50;

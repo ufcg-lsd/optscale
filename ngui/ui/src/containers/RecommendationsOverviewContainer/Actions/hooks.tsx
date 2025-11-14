@@ -6,7 +6,7 @@ import { ExcludePoolsFromRecommendationModal } from "components/SideModalManager
 import { useDownloadCleanupScript } from "hooks/useDownloadCleanupScript";
 import { useDownloadRecommendationItems } from "hooks/useDownloadRecommendationItems";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { DOWNLOAD_FILE_FORMATS } from "utils/constants";
 import {
   useIsRecommendationPinned,

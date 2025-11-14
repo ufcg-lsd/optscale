@@ -171,7 +171,8 @@ class Client:
 
     def get_flavor_prices(
             self, cloud_type, flavor, region, os_type, preinstalled=None,
-            quantity=None, billing_method=None, currency=None):
+            quantity=None, billing_method=None, currency=None,
+            currency_conversion_rate=None, cloud_account_id=None):
         params = {
             'flavor': flavor,
             'region': region,
@@ -185,6 +186,10 @@ class Client:
             params['billing_method'] = billing_method
         if currency:
             params['currency'] = currency
+        if currency_conversion_rate:
+            params['currency_conversion_rate'] = currency_conversion_rate
+        if cloud_account_id:
+            params['cloud_account_id'] = cloud_account_id
         url = self.flavor_prices_url(cloud_type) + self.query_url(**params)
         return self.get(url)
 
@@ -256,4 +261,20 @@ class Client:
         if kwargs:
             params.update(kwargs)
         url = self.relevant_flavors_url(cloud_type) + self.query_url(**params)
+        return self.get(url)
+
+    @staticmethod
+    def architecture_url(cloud_type):
+        return '%s/architecture' % Client.cloud_type_url(cloud_type)
+
+    def get_architecture(self, cloud_type, flavor, region=None,
+                         cloud_account_id=None):
+        params = {
+            'flavor': flavor,
+        }
+        if region:
+            params['region'] = region
+        if cloud_account_id:
+            params['cloud_account_id'] = cloud_account_id
+        url = self.architecture_url(cloud_type) + self.query_url(**params)
         return self.get(url)

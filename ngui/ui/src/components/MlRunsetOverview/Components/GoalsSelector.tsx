@@ -5,7 +5,7 @@ import Checkbox from "components/Checkbox";
 import IconButton from "components/IconButton";
 import Popover from "components/Popover";
 import Tooltip from "components/Tooltip";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { sliceByLimitWithEllipsis } from "utils/strings";
 
 const Title = ({ messageId }) => (

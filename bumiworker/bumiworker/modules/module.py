@@ -1,6 +1,6 @@
 import glob
-from os import pathsep, environ
 from os.path import dirname, basename, isfile, join
+import sys
 
 
 class UnknownModuleException(Exception):
@@ -16,7 +16,7 @@ def list_modules(folder_name):
 def import_module(module_name, module_type):
     if not module_name:
         return
-    pythonpath = environ['PYTHONPATH'].split(pathsep)[0]
+    pythonpath = sys.path[0]
     modules = list_modules(module_type)
     if module_name not in modules:
         raise UnknownModuleException(

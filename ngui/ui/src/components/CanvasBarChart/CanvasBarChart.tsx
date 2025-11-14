@@ -1,8 +1,8 @@
 import { useRef, useEffect } from "react";
-import { Skeleton, Typography } from "@mui/material";
+import { Box, Skeleton, Typography } from "@mui/material";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
 import { lighten } from "@mui/system";
-import { ResponsiveBarCanvas } from "@nivo/bar";
+import { BarCanvas } from "@nivo/bar";
 import { getInheritedColorGenerator } from "@nivo/colors";
 import { ResponsiveWrapper } from "@nivo/core";
 import { FormattedMessage } from "react-intl";
@@ -11,7 +11,7 @@ import { useBarChartColors } from "hooks/useChartColors";
 import { useChartLayoutOptions } from "hooks/useChartLayoutOptions";
 import { useChartTheme } from "hooks/useChartTheme";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { getBarTicks, TICK_COUNT, getMaxAndMinBandValues, getInnerWidth, AXIS_FORMATS, getInnerHeight } from "utils/charts";
 import {
   DEFAULT_BAR_CHART_MARGIN,
@@ -228,7 +228,8 @@ const CanvasBarChart = ({
   valueFormat,
   thresholdMarker,
   withLegend,
-  legendLabel
+  legendLabel,
+  maxValue: maxValueProperty
 }) => {
   const wrapperRef = useRef();
   const canvasRef = useRef();
@@ -260,7 +261,7 @@ const CanvasBarChart = ({
   const innerWidth = getInnerWidth(wrapperWidth, margin);
   const innerHeight = getInnerHeight(wrapperHeight, margin);
 
-  const getMaxValue = () => Math.max(...[maxBandValue, thresholdMarker?.value].filter(Boolean));
+  const getMaxValue = () => Math.max(...[maxBandValue, thresholdMarker?.value, maxValueProperty].filter(Boolean));
   const {
     tickValues: valueTickValues, // ticks on Y axis for vertical layout and X axis for horizontal layout
     gridValues: valueGridValues,
@@ -337,12 +338,20 @@ const CanvasBarChart = ({
   });
 
   return (
-    <div ref={wrapperRef} style={{ height: "100%", display: "flex" }} data-test-id={dataTestId}>
+    <Box
+      ref={wrapperRef}
+      height={wrapperDimensions.height}
+      width={wrapperDimensions.width}
+      display="flex"
+      data-test-id={dataTestId}
+    >
       {pdfId ? <CanvasBarChartPdf pdfId={pdfId} renderData={() => ({ canvasRef })} /> : null}
-      <ResponsiveBarCanvas
+      <BarCanvas
         data={data}
         keys={keys}
         ref={canvasRef}
+        height={wrapperDimensions.height}
+        width={wrapperDimensions.width}
         /*
             According to discussions on the github, with `round: true` the chart allocates a bit blank space
             for each band from the left and from the right and if there are a lot of bands than this
@@ -372,8 +381,7 @@ const CanvasBarChart = ({
         enableGridY={enableGridY}
         gridXValues={gridXValues}
         gridYValues={gridYValues}
-        maxValue={maxValue}
-        minValue={minValue}
+        valueScale={{ type: "linear", nice: true, round: false, max: maxValue, min: minValue }}
         axisLeft={axisLeft}
         axisBottom={axisBottom}
         axisRight={axisRight}
@@ -414,13 +422,12 @@ const CanvasBarChart = ({
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 };
 
 const ResponsiveCanvasBarChart = ({
   data,
-  wrapperRef,
   keys = [],
   style = {},
   isLoading = false,
@@ -447,23 +454,21 @@ const ResponsiveCanvasBarChart = ({
       style={{
         height: muiTheme.spacing(height)
       }}
-      ref={wrapperRef}
     >
       <ResponsiveWrapper>
         {({ width: wrapperWidth, height: wrapperHeight }) => {
           if (isLoading) {
-            return <Skeleton variant="rectangular" height={wrapperHeight} />;
+            return <Skeleton variant="rectangular" height={wrapperHeight} width={wrapperWidth} />;
           }
           if (isEmptyArray(data) || isEmptyArray(keys)) {
             return (
               <Typography
                 component="div"
-                style={{
-                  height: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center"
-                }}
+                height={wrapperHeight}
+                width={wrapperWidth}
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
               >
                 <FormattedMessage id={emptyMessageId} />
               </Typography>
@@ -477,7 +482,6 @@ const ResponsiveCanvasBarChart = ({
                 height: wrapperHeight
               }}
               data={data}
-              height={height}
               margin={margin}
               padding={padding}
               innerPadding={innerPadding}

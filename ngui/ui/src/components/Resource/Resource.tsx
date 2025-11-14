@@ -29,7 +29,7 @@ import { useDataSources } from "hooks/useDataSources";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { RESOURCES, getCreateResourceAssignmentRuleUrl } from "urls";
 import { trackEvent, GA_EVENT_CATEGORIES } from "utils/analytics";
-import { isEmpty as isEmptyArray, getSumByObjectKey } from "utils/arrays";
+import { isEmptyArray, getSumByObjectKey } from "utils/arrays";
 import { SUMMARY_VALUE_COMPONENT_TYPES, RESOURCE_PAGE_TABS } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
 import { getCloudResourceIdentifier, getResourceDisplayedName } from "utils/resources";

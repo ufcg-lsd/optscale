@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "@mui/material";
 import FormControl from "@mui/material/FormControl";
 import Stack from "@mui/material/Stack";
@@ -7,14 +8,35 @@ import ActionBar from "components/ActionBar";
 import DataSourceMultiSelect from "components/DataSourceMultiSelect";
 import { getBasicRangesSet } from "components/DateRangePicker/defaults";
 import PageContentWrapper from "components/PageContentWrapper";
+import RiSpCoverageComponent from "components/RiSpCoverage";
 import RangePickerFormContainer from "containers/RangePickerFormContainer";
-import RiSpCoverageContainer from "containers/RiSpCoverageContainer";
 import { useAllDataSources } from "hooks/coreData/useAllDataSources";
 import { useReactiveDefaultDateRange } from "hooks/useReactiveDefaultDateRange";
+import { useRiSpBreakdowns } from "hooks/useRiSpBreakdowns";
 import { useSyncQueryParamWithState } from "hooks/useSyncQueryParamWithState";
 import { RECOMMENDATIONS, RI_SP_QUERY_PARAMETERS } from "urls";
-import { AWS_CNR, DATE_RANGE_TYPE } from "utils/constants";
+import { isEmptyArray } from "utils/arrays";
+import { DATE_RANGE_TYPE } from "utils/constants";
 import { SPACING_2 } from "utils/layouts";
+
+const filterBreakdownByIds = (breakdown, dataSourceIds) => {
+  if (!dataSourceIds || isEmptyArray(dataSourceIds)) {
+    return breakdown;
+  }
+
+  return Object.fromEntries(
+    Object.entries(breakdown).map(([date, entries]) => [
+      date,
+      entries.filter((entry) => dataSourceIds.includes(entry.cloud_account_id))
+    ])
+  );
+};
+
+const getDataSourcesTypes = (usageBreakdown, expensesBreakdown) => [
+  ...new Set(
+    [...Object.values(usageBreakdown).flat(), ...Object.values(expensesBreakdown).flat()].map((b) => b.cloud_account_type)
+  )
+];
 
 const actionBarDefinition = {
   breadcrumbs: [
@@ -26,7 +48,6 @@ const actionBarDefinition = {
     messageId: "riSpCoverageTitle"
   }
 };
-const TARGET_DATA_SOURCES_TYPES = [AWS_CNR];
 
 const RiSpCoverage = () => {
   const dataSources = useAllDataSources();
@@ -54,7 +75,22 @@ const RiSpCoverage = () => {
     setSelectedEndDate(endDate);
   };
 
-  const allDataSources = dataSources.filter((dataSource) => TARGET_DATA_SOURCES_TYPES.includes(dataSource.type));
+  const params = useMemo(
+    () => ({
+      startDate: selectedStartDate,
+      endDate: selectedEndDate,
+      dataSourceIds: []
+    }),
+    [selectedStartDate, selectedEndDate]
+  );
+
+  const { isLoading, expensesBreakdown, usageBreakdown } = useRiSpBreakdowns(params);
+
+  const targetDataSourceTypes = getDataSourcesTypes(usageBreakdown, expensesBreakdown);
+  const allDataSources = dataSources.filter((dataSource) => targetDataSourceTypes.includes(dataSource.type));
+
+  const filteredUsage = filterBreakdownByIds(usageBreakdown, selectedDataSourceIds);
+  const filteredExpenses = filterBreakdownByIds(expensesBreakdown, selectedDataSourceIds);
 
   return (
     <>
@@ -85,10 +121,13 @@ const RiSpCoverage = () => {
             </div>
           </Stack>
           <div>
-            <RiSpCoverageContainer
-              startDate={selectedStartDate}
-              endDate={selectedEndDate}
-              dataSourceIds={selectedDataSourceIds}
+            <RiSpCoverageComponent
+              usageBreakdown={filteredUsage}
+              expensesBreakdown={filteredExpenses}
+              isLoadingProps={{
+                isGetUsageBreakdownLoading: isLoading,
+                isGetExpensesBreakdownLoading: isLoading
+              }}
             />
           </div>
         </Stack>

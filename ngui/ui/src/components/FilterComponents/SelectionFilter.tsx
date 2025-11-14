@@ -14,7 +14,7 @@ import {
 import Button from "@mui/material/Button";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useDebouncedValue } from "hooks/useDebouncedValue";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 type SelectionStateButtonProps = {
   appliedItems: string[];
@@ -273,14 +273,18 @@ const SelectionFilter = <T extends FilterItem>({
                       />
                     }
                     label={valueItemsMap.has(item.value) ? renderItem(item as T) : String(item.value)}
-                    sx={{ px: 2, width: "100%" }}
+                    sx={{
+                      px: 2,
+                      width: "100%",
+                      overflowWrap: "anywhere"
+                    }}
                   />
                 ))}
               </Box>
             </Box>
           )}
           {filteredItems.length === 0 && (
-            <Typography variant="body2" textAlign="center" sx={{ py: 1, px: 1, wordBreak: "break-all" }}>
+            <Typography variant="body2" textAlign="center" sx={{ py: 1, px: 1, overflowWrap: "anywhere" }}>
               <FormattedMessage id="noMatches" values={{ searchQuery: debouncedSearchQuery }} />
             </Typography>
           )}

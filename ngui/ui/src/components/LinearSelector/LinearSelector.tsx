@@ -14,9 +14,9 @@ import Chip from "components/Chip";
 import DashedTypography from "components/DashedTypography";
 import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import Popover from "components/Popover";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { LINEAR_SELECTOR_ITEMS_TYPES } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import useStyles from "./LinearSelector.styles";
 
 const NONE = "none";

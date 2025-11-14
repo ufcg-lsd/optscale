@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTheme } from "@mui/material/styles";
-import { usePartialTheme } from "@nivo/core";
+import { usePartialTheme } from "@nivo/theming";
 import { remToPx } from "utils/fonts";
 
 export const useChartTheme = () => {

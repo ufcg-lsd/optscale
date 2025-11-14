@@ -2,10 +2,9 @@ import { useMemo } from "react";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { Typography } from "@mui/material";
-import Link from "@mui/material/Link";
 import { useTheme } from "@mui/material/styles";
 import { FormattedMessage } from "react-intl";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CaptionedCell from "components/CaptionedCell";
 import Circle from "components/Circle";
 import CloudLabel from "components/CloudLabel";
@@ -164,14 +163,7 @@ const CloudAccountsTable = ({ cloudAccounts = [], isLoading = false }) => {
       data={data}
       columns={columns}
       localization={{
-        emptyMessageId: "noDataSourcesWithLink",
-        values: {
-          connectCloudLink: (chunks) => (
-            <Link to={CLOUD_ACCOUNT_CONNECT} component={RouterLink}>
-              {chunks}
-            </Link>
-          )
-        }
+        emptyMessageId: "noDataSources"
       }}
       pageSize={50}
       withExpanded

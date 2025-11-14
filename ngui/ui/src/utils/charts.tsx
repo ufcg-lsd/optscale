@@ -1,7 +1,7 @@
 import { scaleLinear, scaleOrdinal, scaleBand } from "d3-scale";
 import CloudLabel from "components/CloudLabel";
 import PoolLabel from "components/PoolLabel";
-import { isEmpty, sortObjects, getArithmeticMean, getElementsSum } from "utils/arrays";
+import { isEmptyArray, sortObjects, getArithmeticMean, getElementsSum } from "utils/arrays";
 import { EXPENSES_FILTERBY_TYPES } from "utils/constants";
 import { remToPx } from "utils/fonts";
 import { getTextWidth } from "utils/layouts";
@@ -325,7 +325,7 @@ export const getBarChartDataAndKeys = ({
       [indexBy]: typeof formatIndexByValue === "function" ? formatIndexByValue(indexByValue) : indexByValue
     };
 
-    if (!Array.isArray(values) || isEmpty(values)) return indexByDefinition;
+    if (!Array.isArray(values) || isEmptyArray(values)) return indexByDefinition;
 
     const chartValues = values.reduce((result, value) => {
       keys = { ...keys, [value[keyField]]: keys[value[keyField]] + value[keyValue] || value[keyValue] };
@@ -596,3 +596,22 @@ export const truncateCanvasText = (ctx: CanvasRenderingContext2D, text: string, 
 
   return truncatedText + ellipsis;
 };
+
+export const getBreakdownChartLegendLabel =
+  ({ getLabel, getTotalLabel }) =>
+  (legendItem, ctx, options) => {
+    const { maxWidth } = options;
+
+    const label = getLabel(legendItem, ctx, options);
+    const totalLabel = getTotalLabel(legendItem, ctx, options);
+
+    const endString = ` - ${totalLabel}`;
+
+    // Truncate the main label if needed to fit within maxWidth minus the expenses string width
+    const truncatedLabel = truncateCanvasText(ctx, label, maxWidth - ctx.measureText(endString).width);
+
+    return {
+      label: `${truncatedLabel}${endString}`,
+      shouldTruncate: false
+    };
+  };

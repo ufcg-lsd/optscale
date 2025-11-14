@@ -1,5 +1,6 @@
 ARG BUILDTAG=build
 FROM diworker:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY diworker/test-requirements.txt diworker/.pylintrc ./diworker/
-RUN pip install --no-cache-dir -r diworker/test-requirements.txt
+COPY diworker/pyproject.toml diworker/uv.lock diworker/.pylintrc ./diworker/
+RUN uv --project diworker sync --locked

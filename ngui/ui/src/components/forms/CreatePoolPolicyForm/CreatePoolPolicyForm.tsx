@@ -7,7 +7,7 @@ import Button from "components/Button";
 import ButtonLoader from "components/ButtonLoader";
 import FormButtonsWrapper from "components/FormButtonsWrapper";
 import { useOrganizationActionRestrictions } from "hooks/useOrganizationActionRestrictions";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FIELD_NAMES } from "./constants";
 import { PolicyLimitInput, PolicyTypeSelector, PoolSelector } from "./FormElements";
 

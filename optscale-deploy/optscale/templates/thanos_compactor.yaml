@@ -133,4 +133,8 @@ spec:
             - name: data
               persistentVolumeClaim:
                 claimName: {{ $config.name }}-claim
+          securityContext:
+            fsGroup: 0
+            runAsGroup: 0
+            runAsUser: 0
           restartPolicy: Never

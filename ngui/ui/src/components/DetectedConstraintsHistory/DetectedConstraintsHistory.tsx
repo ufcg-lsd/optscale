@@ -3,7 +3,7 @@ import DetectedConstraintsHistoryTable from "components/DetectedConstraintsHisto
 import SubTitle from "components/SubTitle";
 import TableLoader from "components/TableLoader";
 import TypographyLoader from "components/TypographyLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import {
   EXPENSE_ANOMALY,
   EXPIRING_BUDGET_POLICY,

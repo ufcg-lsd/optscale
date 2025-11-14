@@ -9,7 +9,8 @@ export const idx = (keys: string[], object: Record<string, unknown>, defaultValu
     return defaultValue;
   }, object);
 
-export const isEmpty = (object: Record<string, unknown>) => Object.keys(object).length === 0 && object.constructor === Object;
+export const isEmptyObject = (object: Record<string, unknown>) =>
+  Object.keys(object).length === 0 && object.constructor === Object;
 
 export const removeKey = <T extends Record<string, unknown>, K extends keyof T>(object: T, key: K) => {
   const { [key]: removedKey, ...obj } = object;
@@ -38,7 +39,7 @@ export const sortByValue = <T extends number>(object: Record<string, T>, order: 
 };
 
 export const toKeyValueString = (object: Record<string, unknown>, separator = ":", joinWith = ",") =>
-  isEmpty(object)
+  isEmptyObject(object)
     ? ""
     : Object.entries(object)
         .map(([key, value]) => `${key}${separator} ${value}`)

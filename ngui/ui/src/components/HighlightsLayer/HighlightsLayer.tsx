@@ -1,5 +1,5 @@
 import { useTheme } from "@mui/material/styles";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 
 const HighlightArea = ({ start, end, height, areaOpacity }) => {
   const theme = useTheme();

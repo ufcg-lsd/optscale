@@ -6,7 +6,7 @@ import SnackbarAlert from "components/SnackbarAlert";
 import { useApiState } from "hooks/useApiState";
 import { useApiStateData } from "hooks/useApiStateData";
 import { useLastResult } from "hooks/useLastResult";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const ApiSuccessAlert = () => {
   const { apiStateData: latestSuccessHandledLabel } = useApiStateData(LATEST_SUCCESS_HANDLED_LABEL);
@@ -20,7 +20,7 @@ const ApiSuccessAlert = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setOpen(!isEmpty(success));
+    setOpen(!isEmptyObject(success));
   }, [success]);
 
   const handleClose = (event, reason) => {
@@ -31,7 +31,7 @@ const ApiSuccessAlert = () => {
   };
 
   const successMessage =
-    successHandlerType === SUCCESS_HANDLER_TYPE_ALERT && !isEmpty(success) ? (
+    successHandlerType === SUCCESS_HANDLER_TYPE_ALERT && !isEmptyObject(success) ? (
       <ApiSuccessMessage successCode={success.code} reason={success.reason} params={success.messageParams} />
     ) : null;
 

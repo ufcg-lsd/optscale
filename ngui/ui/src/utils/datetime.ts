@@ -82,6 +82,7 @@ export const SHORT_WEEK_DAYS = [...Array(7).keys()].map((i) => enUS.localize.day
 export const ABBREVIATED_WEEK_DAYS = [...Array(7).keys()].map((i) => enUS.localize.day(i, { width: "abbreviated" }));
 
 export const EN_FULL_FORMAT = "MM/dd/yyyy hh:mm a";
+export const EN_FULL_FORMAT_HH_MM_SS = "MM/dd/yyyy hh:mm:ss a";
 export const EN_FORMAT = "MM/dd/yyyy";
 export const EN_TIME_FORMAT_12_HOURS_CLOCK_HH_MM = "hh:mm";
 export const EN_TIME_FORMAT_24_HOURS_CLOCK_HH_MM_SS = "HH:mm:ss";

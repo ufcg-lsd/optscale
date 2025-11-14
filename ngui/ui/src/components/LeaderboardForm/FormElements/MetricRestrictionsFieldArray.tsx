@@ -9,7 +9,7 @@ import { NumberInput } from "components/forms/common/fields";
 import IconButton from "components/IconButton";
 import InputLoader from "components/InputLoader";
 import Selector, { Item, ItemContent } from "components/Selector";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { ARRAY_FORM_FIELD_FLEX_BASIS_WIDTH } from "utils/constants";
 import { SPACING_1 } from "utils/layouts";
 import { FIELD_NAMES } from "../constants";

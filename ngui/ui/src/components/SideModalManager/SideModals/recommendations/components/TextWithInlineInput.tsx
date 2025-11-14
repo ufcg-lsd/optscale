@@ -2,7 +2,7 @@ import { FormHelperText, Input, Skeleton, Typography } from "@mui/material";
 import { useFormContext } from "react-hook-form";
 import { FormattedMessage, useIntl } from "react-intl";
 import { MAX_INT_32 } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { isWhitespaceString } from "utils/strings";
 import { isPositiveNumberOrZero, isWholeNumber, lessOrEqual, notOnlyWhiteSpaces } from "utils/validation";
 

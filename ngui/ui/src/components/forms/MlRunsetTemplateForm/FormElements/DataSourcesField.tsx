@@ -5,7 +5,7 @@ import Chip from "components/Chip";
 import CloudLabel from "components/CloudLabel";
 import Input from "components/Input";
 import InputLoader from "components/InputLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { AWS_CNR } from "utils/constants";
 import { FIELD_NAMES } from "../constants";
 

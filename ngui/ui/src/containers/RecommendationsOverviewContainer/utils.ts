@@ -1,6 +1,6 @@
 import { ALL_SERVICES } from "hooks/useRecommendationServices";
 import { intl } from "translations/react-intl-config";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { CATEGORY, RECOMMENDATION_COLOR } from "./recommendations/BaseRecommendation";
 
 export const categoryFilter = (category) => (recommendation) => {

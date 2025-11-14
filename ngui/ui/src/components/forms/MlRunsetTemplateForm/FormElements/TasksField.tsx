@@ -4,7 +4,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import Chip from "components/Chip";
 import Input from "components/Input";
 import InputLoader from "components/InputLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FIELD_NAMES } from "../constants";
 
 export const FIELD_NAME = FIELD_NAMES.TASKS;

@@ -1,6 +1,6 @@
 import logging
-from collections import OrderedDict
-from datetime import datetime, timedelta
+from collections import defaultdict, OrderedDict
+from datetime import timedelta
 from pymongo import UpdateOne
 
 from tools.cloud_adapter.clouds.aws import Aws
@@ -89,11 +89,6 @@ class InstanceMigration(ModuleBase):
     def aws(self):
         config = self.config_cl.read_branch('/service_credentials/aws')
         return Aws(config)
-
-    @property
-    def alibaba(self):
-        config = self.config_cl.read_branch('/service_credentials/alibaba')
-        return Alibaba(config)
 
     def get_similar_skus(self, resource_id, sku):
         def get_skus_from_cloud(sku):
@@ -228,42 +223,35 @@ class InstanceMigration(ModuleBase):
     def get_alibaba_recommendations(self, alibaba_instance_map,
                                     cloud_account_map, excluded_pools):
         result = []
-        flavors_to_find = {}
-        all_regions = set()
-        all_flavors = set()
+        cloud_acc_flavors = defaultdict(lambda: defaultdict(
+            lambda: defaultdict(set)))
         for resource in alibaba_instance_map.values():
-            all_flavors.add(resource['meta']['flavor'])
-            nearby_regions = self._get_nearby_alibaba_regions(
-                resource['region'])
-            all_regions.update(nearby_regions)
-            if not flavors_to_find.get(resource['meta']['flavor']):
-                flavors_to_find[resource['meta']['flavor']] = set(nearby_regions)
-            else:
-                flavors_to_find[resource['meta']['flavor']].update(nearby_regions)
+            cloud_account_id = resource['cloud_account_id']
+            region = resource['region']
+            flavor = resource['meta']['flavor']
+            nearby_regions = self._get_nearby_alibaba_regions(region)
+            cloud_acc_flavors[cloud_account_id][region][flavor].update(
+                nearby_regions)
 
         available_flavors = {}
-        for region in all_regions:
-            flavors = self.alibaba.get_available_flavors(region)
-            available_flavors[region] = [x for x in flavors
-                                         if x in all_flavors]
-
         prices = {}
-        for region, flavor_list in available_flavors.items():
-            for fl in flavor_list:
-                if region in flavors_to_find[fl]:
-                    if not prices.get(region):
-                        prices[region] = [fl]
-                    else:
-                        prices[region].append(fl)
-        for region, flavors in prices.items():
-            try:
-                prices[region] = self.alibaba.get_flavor_prices(flavors, region)
-            except ValueError as exc:
-                LOG.info("Unable to find flavor prices: %s", exc)
-                prices[region] = {}
+        for cloud_account_id, data in cloud_acc_flavors.items():
+            cloud_account = cloud_account_map.get(cloud_account_id)
+            if not cloud_account:
                 continue
-            for flav, price in prices[region].items():
-                prices[region][flav] = price * HOURS_IN_MONTH
+            alibaba = Alibaba(cloud_account['config'])
+            for region, flavor_data in data.items():
+                flavors = alibaba.get_available_flavors(region)
+                available_flavors[region] = [x for x in flavors
+                                             if x in list(flavor_data)]
+                try:
+                    prices[region] = alibaba.get_flavor_prices(flavors, region)
+                except ValueError as exc:
+                    LOG.info("Unable to find flavor prices: %s", exc)
+                    prices[region] = {}
+                    continue
+                for flav, price in prices[region].items():
+                    prices[region][flav] = price * HOURS_IN_MONTH
 
         for resource in alibaba_instance_map.values():
             flavor = resource['meta']['flavor']

@@ -1,14 +1,16 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
+COPY optscale_client optscale_client
 
-COPY gemini/gemini_scheduler/requirements.txt gemini/gemini_scheduler/requirements.txt
-RUN pip install --no-cache-dir -r gemini/gemini_scheduler/requirements.txt
+COPY gemini/__init__.py ./gemini/
+COPY gemini/gemini_scheduler/pyproject.toml ./gemini/gemini_scheduler/
+COPY gemini/gemini_scheduler/uv.lock ./gemini/gemini_scheduler/
 COPY gemini/gemini_scheduler/*.py ./gemini/gemini_scheduler/
 
-CMD ["python", "-u","/usr/src/app/gemini/gemini_scheduler/main.py"]
+RUN uv --project gemini/gemini_scheduler sync --locked --no-dev
+
+CMD ["uv", "run", "--project", "gemini/gemini_scheduler", "python", "-u","/usr/src/app/gemini/gemini_scheduler/main.py"]

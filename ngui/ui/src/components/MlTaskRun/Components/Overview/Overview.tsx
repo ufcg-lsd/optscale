@@ -14,7 +14,7 @@ import SubTitle from "components/SubTitle";
 import Tooltip from "components/Tooltip";
 import TypographyLoader from "components/TypographyLoader";
 import { SPACING_2 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const LOADER_LINES = 5;
 

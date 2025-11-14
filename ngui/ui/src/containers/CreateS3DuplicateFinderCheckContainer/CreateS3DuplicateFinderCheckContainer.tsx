@@ -8,7 +8,7 @@ import { FormValues } from "components/forms/CreateS3DuplicateFinderCheckForm/ty
 import { getDefaultValues } from "components/forms/CreateS3DuplicateFinderCheckForm/utils";
 import CloudResourcesService from "services/CloudResourcesService";
 import S3DuplicatesService from "services/S3DuplicatesService";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { AWS_CNR } from "utils/constants";
 
 const useGetBuckets = (dataSourceIds) => {

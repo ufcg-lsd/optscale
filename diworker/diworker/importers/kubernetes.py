@@ -81,13 +81,14 @@ class Node:
 
 class NodesProvider:
     def __init__(self, cloud_account_id, cloud_adapter, insider_client,
-                 rest_cl, default_cost_model):
+                 rest_cl, default_cost_model, currency='USD'):
         self.cloud_account_id = cloud_account_id
         self._cloud_adapter = cloud_adapter
         self._insider_client = insider_client
         self._rest_cl = rest_cl
         self.default_cost_model = default_cost_model
         self._nodes = {}
+        self.currency = currency
 
     def _get_node_names(self, period, dt):
         pod_infos = self._cloud_adapter.get_metric(
@@ -182,7 +183,8 @@ class NodesProvider:
                 if not prices:
                     _, res = self._insider_client.get_flavor_prices(
                         cloud_type=node.provider, flavor=node.flavor,
-                        region=node.region, os_type=node.os_type
+                        region=node.region, os_type=node.os_type,
+                        currency=self.currency
                     )
                     prices = res.get('prices', [])
                     prices_cache[key] = prices
@@ -253,6 +255,7 @@ class KubernetesReportImporter(BaseReportImporter):
         super().__init__(*args, **kwargs)
         self._insider_client = None
         self._nodes_provider = None
+        self._currency = None
         self.period_start = None
         if self.cloud_acc.get('last_import_at'):
             last_import_at = self.get_last_import_date(self.cloud_acc_id)
@@ -271,6 +274,14 @@ class KubernetesReportImporter(BaseReportImporter):
             self._cloud_adapter = CloudAdapter.get_adapter(cloud_acc)
         return self._cloud_adapter
 
+    @property
+    def currency(self):
+        if self._currency is None:
+            _, organization = self.rest_cl.organization_get(
+                self.cloud_acc['organization_id'])
+            self._currency = organization.get('currency', 'USD')
+        return self._currency
+
     def prepare(self):
         pass
 
@@ -287,7 +298,9 @@ class KubernetesReportImporter(BaseReportImporter):
                 cloud_adapter=self.cloud_adapter,
                 insider_client=self.insider_client,
                 rest_cl=self.rest_cl,
-                default_cost_model=ca_cost_model)
+                default_cost_model=ca_cost_model,
+                currency=self.currency
+            )
         return self._nodes_provider
 
     @property
@@ -386,9 +399,8 @@ class KubernetesReportImporter(BaseReportImporter):
                 worked_hrs = (end_date - start_date + timedelta(seconds=1)
                               ).total_seconds() / SECONDS_IN_HOUR
 
-                node_info = expense.get('node_info')
                 total_metrics = expense.get('total_pods_value')
-                cost = cost_func(default_node, node_info, expense['value'],
+                cost = cost_func(default_node, expense['value'],
                                  total_metrics, worked_hrs)
                 changes.append(UpdateOne(
                     filter={'_id': expense['_id']},
@@ -461,8 +473,8 @@ class KubernetesReportImporter(BaseReportImporter):
                                   ).total_seconds() / SECONDS_IN_HOUR
                     end_date = end_date - timedelta(seconds=1)
                     cost = cost_func(
-                        node, node_info[dt_timestamp][node_name], value,
-                        total_metrics[dt_timestamp][node_name], worked_hrs)
+                        node, value, total_metrics[dt_timestamp][node_name],
+                        worked_hrs)
                     expense.update({
                         'metric': metric_name,
                         'value': value,
@@ -481,19 +493,17 @@ class KubernetesReportImporter(BaseReportImporter):
             self.update_raw_records(chunk)
 
     @staticmethod
-    def get_cost_by_avg_memory_usage(node, node_capacity, value,
-                                     total_pods_value, worked_hrs):
+    def get_cost_by_avg_memory_usage(node, value, total_pods_value, worked_hrs):
         hourly_cost = node.cost_model['memory_hourly_cost']
-        node_cost = bytes_to_gb(node_capacity['memory']) * hourly_cost * worked_hrs
+        node_cost = hourly_cost * worked_hrs
         cost = bytes_to_gb(float(value)) * node_cost / bytes_to_gb(
             total_pods_value) if total_pods_value else 0
         return cost
 
     @staticmethod
-    def get_cost_by_cpu_usage_delta(node, node_capacity, value,
-                                    total_pods_value, worked_hrs):
+    def get_cost_by_cpu_usage_delta(node, value, total_pods_value, worked_hrs):
         hourly_cost = node.cost_model['cpu_hourly_cost']
-        node_cost = node_capacity['cpu'] * hourly_cost * worked_hrs
+        node_cost = hourly_cost * worked_hrs
         cost = float(value) * node_cost / total_pods_value if total_pods_value else 0
         return cost
 

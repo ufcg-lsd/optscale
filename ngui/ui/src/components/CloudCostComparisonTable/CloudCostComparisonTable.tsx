@@ -8,7 +8,7 @@ import Table from "components/Table";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { useSelectedSizes, useSelectionActions } from "reducers/cloudCostComparisonSelectedSizes/hooks";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { ALIBABA_CNR, AWS_CNR, AZURE_CNR, GCP_CNR, NEBIUS } from "utils/constants";
 import { getSearchParams } from "utils/network";
 import { cpu as cpuColumn, ram as ramColumn, flavors as flavorsColumn } from "./columns";

@@ -1,7 +1,7 @@
 import Typography from "@mui/material/Typography";
 import { useForm, FormProvider } from "react-hook-form";
 import { FormattedMessage } from "react-intl";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FormButtons, NewDefaultKeySelector } from "./FormElements";
 import { FormValues } from "./types";
 import { getDefaultValues } from "./utils";
@@ -13,7 +13,7 @@ const DeleteSshKeyForm = ({ onSubmit, closeSideModal, isDefaultKey, isLoading, k
 
   const { handleSubmit } = methods;
 
-  const shouldShowSelector = !isEmpty(keysToSelect);
+  const shouldShowSelector = !isEmptyArray(keysToSelect);
 
   return (
     <>

@@ -5,7 +5,7 @@ import SnackbarAlert from "components/SnackbarAlert";
 import { useApiState } from "hooks/useApiState";
 import { useApiStateData } from "hooks/useApiStateData";
 import { useLastResult } from "hooks/useLastResult";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const ApiErrorAlert = () => {
   const { apiStateData: latestErrorLabel } = useApiStateData("latestErrorLabel");
@@ -19,7 +19,7 @@ const ApiErrorAlert = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setOpen(!isEmpty(error));
+    setOpen(!isEmptyObject(error));
   }, [error]);
 
   const handleClose = (event, reason) => {
@@ -30,7 +30,7 @@ const ApiErrorAlert = () => {
   };
 
   const errorMessage =
-    errorHandlerType === ERROR_HANDLER_TYPE_ALERT && !isEmpty(error) ? (
+    errorHandlerType === ERROR_HANDLER_TYPE_ALERT && !isEmptyObject(error) ? (
       <ApiErrorMessage errorCode={error.error_code} reason={error.reason} url={url} params={error.params} />
     ) : null;
 

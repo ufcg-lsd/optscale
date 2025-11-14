@@ -6,7 +6,7 @@ import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import SubTitle from "components/SubTitle";
 import TendencyFormattedMessage from "components/TendencyFormattedMessage";
 import { ML_METRICS } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { FIELD_NAMES } from "../constants";
 import { FormValues } from "../types";
 

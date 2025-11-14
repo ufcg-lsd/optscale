@@ -1021,7 +1021,6 @@ class AWSReportImporter(CSVBaseReportImporter):
     def discover_region_log_groups(self, region):
         """
         Yield discovered CloudWatch LogGroupResource objects for the given region.
-
         The importer delegates to the cloud adapter to create log group resources,
         processes their metrics (persisting raw docs and summarised points) and
         yields each resource for further processing. The function is a generator

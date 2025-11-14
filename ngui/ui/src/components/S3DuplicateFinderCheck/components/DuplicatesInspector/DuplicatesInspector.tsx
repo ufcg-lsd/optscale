@@ -1,6 +1,6 @@
 import { useTheme } from "@mui/material/styles";
 import TableLoader from "components/TableLoader";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { STATUS } from "../../utils";
 import CrossDuplicatesTable from "../CrossDuplicatesTable";
 

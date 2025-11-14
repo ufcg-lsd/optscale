@@ -12,7 +12,7 @@ from tools.optscale_data.clickhouse import ExternalDataConverter
 CH_DB_NAME = 'risp'
 LOG = logging.getLogger(__name__)
 SEC_IN_HR = 3600
-SUPPORTED_CLOUD_TYPES = ['aws_cnr']
+SUPPORTED_CLOUD_TYPES = ['aws_cnr', 'azure_cnr']
 RI_FACTOR_MAP = {
     'nano': 0.25,
     'micro': 0.5,
@@ -138,7 +138,7 @@ class RiBreakdownController(CleanExpenseController):
     def get_flavors(self, cloud_account_ids):
         flavor_factor_map = defaultdict(float)
         flavors = self.execute_clickhouse(
-            """SELECT DISTINCT instance_type
+            """SELECT DISTINCT instance_type, ri_norm_factor
                FROM ri_sp_usage
                WHERE cloud_account_id IN cloud_account_ids AND
                  date >= %(start_date)s AND date <= %(end_date)s AND
@@ -158,13 +158,15 @@ class RiBreakdownController(CleanExpenseController):
                 ]
             )
         )
-        flavors = [x[0] for x in flavors]
-        for flavor_name in flavors:
+        for flavor in flavors:
+            flavor_name, norm_factor = flavor
             if 'db.' in flavor_name:
-                # RDS instances don't have normalization factor
+                # AWS RDS instances don't have normalization factor
                 # use 1 as default
                 flavor_factor_map[flavor_name] = 1
                 continue
+            if norm_factor:
+                flavor_factor_map[flavor_name] = norm_factor
             for key, value in RI_FACTOR_MAP.items():
                 if key in flavor_name:
                     flavor_factor_map[flavor_name] = value
@@ -347,7 +349,7 @@ class RiBreakdownController(CleanExpenseController):
                         data['overprovision_hrs'][flavor_name] = ri_usage
         return cloud_account_usage
 
-    def get_aws_accounts_map(self, organization_id):
+    def get_accounts_map(self, organization_id):
         _, cloud_accounts = self.get_organization_and_cloud_accs(
             organization_id)
         return {
@@ -359,22 +361,22 @@ class RiBreakdownController(CleanExpenseController):
         }
 
     @staticmethod
-    def filter_cloud_accounts(params, aws_cloud_accs_map):
+    def filter_cloud_accounts(params, cloud_accs_map):
         cloud_account_ids = params.get('cloud_account_id')
         if not cloud_account_ids:
-            cloud_account_ids = list(aws_cloud_accs_map.keys())
+            cloud_account_ids = list(cloud_accs_map.keys())
         else:
             for cloud_account_id in cloud_account_ids:
-                if cloud_account_id not in aws_cloud_accs_map.keys():
+                if cloud_account_id not in cloud_accs_map.keys():
                     cloud_account_ids.remove(cloud_account_id)
         return cloud_account_ids
 
     def get(self, organization_id, **params):
         filters = params.copy()
-        aws_cloud_accs_map = self.get_aws_accounts_map(organization_id)
+        cloud_accs_map = self.get_accounts_map(organization_id)
         self.handle_filters(params, filters, organization_id)
         cloud_account_ids = self.filter_cloud_accounts(
-            params, aws_cloud_accs_map)
+            params, cloud_accs_map)
         flavor_rate_map = self.get_flavors(cloud_account_ids)
         cloud_account_total = self.get_total_stats(cloud_account_ids)
         cloud_account_usage = self.get_cloud_account_usage_stats(
@@ -393,10 +395,10 @@ class RiBreakdownController(CleanExpenseController):
                 ri_stats = date_ri_usage.get(date, {})
                 result = self.format_result(
                     result, cloud_account_id, date_ts, total_stats, ri_stats,
-                    aws_cloud_accs_map, flavor_rate_map)
+                    cloud_accs_map, flavor_rate_map)
         breakdown_dates = self.breakdown_dates(self.start_date, self.end_date)
         result = self.fill_empty_dates(
-            result, breakdown_dates, cloud_account_ids, aws_cloud_accs_map,
+            result, breakdown_dates, cloud_account_ids, cloud_accs_map,
             flavor_rate_map)
         return result
 
