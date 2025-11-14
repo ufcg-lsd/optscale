@@ -56,6 +56,7 @@ export const useOptscaleRecommendations = () => {
       InactiveConsoleUsers,
       InactiveCloudWatchLogGroup,
       AbandonedS3Buckets,
+      IntelligentTiering,
       AbandonedKinesisStreams,
       AbandonedInstances,
       AbandonedLoadBalancers,
