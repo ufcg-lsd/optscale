@@ -11,7 +11,7 @@ import Button from "components/Button";
 import QuestionMark from "components/QuestionMark";
 import SubTitle from "components/SubTitle";
 import { useResizeObserver } from "hooks/useResizeObserver";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SPACING_1 } from "utils/layouts";
 import { removeKey } from "utils/objects";
 import { sliceByLimitWithEllipsis } from "utils/strings";

@@ -14,25 +14,11 @@ function initializeEnvironmentVariables(){
     done
 }
 
-function allowAppIndexing(){
-    ROBOTS_TXT_PATH=${UI_PATH}/build/robots.txt
-    > $ROBOTS_TXT_PATH
-    {
-        echo "User-agent: *"
-        echo "Allow: /"
-    } >> $ROBOTS_TXT_PATH
-}
-
 initializeEnvironmentVariables > ${UI_PATH}/build/config.js
 
 # updating script include version in html file, to drop client browser cache
 current_timestamp=`date +%s`
 sed -i ${UI_PATH}/build/index.html -e "s/\${buildVersion}/${current_timestamp}/" ${UI_PATH}/build/index.html
-
-
-if [ "$BUILD_MODE" = "production" ]; then
-   allowAppIndexing
-fi
 
 # running application
 cd ${SERVER_PATH}/dist

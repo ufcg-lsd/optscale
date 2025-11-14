@@ -5,12 +5,12 @@ import { useTheme as useMuiTheme } from "@mui/material/styles";
 import { useOrdinalColorScale } from "@nivo/colors";
 import { ResponsiveWrapper, useDimensions } from "@nivo/core";
 import { renderLegendToCanvas } from "@nivo/legends";
-import { ResponsiveLineCanvas } from "@nivo/line";
+import { LineCanvas } from "@nivo/line";
 import { computeXYScalesForSeries } from "@nivo/scales";
 import { FormattedMessage } from "react-intl";
 import ChartTooltip from "components/ChartTooltip";
 import { useChartTheme } from "hooks/useChartTheme";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { getColorScale, TICK_COUNT, getLineYTicks, getLineChartBottomTickValues, truncateCanvasText } from "utils/charts";
 import {
   CHART_LEGEND_LAYOUT_SETTINGS,
@@ -48,15 +48,28 @@ const useLineDimensions = ({ height, width, margin: partialMargin }) => {
   };
 };
 
-const useXScaleSpec = ({ xScaleSpecProp = {} }) =>
-  useMemo(
-    () => ({
-      type: xScaleSpecProp.type ?? "point",
-      min: xScaleSpecProp.min ?? 0,
-      max: xScaleSpecProp.max ?? "auto"
-    }),
-    [xScaleSpecProp.max, xScaleSpecProp.min, xScaleSpecProp.type]
-  );
+const useXScaleSpec = (
+  xScaleSpecProp = {
+    type: "point"
+  }
+) =>
+  useMemo(() => {
+    if (xScaleSpecProp.type === "linear") {
+      return {
+        type: "linear",
+        min: 0,
+        max: "auto",
+        stacked: false,
+        reverse: false,
+        clamp: false,
+        nice: false,
+        round: false,
+        ...xScaleSpecProp
+      };
+    }
+
+    return xScaleSpecProp;
+  }, [xScaleSpecProp]);
 
 const useYScaleSpec = ({ data, yScaleSpecProp = {} }) =>
   useMemo(() => {
@@ -154,6 +167,9 @@ const useLineYTicks = ({ yScaleSpec: defaultYScaleSpec, outerHeight, y }) => {
 
 const DEFAULT_LAYERS = ["grid", "markers", "axes", "areas", "crosshair", "lines", "points", "slices", "mesh"];
 
+const POINT_COLOR = Object.freeze({ from: "series.color" });
+const POINT_BORDER_COLOR = Object.freeze({ from: "seriesColor" });
+
 const Line = ({
   data,
   axisBottom: axisBottomSpec = {},
@@ -167,7 +183,6 @@ const Line = ({
   xFormat,
   wrapperDimensions,
   margin: partialMargin,
-  pointColor,
   enableGridY = true,
   overlayLayers = [],
   xScale: xScaleSpecProp,
@@ -177,7 +192,7 @@ const Line = ({
 }) => {
   const chartTheme = useChartTheme();
 
-  const xScaleSpec = useXScaleSpec({ xScaleSpecProp });
+  const xScaleSpec = useXScaleSpec(xScaleSpecProp);
 
   const yScaleSpec = useYScaleSpec({
     data,
@@ -206,15 +221,15 @@ const Line = ({
   const defaultPalette = useDefaultPalette(data, isStackedChart);
   const colorsSpec = typeof colors === "function" ? colors : defaultPalette;
 
-  const serieColorScale = useOrdinalColorScale(colorsSpec, "id");
+  const seriesColorScale = useOrdinalColorScale(colorsSpec, "id");
 
   const seriesWithColor = useMemo(
     () =>
       series.map((serie) => ({
         ...serie,
-        color: serieColorScale(serie)
+        color: seriesColorScale(serie)
       })),
-    [serieColorScale, series]
+    [seriesColorScale, series]
   );
 
   const getAxisBottom = () => {
@@ -249,8 +264,6 @@ const Line = ({
   };
 
   const axisBottom = getAxisBottom();
-
-  const pointBorderColor = { from: "serieColor" };
 
   const overlayLayerProps = useMemo(
     () => ({
@@ -287,15 +300,15 @@ const Line = ({
         xFormat={xFormat}
         yFormat={yFormat}
         series={seriesWithColor}
-        pointColor={pointColor}
-        pointBorderColor={pointBorderColor}
+        pointColor={POINT_COLOR}
+        pointBorderColor={POINT_BORDER_COLOR}
         enableSlices="x"
         layerProps={overlayLayerProps}
       />
       {overlayLayers.map(({ key, renderCanvasContent }) => (
         <CanvasLayer key={key} layerProps={overlayLayerProps} renderCanvasContent={renderCanvasContent} />
       ))}
-      <ResponsiveLineCanvas
+      <LineCanvas
         data={data}
         animate={false}
         height={wrapperDimensions.height}
@@ -320,17 +333,17 @@ const Line = ({
             : null
         }
         pointSize={pointSize}
-        pointColor={pointColor}
+        pointColor={POINT_COLOR}
         pointBorderWidth={1}
         yFormat={yFormat}
-        pointBorderColor={pointBorderColor}
+        pointBorderColor={POINT_BORDER_COLOR}
         theme={chartTheme}
         lineWidth={1}
         layers={[
           ...DEFAULT_LAYERS,
           ...(withLegend
             ? [
-                ({ ctx, ...layerContext }) => {
+                (ctx, layerContext) => {
                   // Explicitly set font to correctly measure text width
                   ctx.save();
                   ctx.font = `${chartTheme.legends.text.fontSize}px ${chartTheme.legends.text.fontFamily}`;
@@ -354,12 +367,14 @@ const Line = ({
               ]
             : [])
         ]}
+        pixelRatio={2}
       />
     </div>
   );
 };
 
 const ResponsiveLine = ({
+  wrapperRef,
   data,
   isLoading,
   dataTestId,
@@ -384,23 +399,22 @@ const ResponsiveLine = ({
         height: theme.spacing(height)
       }}
       data-test-id={dataTestId}
+      ref={wrapperRef}
     >
       <ResponsiveWrapper>
         {({ width: wrapperWidth, height: wrapperHeight }) => {
           if (isLoading) {
-            return <Skeleton variant="rectangular" height={wrapperHeight} />;
+            return <Skeleton variant="rectangular" height={wrapperHeight} width={wrapperWidth} />;
           }
           if (isEmptyArray(data)) {
             return (
               <Typography
                 component="div"
-                align="center"
-                style={{
-                  height: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center"
-                }}
+                height={wrapperHeight}
+                width={wrapperWidth}
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
               >
                 <FormattedMessage id={emptyMessageId} values={emptyMessageValues} />
               </Typography>
@@ -414,7 +428,6 @@ const ResponsiveLine = ({
               }}
               data={data}
               margin={margin}
-              pointColor={theme.palette.common.white}
               withLegend={withLegend}
               {...rest}
             />

@@ -1,5 +1,6 @@
 ARG BUILDTAG=build
 FROM bi_exporter:${BUILDTAG}
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY bi_exporter/test-requirements.txt bi_exporter/run_tests.py bi_exporter/.pylintrc bi_exporter/
-RUN pip install --no-cache-dir -r bi_exporter/test-requirements.txt
+COPY bi_exporter/pyproject.toml bi_exporter/uv.lock bi_exporter/run_tests.py bi_exporter/.pylintrc bi_exporter/
+RUN uv --project bi_exporter sync --locked

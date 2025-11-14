@@ -61,10 +61,6 @@
 - name: Update Helm repos
   shell: helm repo update
 
-- name: Install nginx ingress controller
-  shell: helm upgrade --install ngingress ingress-nginx/ingress-nginx --set controller.hostNetwork=true --set controller.extraArgs."default-ssl-certificate"=default/defaultcert --set controller.kind=DaemonSet --set controller.daemonset.useHostPort=true --set controller.containerPort.http=80 --set controller.containerPort.https=443 --set controller.resources.limits.memory=896Mi --set controller.resources.requests.memory=384Mi
-  run_once: true
-
 - name: Copy custom nginx-ingress chart
   copy:
     src: nginx-ingress
@@ -72,6 +68,10 @@
     owner: "{{ ansible_ssh_user }}"
     group: "{{ ansible_ssh_user }}"
     mode: 0644
+  run_once: true
+
+- name: Install nginx ingress controller
+  shell: helm upgrade --install ngingress ingress-nginx --repo https://kubernetes.github.io/ingress-nginx -f nginx-ingress/values.yaml
   run_once: true
 
 - name: Check domain presence

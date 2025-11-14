@@ -1,11 +1,11 @@
 import { FormattedMessage } from "react-intl";
 import LinearSelector from "components/LinearSelector";
 import { getPoolIdWithSubPools } from "urls";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { POOL_ID_FILTER } from "utils/constants";
 
 const ExpensesFilters = ({ items, appliedValues, onFilterAdd, onFilterDelete, onFiltersDelete }) =>
-  !isEmpty(items) && (
+  !isEmptyArray(items) && (
     <LinearSelector
       label={<FormattedMessage id="filters" />}
       value={appliedValues}

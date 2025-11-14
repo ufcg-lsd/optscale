@@ -5,7 +5,7 @@ import Input from "components/Input";
 import MetricUnitLabel from "components/MetricUnitLabel";
 import SlicedText from "components/SlicedText";
 import { useIsAllowed } from "hooks/useAllowedActions";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import CopyLeaderboardIconButton from "./CopyLeaderboardIconButton";
 import CreateLeaderboardIconButton from "./CreateLeaderboardIconButton";
 import DeleteLeaderboardButton from "./DeleteLeaderboardButton";

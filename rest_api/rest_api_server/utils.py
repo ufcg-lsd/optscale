@@ -556,7 +556,7 @@ class SupportedFiltersMixin(object):
             'region', 'resource_type', 'created_by_kind',
             'created_by_name', 'k8s_namespace', 'k8s_node',
             'k8s_service', 'tag', 'without_tag', 'traffic_from', 'traffic_to',
-            '_id'
+            '_id', 'meta'
         ]
         self.bool_filters = [
             'active', 'recommendations', 'constraint_violated'

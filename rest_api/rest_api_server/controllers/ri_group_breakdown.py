@@ -12,7 +12,7 @@ from tools.optscale_data.clickhouse import ExternalDataConverter
 CHUNK_SIZE = 200
 LOG = logging.getLogger(__name__)
 SEC_IN_HR = 3600
-SUPPORTED_CLOUD_TYPES = ['aws_cnr']
+SUPPORTED_CLOUD_TYPES = ['aws_cnr', 'azure_cnr']
 
 
 class RiGroupBreakdownController(RiBreakdownController):
@@ -60,10 +60,10 @@ class RiGroupBreakdownController(RiBreakdownController):
 
     def get(self, organization_id, **params):
         filters = params.copy()
-        aws_cloud_accs_map = self.get_aws_accounts_map(organization_id)
+        cloud_accs_map = self.get_accounts_map(organization_id)
         self.handle_filters(params, filters, organization_id)
         cloud_account_ids = self.filter_cloud_accounts(
-            params, aws_cloud_accs_map)
+            params, cloud_accs_map)
         result = defaultdict(list)
         usages = self.get_usage_breakdown(cloud_account_ids)
         res_account_map = {}
@@ -80,7 +80,7 @@ class RiGroupBreakdownController(RiBreakdownController):
                 'cost': cost
             }
             usage.update(self.format_cloud_account(
-                cloud_account_id, aws_cloud_accs_map))
+                cloud_account_id, cloud_accs_map))
             date_group_usage[int(date.timestamp())][group_id].append(usage)
         resources_info = self.get_resources_info(res_account_map)
         for date, group_usage in date_group_usage.items():

@@ -1,14 +1,15 @@
 FROM python:3.12.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 LABEL org.opencontainers.image.authors="Hystax"
 
 WORKDIR /usr/src/app/
-ENV PYTHONPATH=/usr/src/app/
 
-COPY optscale_client/config_client optscale_client/config_client
-COPY optscale_client/rest_api_client optscale_client/rest_api_client
-COPY trapper/trapper_scheduler/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY optscale_client optscale_client
 
+COPY trapper/__init__.py ./trapper/
+COPY trapper/trapper_scheduler/pyproject.toml ./trapper/trapper_scheduler/
+COPY trapper/trapper_scheduler/uv.lock ./trapper/trapper_scheduler/
 COPY trapper/trapper_scheduler/*.py ./trapper/trapper_scheduler/
 
-CMD ["python", "-u","/usr/src/app/trapper/trapper_scheduler/main.py"]
+RUN uv --project trapper/trapper_scheduler sync --locked --no-dev
+CMD ["uv", "run", "--project", "trapper/trapper_scheduler", "python", "-u","/usr/src/app/trapper/trapper_scheduler/main.py"]

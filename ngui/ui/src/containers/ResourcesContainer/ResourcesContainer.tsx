@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Resources from "components/Resources";
 import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import { RANGE_DATES } from "containers/RangePickerFormContainer/reducer";
+import { useAvailableFiltersQuery } from "graphql/__generated__/hooks/restapi";
 import { useOrganizationPerspectives } from "hooks/coreData/useOrganizationPerspectives";
-import { useReactiveSearchParams } from "hooks/useReactiveSearchParams";
+import { useOrganizationInfo } from "hooks/useOrganizationInfo";
+import { useReactiveSearchParam } from "hooks/useReactiveSearchParam";
 import { useRootData } from "hooks/useRootData";
-import AvailableFiltersService from "services/AvailableFiltersService";
 import {
   DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME,
   DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME,
@@ -65,7 +66,45 @@ const useDateRange = () => {
   return [dateRange, setDateRange] as const;
 };
 
+const useListenForPerspectiveChange = (selectedPerspectiveDefinition) => {
+  const dailyExpensesBreakdownBy = useReactiveSearchParam(DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME);
+  const dailyResourceCountBreakdownBy = useReactiveSearchParam(DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME);
+  const groupBy = useReactiveSearchParam(GROUP_BY_PARAM_NAME);
+  const groupType = useReactiveSearchParam(GROUP_TYPE_PARAM_NAME);
+
+  useEffect(() => {
+    if (selectedPerspectiveDefinition) {
+      const { breakdownBy, breakdownData } = selectedPerspectiveDefinition;
+
+      const categorizeByHasChanged = () => {
+        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES) {
+          return breakdownData.breakdownBy !== dailyExpensesBreakdownBy;
+        }
+        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.RESOURCE_COUNT) {
+          return breakdownData.breakdownBy !== dailyResourceCountBreakdownBy;
+        }
+        return false;
+      };
+
+      const groupByHasChanged = () => {
+        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES) {
+          return groupBy !== breakdownData.groupBy?.groupBy || groupType !== breakdownData.groupBy?.groupType;
+        }
+        return false;
+      };
+
+      const someParamHasChanged = [categorizeByHasChanged, groupByHasChanged].some((fn) => fn());
+
+      if (someParamHasChanged) {
+        removeSearchParam(RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME);
+      }
+    }
+  }, [dailyExpensesBreakdownBy, dailyResourceCountBreakdownBy, groupBy, groupType, selectedPerspectiveDefinition]);
+};
+
 const ResourcesContainer = () => {
+  const { organizationId } = useOrganizationInfo();
+
   const navigate = useNavigate();
 
   const [appliedFilters, setAppliedFilters] = useState(() =>
@@ -78,22 +117,11 @@ const ResourcesContainer = () => {
     )
   );
 
-  const { [RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME]: perspectiveNameSearchParameter } = useReactiveSearchParams(
-    useMemo(() => [RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME], [])
-  );
+  const perspectiveName = useReactiveSearchParam(RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME);
 
   const { validPerspectives } = useOrganizationPerspectives();
 
   const [dateRange, setDateRange] = useDateRange();
-
-  const groupByParameters = useReactiveSearchParams([GROUP_BY_PARAM_NAME, GROUP_TYPE_PARAM_NAME]);
-
-  const { [DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME]: dailyExpensesBreakdownByParameter } = useReactiveSearchParams(
-    useMemo(() => [DAILY_EXPENSES_BREAKDOWN_BY_PARAMETER_NAME], [])
-  );
-
-  const { [DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME]: dailyResourceCountBreakdownByParameter } =
-    useReactiveSearchParams(useMemo(() => [DAILY_RESOURCE_COUNT_BREAKDOWN_BY_PARAMETER_NAME], []));
 
   const [breakdownByState, setBreakdownByState] = useState(() => {
     const { [RESOURCES_BREAKDOWN_BY_QUERY_PARAMETER_NAME]: breakdownBy } = getSearchParams();
@@ -105,50 +133,9 @@ const ResourcesContainer = () => {
     return CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES;
   });
 
-  useEffect(() => {
-    const selectedPerspective = validPerspectives[perspectiveNameSearchParameter];
+  const selectedPerspectiveDefinition = useMemo(() => validPerspectives[perspectiveName], [validPerspectives, perspectiveName]);
 
-    if (selectedPerspective) {
-      const { breakdownBy, breakdownData } = selectedPerspective;
-
-      const categorizeByHasChanged = () => {
-        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES) {
-          return breakdownData.breakdownBy !== dailyExpensesBreakdownByParameter;
-        }
-        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.RESOURCE_COUNT) {
-          return breakdownData.breakdownBy !== dailyResourceCountBreakdownByParameter;
-        }
-        return false;
-      };
-
-      const groupByHasChanged = () => {
-        if (breakdownBy === CLEAN_EXPENSES_BREAKDOWN_TYPES.EXPENSES) {
-          return (
-            groupByParameters.groupBy !== breakdownData.groupBy?.groupBy ||
-            groupByParameters.groupType !== breakdownData.groupBy?.groupType
-          );
-        }
-        return false;
-      };
-
-      const someParamHasChanged = [categorizeByHasChanged, groupByHasChanged].some((fn) => fn());
-
-      if (someParamHasChanged) {
-        removeSearchParam(RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME);
-      }
-    }
-  }, [
-    dailyExpensesBreakdownByParameter,
-    dailyResourceCountBreakdownByParameter,
-    groupByParameters.groupBy,
-    groupByParameters.groupType,
-    perspectiveNameSearchParameter,
-    validPerspectives
-  ]);
-
-  const selectedPerspective = validPerspectives[perspectiveNameSearchParameter];
-
-  const { useGet: useGetFilters } = AvailableFiltersService();
+  useListenForPerspectiveChange(selectedPerspectiveDefinition);
 
   const requestParams = useMemo(() => {
     const queryParams = getSearchParams();
@@ -189,16 +176,24 @@ const ResourcesContainer = () => {
     updateSearchParams(requestParams.dateRange);
   }, [requestParams.dateRange]);
 
-  const { isLoading: isFilterValuesLoading, filters: filterValues } = useGetFilters(requestParams.dateRange);
+  const { data: availableFiltersData, loading: isAvailableFiltersLoading } = useAvailableFiltersQuery({
+    variables: {
+      organizationId,
+      params: {
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate
+      }
+    }
+  });
 
   const onApplyDateRange = (dateRange) => {
     setDateRange(dateRange);
   };
 
-  const onPerspectiveApply = (perspectiveName) => {
+  const onPerspectiveApply = (newPerspectiveName) => {
     navigate(
       getResourcesExpensesUrl({
-        perspective: perspectiveName
+        perspective: newPerspectiveName
       })
     );
   };
@@ -207,24 +202,24 @@ const ResourcesContainer = () => {
     <Resources
       startDateTimestamp={dateRange.startDate}
       endDateTimestamp={dateRange.endDate}
-      filterValues={filterValues}
+      filterValues={availableFiltersData?.availableFilters ?? {}}
       onApply={onApplyDateRange}
       requestParams={flatRequestParams}
-      isFilterValuesLoading={isFilterValuesLoading}
+      isFilterValuesLoading={isAvailableFiltersLoading}
       activeBreakdown={breakdownByState}
       onBreakdownChange={(breakdownBy) => {
-        if (selectedPerspective) {
+        if (selectedPerspectiveDefinition) {
           removeSearchParam(RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME);
         }
 
         setBreakdownByState(breakdownBy);
       }}
-      selectedPerspectiveName={perspectiveNameSearchParameter}
+      selectedPerspectiveName={perspectiveName}
       perspectives={validPerspectives}
       onPerspectiveApply={onPerspectiveApply}
       appliedFilters={appliedFilters}
       onAppliedFiltersChange={(newFilters) => {
-        if (selectedPerspective) {
+        if (selectedPerspectiveDefinition) {
           removeSearchParam(RESOURCES_SELECTED_PERSPECTIVE_PARAMETER_NAME);
         }
 

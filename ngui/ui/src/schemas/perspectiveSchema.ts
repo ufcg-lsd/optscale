@@ -2,8 +2,7 @@ import { FILTER_CONFIGS } from "components/Resources/filterConfigs";
 import {
   CLEAN_EXPENSES_BREAKDOWN_TYPES,
   CLEAN_EXPENSES_BREAKDOWN_TYPES_LIST,
-  CLEAN_EXPENSES_GROUP_TYPES_LIST,
-  RESOURCES_EXPENSES_DAILY_BREAKDOWN_BY_VALUES
+  CLEAN_EXPENSES_GROUP_TYPES_LIST
 } from "utils/constants";
 
 const BREAKDOWN_BY_PROPERTY = "breakdownBy";
@@ -26,8 +25,7 @@ const breakdownDataSchema = {
   additionalProperties: false,
   properties: {
     [CATEGORIZE_BY_PROPERTY]: {
-      type: "string",
-      enum: RESOURCES_EXPENSES_DAILY_BREAKDOWN_BY_VALUES
+      type: "string"
     },
     [GROUP_BY_PROPERTY]: {
       type: "object",

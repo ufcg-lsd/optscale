@@ -7,7 +7,7 @@ import ResourceLimitHitEvent from "components/ResourceLimitHitEvent";
 import Table from "components/Table";
 import TableLoader from "components/TableLoader";
 import TextWithDataTestId from "components/TextWithDataTestId";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { CONSTRAINTS_TYPES, isExpensesLimit, isTtlLimit } from "utils/constraints";
 import { format, EN_FULL_FORMAT, secondsToMilliseconds } from "utils/datetime";
 
@@ -72,7 +72,7 @@ const ResourceLimitHits = ({ limitHits, isLoading }) => {
       <TableLoader columnsCounter={columns.length} showHeader />
     </>
   ) : (
-    !isEmpty(data) && (
+    !isEmptyArray(data) && (
       <>
         <span data-test-id="p_constraints_table">
           <FormattedMessage id="resourceConstraintsStateHistory" />:

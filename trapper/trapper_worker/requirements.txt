@@ -1,9 +1,0 @@
-kombu==5.3.4
-clickhouse-connect==0.8.15
-pymongo==4.6.3
-urllib3==2.5.0
-# OptScale packages
--e optscale_client/rest_api_client
--e tools/cloud_adapter
--e optscale_client/config_client
--e tools/optscale_time

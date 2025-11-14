@@ -18,9 +18,9 @@ import SlicedText from "components/SlicedText";
 import Table from "components/Table";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
-import { getIntersection, isEmpty as isEmptyArray } from "utils/arrays";
+import { getIntersection, isEmptyArray } from "utils/arrays";
 import { SPACING_1 } from "utils/layouts";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 
 const METRIC_NAME_LENGTH_LIMIT = 15;

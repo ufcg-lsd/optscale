@@ -4,7 +4,7 @@ import { saveAs } from "file-saver";
 import { FormattedMessage } from "react-intl";
 import ButtonLoader from "components/ButtonLoader";
 import SnackbarAlert from "components/SnackbarAlert";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { format } from "utils/datetime";
 import { createPng } from "utils/exportChart";
 

@@ -986,6 +986,14 @@ class CleanExpenseAsyncHandler(FilteredExpensesBaseAsyncHandler):
             collectionFormat: multi
             items:
                 type: string
+        -   name: meta
+            in: query
+            description: meta key
+            required: false
+            type: array
+            collectionFormat: multi
+            items:
+                type: string
         responses:
             200:
                 description: Clean expense data
@@ -1849,6 +1857,14 @@ class SummaryExpenseAsyncHandler(CleanExpenseAsyncHandler):
             in: query
             description: >
                 traffic_to filter in <region_name>:<cloud_type> format or 'ANY'
+            required: false
+            type: array
+            collectionFormat: multi
+            items:
+                type: string
+        -   name: meta
+            in: query
+            description: meta key
             required: false
             type: array
             collectionFormat: multi

@@ -38,7 +38,10 @@ def get_handlers(handler_kwargs):
          handlers.instances.ReservedInstancesOfferingsHandler, handler_kwargs),
         (urls_v2.relevant_flavors,
          handlers.relevant_flavors.RelevantFlavorCollectionHandler,
-         handler_kwargs)
+         handler_kwargs),
+        (urls_v2.architecture,
+         handlers.architectures.ArchitectureCollectionHandler,
+         handler_kwargs),
     ]
 
 

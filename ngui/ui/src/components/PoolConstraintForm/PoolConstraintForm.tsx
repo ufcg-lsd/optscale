@@ -17,7 +17,7 @@ import {
   TOTAL_EXPENSE_LIMIT,
   TTL
 } from "utils/constraints";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const getDataTestIds = (type) =>
   ({
@@ -101,7 +101,7 @@ const PoolConstraintForm = ({ update, create, updateActivity, policy = {}, polic
             key="switch"
             disabled={isRestricted}
             onChange={() => updateActivity(policy.id, !policy.active)}
-            checked={!isEmpty(policy) && policy.active}
+            checked={!isEmptyObject(policy) && policy.active}
             data-test-id={switchDataTestId}
           />
         </div>
@@ -113,7 +113,7 @@ const PoolConstraintForm = ({ update, create, updateActivity, policy = {}, polic
       return (
         <Box display="flex" alignItems="center">
           {renderCardTitleText()}
-          {!isEmpty(policy) && renderCardTitleSwitch()}
+          {!isEmptyObject(policy) && renderCardTitleSwitch()}
         </Box>
       );
     }
@@ -122,7 +122,7 @@ const PoolConstraintForm = ({ update, create, updateActivity, policy = {}, polic
         <Box display="flex" alignItems="center">
           <Box mr={1} display="flex" alignItems="center">
             {renderCardTitleText()}
-            {!isEmpty(policy) && renderCardTitleSwitch()}
+            {!isEmptyObject(policy) && renderCardTitleSwitch()}
           </Box>
           {/* This was hidden as part of this task-https://datatrendstech.atlassian.net/browse/NGUI-2412. It will be redone and returned in the future.
               <Typography variant="body2">

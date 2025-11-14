@@ -5,7 +5,7 @@ import ChartExport from "components/ChartExport";
 import ChartLegendToggle from "components/ChartLegendToggle/ChartLegendToggle";
 import Selector, { Item, ItemContent } from "components/Selector";
 import { useSyncQueryParamWithState } from "hooks/useSyncQueryParamWithState";
-import { DAILY_EXPENSES_SPLIT_PARAMETER_NAME } from "urls";
+import { DAILY_EXPENSES_SPLIT_PARAMETER_NAME, WITH_LEGEND_QUERY_PARAMETER_NAME } from "urls";
 import { AXIS_FORMATS } from "utils/charts";
 import { EXPENSES_SPLIT_PERIODS } from "utils/constants";
 import { SPLITS } from "utils/getResourceExpensesSplits";
@@ -51,7 +51,7 @@ const ExpensesDailyBreakdownBy = ({
   });
 
   const [withLegend, setWithLegend] = useSyncQueryParamWithState({
-    queryParamName: "withLegend",
+    queryParamName: WITH_LEGEND_QUERY_PARAMETER_NAME,
     possibleStates: [true, false],
     defaultValue: true
   });

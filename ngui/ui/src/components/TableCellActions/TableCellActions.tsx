@@ -2,7 +2,7 @@ import { FormattedMessage } from "react-intl";
 import IconButton from "components/IconButton";
 import { useAllowedItems } from "hooks/useAllowedActions";
 import { useApiState } from "hooks/useApiState";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SCOPE_TYPES } from "utils/constants";
 
 const renderActions = (items, allowedItems, isGetAllowedActionsLoading) => {
@@ -15,7 +15,7 @@ const renderActions = (items, allowedItems, isGetAllowedActionsLoading) => {
       icon={item.icon}
       onClick={item.action}
       disabled={item.disabled}
-      isLoading={(isGetAllowedActionsLoading && !isEmpty(item.requiredActions)) || item.isLoading}
+      isLoading={(isGetAllowedActionsLoading && !isEmptyArray(item.requiredActions)) || item.isLoading}
       tooltip={
         item.tooltip ?? {
           show: true,

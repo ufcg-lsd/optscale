@@ -9,7 +9,7 @@ import { BucketDuplicatesModal, SelectedBucketsInfoModal } from "components/Side
 import Table from "components/Table";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { BASE_LAYOUT_CONTAINER_ID, FORMATTED_MONEY_TYPES } from "utils/constants";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import { CELL_EMPTY_VALUE } from "utils/tables";
 import useStyles from "./CrossDuplicatesTable.styles";
 

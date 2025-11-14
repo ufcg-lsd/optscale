@@ -128,6 +128,12 @@ const resolvers: Resolvers = {
     cloudPolicies: async (_, { organizationId, params }, { dataSources }) => {
       return dataSources.restapi.getCloudPolicies(organizationId, params);
     },
+    metaBreakdown: async (_, { organizationId, params }, { dataSources }) => {
+      return dataSources.restapi.getMetaBreakdown(organizationId, params);
+    },
+    availableFilters: async (_, { organizationId, params }, { dataSources }) => {
+      return dataSources.restapi.getAvailableFilters(organizationId, params);
+    }
   },
   Mutation: {
     createDataSource: async (

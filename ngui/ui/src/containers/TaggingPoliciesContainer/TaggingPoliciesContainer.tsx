@@ -5,7 +5,7 @@ import OrganizationConstraintsMocked from "components/OrganizationConstraintsMoc
 import { useShouldRenderConnectCloudAccountMock } from "hooks/useShouldRenderConnectCloudAccountMock";
 import OrganizationConstraintsService from "services/OrganizationConstraintsService";
 import { TAGGING_POLICY_CREATE } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { TAGGING_POLICY_TYPES } from "utils/constants";
 
 const actionBarDefinition = {

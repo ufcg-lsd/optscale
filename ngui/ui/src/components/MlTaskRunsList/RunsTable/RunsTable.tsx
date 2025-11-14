@@ -15,7 +15,7 @@ import { getMlTaskRunUrl, getMlRunsetDetailsUrl } from "urls";
 import { duration, startedAt, hyperparameters, dataset, metrics, tags } from "utils/columns";
 import { FORMATTED_MONEY_TYPES, OPTSCALE_CAPABILITY } from "utils/constants";
 import { formatRunFullName, getFirstMetricEntryKey, getRunsReachedGoalsKeyNameEntries } from "utils/ml";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 
 const RunsTable = ({ runs }) => {
   const theme = useTheme();

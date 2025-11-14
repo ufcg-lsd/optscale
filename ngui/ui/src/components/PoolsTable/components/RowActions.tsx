@@ -7,7 +7,7 @@ import { AddPoolModal, DeletePoolModal } from "components/SideModalManager/SideM
 import TableCellActions from "components/TableCellActions";
 import { useOpenSideModal } from "hooks/useOpenSideModal";
 import { getThisMonthPoolExpensesUrl, getThisMonthResourcesByPoolUrl } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SCOPE_TYPES } from "utils/constants";
 
 const RowActions = ({

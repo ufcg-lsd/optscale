@@ -22,7 +22,8 @@ from rest_api.rest_api_server.utils import (raise_unexpected_exception,
                                             check_int_attribute)
 
 ACTIVE_IMPORT_THRESHOLD = 1800  # 30 min
-NOT_PROCESSED_REPORT_THRESHOLD = 10800  # 3 hrs
+DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS = 10800  # 3 hrs
+DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS = 10800  # 3 hrs
 LOG = logging.getLogger(__name__)
 
 
@@ -48,7 +49,12 @@ class ReportImportBaseController(BaseController):
 
     def check_unprocessed_imports(self, cloud_account_id):
         dt = opttime.utcnow().timestamp()
-        scheduled_threshold = dt - NOT_PROCESSED_REPORT_THRESHOLD
+        scheduled_threshold = dt - int(
+            self._config.report_imports_setting().get(
+                'not_processed_threshold_secs',
+                DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS
+            )
+        )
         active_threshold = dt - ACTIVE_IMPORT_THRESHOLD
         return self.session.query(
             exists().where(and_(
@@ -131,6 +137,12 @@ class ReportImportBaseController(BaseController):
             transport_options=self.RETRY_POLICY)
 
         task_exchange = Exchange('billing-reports', type='direct')
+        expiration = float(
+            self._config.report_imports_setting().get(
+                'message_expiration_secs',
+                DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS
+            )
+        )
         with producers[queue_conn].acquire(block=True) as producer:
             producer.publish(
                 task_params,
@@ -140,6 +152,7 @@ class ReportImportBaseController(BaseController):
                 routing_key=self.REPORT_IMPORT_QUEUE,
                 retry=True,
                 retry_policy=self.RETRY_POLICY,
+                expiration=expiration,
                 priority=priority,
             )
 

@@ -91,6 +91,15 @@ class FilterDetailsController(AvailableFiltersController):
                     'preserveNullAndEmptyArrays': True
                 }},
             ])
+        if 'meta' in kwargs:
+            group_stage.update({'meta': {'$addToSet': '$meta.k'}})
+            pipeline.extend([
+                {'$addFields': {'meta': {'$objectToArray': "$meta"}}},
+                {'$unwind': {
+                    'path': "$meta",
+                    'preserveNullAndEmptyArrays': True
+                }},
+            ])
         pipeline.append({'$group': group_stage})
         return self.resources_collection.aggregate(pipeline, allowDiskUse=True)
 
@@ -188,6 +197,16 @@ class FilterDetailsController(AvailableFiltersController):
                         tag_filter.append(
                             {'tags.%s' % v: {'$exists': True}})
                 subquery.append({'$or': tag_filter})
+
+        meta_params = params.pop('meta', None)
+        if meta_params:
+            meta_filter = []
+            for v in meta_params:
+                if v == nil_uuid:
+                    meta_filter.append({'meta': {}})
+                else:
+                    meta_filter.append(
+                        {'meta.%s' % v: {'$exists': True}})
 
         for filter_key, filter_values in params.items():
             for n, filter_value in enumerate(filter_values):

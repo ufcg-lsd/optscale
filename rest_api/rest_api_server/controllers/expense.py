@@ -1212,6 +1212,12 @@ class CleanExpenseController(BaseController, MongoMixin, ClickHouseMixin,
                         tag_filter.append(
                             {'tags.%s' % v: {'$exists': filled_cond}})
                 query['$and'].append({'$or': tag_filter})
+        meta_filters = params.pop('meta', None)
+        if meta_filters:
+            meta_vals = []
+            for v in meta_filters:
+                meta_vals.append({f'meta.{v}': {'$exists': True}})
+            query['$and'].append({'$or': meta_vals})
 
         for regex_key, query_key in {
             'name_like': 'name',

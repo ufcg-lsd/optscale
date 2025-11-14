@@ -96,6 +96,6 @@ spec:
       volumes:
       - name: etcd-persistent-storage
         hostPath:
-          path: /optscale/elk
+          path: /optscale/elk-7
           type: DirectoryOrCreate
 {{- end -}}

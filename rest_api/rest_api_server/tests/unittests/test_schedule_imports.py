@@ -3,6 +3,10 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from freezegun import freeze_time
 
+from rest_api.rest_api_server.controllers.report_import import (
+    DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS,
+    DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS,
+)
 from rest_api.rest_api_server.models.db_factory import DBFactory, DBType
 from rest_api.rest_api_server.models.db_base import BaseDB
 from rest_api.rest_api_server.models.models import CloudAccount
@@ -26,6 +30,13 @@ class TestScheduleImportsApi(TestApiBase):
         self.org_id2 = self.org2['id']
         patch('rest_api.rest_api_server.controllers.report_import.'
               'ReportImportBaseController.publish_task').start()
+        patch(
+            'optscale_client.config_client.client.Client.report_imports_setting',
+            return_value={
+                'not_processed_threshold_secs': DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS,
+                'message_expiration_secs': DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS,
+            }
+        ).start()
 
     def test_schedule_imports_without_cloud_acc(self):
         code, ret = self.client.schedule_import(0)

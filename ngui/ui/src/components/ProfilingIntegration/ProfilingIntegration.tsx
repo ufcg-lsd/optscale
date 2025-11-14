@@ -10,7 +10,7 @@ import KeyValueLabel from "components/KeyValueLabel/KeyValueLabel";
 import SubTitle from "components/SubTitle";
 import { ProfilingIntegrationModalContext } from "contexts/ProfilingIntegrationModalContext";
 import { ML_METRICS, ML_TASKS, PYPI_OPTSCALE_ARCEE, isProduction } from "urls";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { SPACING_2 } from "utils/layouts";
 
 type ProfilingIntegrationProps = {

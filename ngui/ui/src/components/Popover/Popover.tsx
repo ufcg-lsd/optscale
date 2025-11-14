@@ -1,7 +1,7 @@
 import { useState } from "react";
 import MuiPopover from "@mui/material/Popover";
 import Button from "components/Button";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import useStyles from "./Popover.styles";
 
 const Popover = ({
@@ -95,7 +95,7 @@ const Popover = ({
         ) : (
           <>
             {menu}
-            {!isEmpty(buttonsProperty) && renderButtons(buttonsProperty)}
+            {!isEmptyArray(buttonsProperty) && renderButtons(buttonsProperty)}
           </>
         )}
       </MuiPopover>

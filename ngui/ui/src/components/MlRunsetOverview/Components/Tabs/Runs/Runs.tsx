@@ -4,7 +4,7 @@ import { ML_RUNS_FILTERS_NAMES } from "components/Filters/constants";
 import { GOALS_BE_FILTER, GOALS_FILTER, GOAL_STATUS, STATUS_BE_FILTER } from "utils/constants";
 import { SPACING_1 } from "utils/layouts";
 import { getSearchParams, updateSearchParams } from "utils/network";
-import { isEmpty as isEmptyObject } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import RunsFilter from "./RunsFilter";
 import RunsTable from "./RunsTable";
 

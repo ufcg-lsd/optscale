@@ -5,7 +5,7 @@ import { FormValues } from "components/forms/CloudCostComparisonFiltersForm/type
 import { useRelevantFlavorsLazyQuery } from "graphql/__generated__/hooks/restapi";
 import { useIsNebiusConnectionEnabled } from "hooks/useIsNebiusConnectionEnabled";
 import { useOrganizationInfo } from "hooks/useOrganizationInfo";
-import { isEmpty } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
 import { NEBIUS } from "utils/constants";
 import { updateSearchParams } from "utils/network";
 
@@ -26,7 +26,7 @@ const CloudCostComparisonContainer = () => {
           return true;
         });
 
-        if (isEmpty(params[FIELD_NAMES.CLOUD_PROVIDER])) {
+        if (isEmptyArray(params[FIELD_NAMES.CLOUD_PROVIDER])) {
           return allowedTypes;
         }
         return allowedTypes.filter((type) => params[FIELD_NAMES.CLOUD_PROVIDER].includes(type));

@@ -1,12 +1,15 @@
 import { NetworkStatus } from "@apollo/client";
+import { ORGANIZATION_SETUP_MODE } from "containers/InitializeContainer/constants";
 import { useOrganizationsQuery } from "graphql/__generated__/hooks/restapi";
 import { useGetToken } from "hooks/useGetToken";
-import { isEmpty as isEmptyArray } from "utils/arrays";
+import { isEmptyArray } from "utils/arrays";
+import { getEnvironmentVariable } from "utils/env";
 import { Error, Loading } from "../../common";
 import ProceedToApplication from "../ProceedToApplication";
 import SetupOrganization from "./SetupOrganization";
+import ThanksForSigningUp from "./ThanksForSigningUp";
 
-const StepContainer = () => {
+const StepContainer = ({ refetchInvitations, isInvitationsRefetching }) => {
   const { userEmail } = useGetToken();
 
   const {
@@ -31,11 +34,20 @@ const StepContainer = () => {
 
   const hasOrganizations = !isEmptyArray(organizations?.organizations ?? []);
 
-  if (!hasOrganizations) {
-    return <SetupOrganization userEmail={userEmail} refetchOrganizations={refetchOrganizations} />;
+  if (hasOrganizations) {
+    return <ProceedToApplication />;
   }
 
-  return <ProceedToApplication />;
+  const organizationSetupMode = getEnvironmentVariable(
+    "VITE_ON_INITIALIZE_ORGANIZATION_SETUP_MODE",
+    ORGANIZATION_SETUP_MODE.AUTOMATIC
+  );
+
+  if (organizationSetupMode === ORGANIZATION_SETUP_MODE.INVITE_ONLY) {
+    return <ThanksForSigningUp refetchInvitations={refetchInvitations} isInvitationsRefetching={isInvitationsRefetching} />;
+  }
+
+  return <SetupOrganization userEmail={userEmail} refetchOrganizations={refetchOrganizations} />;
 };
 
 export default StepContainer;

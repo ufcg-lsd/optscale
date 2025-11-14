@@ -1,0 +1,994 @@
+# Default values for optscale's deploy on EKS
+
+tag: &tag old
+
+global:
+  storageClass: gp2
+
+auth:
+  google_oauth_client_id: ""
+  google_oauth_client_secret: ""
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/auth
+    tag: *tag
+  microsoft_oauth_client_id: ""
+  name: auth
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8905
+    name: auth
+    type: ClusterIP
+bi_exporter:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_exporter
+    tag: *tag
+  name: bi-exporter
+  replicaCount: 1
+bi_scheduler:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_scheduler
+    tag: *tag
+  name: bi-scheduler
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+bi_settings:
+  encryption_key: 5t3X3PkQqF5edqW9_c8znow7k7GraZOpBLHhF1kFFvE=
+  exporter_run_period: 86400
+  task_wait_timeout: 259200
+booking_observer:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/booking_observer
+    tag: *tag
+  name: booking-observer
+  replicaCount: 2
+  schedule: '*/1 * * * *'
+  startingDeadlineSeconds: 100
+bumi_scheduler_timeout: 300
+bumi_worker:
+  max_retries: 5
+  run_period: 10800
+  task_timeout: 3600
+  wait_timeout: 7200
+bumischeduler:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumischeduler
+    tag: *tag
+  name: bumischeduler
+  replicaCount: 1
+bumiworker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumiworker
+    tag: *tag
+  name: bumiworker
+  replicaCount: 1
+calendar_observer:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/calendar_observer
+    tag: *tag
+  name: calendar-observer
+  replicaCount: 1
+  schedule: 0 * * * *
+  startingDeadlineSeconds: 100
+certificates:
+  optscale:
+
+cleanelkdb:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanelkdb
+    tag: *tag
+  log_max_size: 5120
+  name: cleanelkdb
+  schedule: '*/15 * * * *'
+  startingDeadlineSeconds: 100
+cleaninfluxdb:
+  days_to_store: 90
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleaninfluxdb
+    tag: *tag
+  influxdb_host: influxdb
+  influxdb_port: 80
+  name: cleaninfluxdb
+  schedule: '@weekly'
+  startingDeadlineSeconds: 100
+cleanmongodb:
+  archive_enable: null
+  chunk_size: 500
+  file_max_rows: 10000
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanmongodb
+    tag: *tag
+  name: cleanmongodb
+  rows_limit: 10000
+  schedule: '*/3 * * * *'
+  startingDeadlineSeconds: 100
+clickhouse:
+  db:
+    name: default
+    password: secure-password-1-clk
+    user: default
+  external: false
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/clickhouse
+    tag: *tag
+  name: clickhouse
+  replicaCount: 1
+  replicas: 1
+  service:
+    externalPort: 9000
+    host: clickhouse
+    httpPort: 8123
+    name: clickhouse
+    type: ClusterIP
+  shardsCount: 1
+clusterDomain: cluster.local
+company_name: Hystax
+configurator:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
+    tag: *tag
+databases:
+- auth-db
+- my-db
+- tasks
+- herald
+- katara
+- slacker
+- jira-bus
+db_backup:
+  enabled: false
+  keep: 5
+  mountpoint: /optscale/backup
+  schedule: 0 12 * * *
+deactivatorg:
+  days_limit: 30
+  enable: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/deactivatorg
+    tag: *tag
+  name: deactivatorg
+  schedule: 0 2 * * *
+  startingDeadlineSeconds: 100
+demo:
+  multiplier: 2
+demo_org_cleanup:
+  demo_org_lifetime_hrs: null
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/demo_org_cleanup
+    tag: *tag
+  name: demoorgcleanup
+  schedule: 0 0 * * *
+  startingDeadlineSeconds: 100
+deploy_cleanelkdb: "false"
+deploy_cleaninfluxdb: "true"
+diproxy:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diproxy
+    tag: *tag
+  name: diproxy
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8935
+    name: diproxy
+    type: ClusterIP
+disable_email_verification: true
+diworker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diworker
+    tag: *tag
+  name: diworker
+  replicaCount: 1
+docker_registry: null
+docker_tag: null
+domains_blacklists:
+  failed_import_email: null
+  new_employee_email: null
+  registration: null
+domains_whitelists:
+  failed_import_email: null
+  new_employee_email: null
+  registration: null
+elk:
+  enabled: false
+  env:
+    htpasswd_pass: passwordforelk
+    htpasswd_user: userforelk
+  es_connect_retry: "90"
+  es_heap_size: 1g
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/elk
+    tag: *tag
+  ls_heap_size: 2g
+  name: elk
+  service:
+    elastic_port: 9200
+    external_kibana_port: 30081
+    externalPort: 9200
+    internal_kibana_port: 80
+    logstash_tcp_port: 12201
+    logstash_udp_port: 12201
+    name: elk
+encryption_key: fffffxdddeadb33f
+encryption_salt: my~encypt10n~s@lt
+encryption_salt_auth: null
+error_pages:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/error_pages
+    tag: *tag
+  name: error-pages
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8080
+    name: error-pages
+    type: ClusterIP
+etcd:
+  election_timeout: 5000
+  hb_interval: 500
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/etcd
+    tag: *tag
+  job:
+    containers:
+      image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
+  name: etcd
+  pod:
+    busyboxImage: busybox:1.30.0
+  replicaCount: 1
+  service:
+    discovery_name: etcd-cluster
+    externalPort: 2379
+    internalPort: 2379
+    name: etcd-client
+    peerPort: 2380
+    type: ClusterIP
+events_queue: events_queue
+failed_imports_dataset_generator:
+  aws_access_key_id: null
+  aws_secret_access_key: null
+  bucket: null
+  enable: false
+  filename: null
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/failed_imports_dataset_generator
+    tag: *tag
+  name: failed-imports-dataset-generator
+  s3_path: null
+  schedule: 0 0 * * *
+  startingDeadlineSeconds: 100
+fake_cad_enabled: 0
+filebeat:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/filebeat
+    tag: *tag
+  name: filebeat
+  service:
+    external_port: 9666
+    logstash_beats_port: 12201
+    logstash_host_address: 127.0.0.1
+    name: filebeat
+force_aws_edp_strip: null
+gemini_scheduler:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_scheduler
+    tag: *tag
+  name: gemini-scheduler
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+gemini_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_worker
+    tag: *tag
+  name: gemini-worker
+  replicaCount: 1
+google_calendar_service:
+  access_key:
+    auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+    auth_uri: https://accounts.google.com/o/oauth2/auth
+    client_email: calendar-service@optscale.iam.gserviceaccount.com
+    client_id: ""
+    client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/calendar-service@optscale.iam.gserviceaccount.com
+    private_key: |
+      -----BEGIN PRIVATE KEY-----
+      -----END PRIVATE KEY-----
+    private_key_id: eeee000
+    project_id: optscale
+    token_uri: https://oauth2.googleapis.com/token
+    type: service_account
+  enabled: false
+grafana:
+  env:
+    htpasswd_pass: passwordforgrafana
+    htpasswd_user: userforgrafana
+  grafana_nginx:
+    image:
+      id: null
+      pullPolicy: Never
+      repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
+      tag: *tag
+    name: grafana-nginx
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
+    tag: *tag
+  internalPort: 3000
+  name: grafana
+  replicaCount: 1
+  service:
+    externalPort: 30082
+    internalPort: 80
+    name: grafana
+    type: NodePort
+grafana_nginx:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana_nginx
+    tag: *tag
+herald:
+  api:
+    replicaCount: 1
+    role: api
+  engine:
+    replicaCount: 2
+    role: engine
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald
+    tag: *tag
+  name: herald
+  service:
+    externalPort: 80
+    internalPort: 8906
+    name: herald
+    type: ClusterIP
+herald_executor:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald_executor
+    tag: *tag
+  name: herald-executor
+  replicaCount: 1
+influxdb:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/influxdb
+    tag: *tag
+  name: influxdb
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8086
+    name: influxdb
+    type: ClusterIP
+insider_api:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_api
+    tag: *tag
+  name: insider-api
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8945
+    name: insider-api
+    type: ClusterIP
+insider_scheduler:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_scheduler
+    tag: *tag
+  name: insider-scheduler
+  replicaCount: 1
+  schedule: 0 0 * * *
+  startingDeadlineSeconds: 100
+insider_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_worker
+    tag: *tag
+  name: insider-worker
+  replicaCount: 1
+invite_expiration_days: 30
+jira_bus:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_bus
+    tag: *tag
+  name: jira-bus
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8977
+    name: jira-bus
+    type: ClusterIP
+jira_ui:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_ui
+    tag: *tag
+  name: jira-ui
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 4000
+    name: jira-ui
+    type: ClusterIP
+katara_scheduler_timeout: 3600
+katara_service:
+  api:
+    replicaCount: 1
+    role: api
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_service
+    tag: *tag
+  name: katara
+  scheduler:
+    replicaCount: 1
+    role: scheduler
+  service:
+    externalPort: 80
+    internalPort: 8935
+    name: katara
+    type: ClusterIP
+katara_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_worker
+    tag: *tag
+  name: kataraworker
+  replicaCount: 1
+keeper:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper
+    tag: *tag
+  name: keeper
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8973
+    name: keeper
+    type: ClusterIP
+keeper_executor:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper_executor
+    tag: *tag
+  name: keeper-executor
+  replicaCount: 1
+layout_cleaner:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/layout_cleaner
+    tag: *tag
+  name: layout-cleaner
+  schedule: 0 3 * * *
+  startingDeadlineSeconds: 100
+live_demo_generator:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/live_demo_generator
+    tag: *tag
+  name: live-demo-generator
+  replicaCount: 1
+  schedule: 0 * * * *
+  startingDeadlineSeconds: 100
+mariadb:
+  credentials:
+    password: my-password-01
+    username: root
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb
+    tag: *tag
+  name: mariadb
+  replicaCount: 1
+  service:
+    externalPort: 3306
+    internalPort: 3306
+    name: mariadb
+    type: ClusterIP
+metroculus_api:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_api
+    tag: *tag
+  name: metroculusapi
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8969
+    name: metroculusapi
+    type: ClusterIP
+metroculus_scheduler:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_scheduler
+    tag: *tag
+  name: metroculusscheduler
+  replicaCount: 1
+  schedule: '*/30 * * * *'
+  startingDeadlineSeconds: 100
+metroculus_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_worker
+    tag: *tag
+  name: metroculusworker
+  replicaCount: 1
+minio:
+  credentials:
+    access: optscale-minio
+    secret: secret_password
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/minio
+    tag: *tag
+  name: minio
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 9000
+    name: minio
+    type: ClusterIP
+mongo:
+  cache_size: 1
+  credentials:
+    key: secureShardingKeyFFFDDa129
+    password: SecurePassword-01-02
+    username: root
+  external: false
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mongo
+    tag: *tag
+  name: mongo
+  replicaCount: 1
+  dataSize: 100Gi
+  service:
+    externalPort: 80
+    host: mongo
+    internalPort: 27017
+    name: mongo
+    type: ClusterIP
+  statefulSet:
+    spec:
+      initContainers:
+        image: busybox:1.30.0
+ngui:
+  env:
+    build_mode: ""
+    ganalytics_id: ""
+    google_map_api_key: ""
+    google_oauth_client_id: ""
+    hotjar_id: ""
+    microsoft_oauth_client_id: ""
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/ngui
+    tag: *tag
+  name: ngui
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 4000
+    name: ngui
+    type: ClusterIP
+optscale_error_emails:
+  enabled: false
+  recipient: null
+optscale_key:
+
+optscale_service_emails:
+  enabled: false
+  recipient: null
+organization_violations:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/organization_violations
+    tag: *tag
+  name: organization-violations
+  replicaCount: 1
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+overlay_list: ""
+password_strength_settings: {}
+phpmyadmin:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  name: myadmin
+  replicaCount: 1
+  service:
+    externalPort: 30080
+    internalPort: 80
+    name: myadmin
+    type: NodePort
+power_schedule:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/power_schedule
+    tag: *tag
+  name: power-schedule
+  replicaCount: 1
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+product_name: OptScale
+public_port: 443
+rabbitmq:
+  credentials:
+    cookie: dWkhXehOApH1OHshvByfpfTf3Cd8wwkADei7mWd5JF
+    password: secure-password-here
+    username: optscale
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  memory_limit: 512
+  mnesiaSize: 10Gi
+  name: rabbitmq
+  replicaCount: 1
+  service:
+    empdPort: 4369
+    externalPort: 5672
+    internalPort: 5672
+    managerPort: 15672
+    name: rabbitmq
+    type: ClusterIP
+  statefulSet:
+    spec:
+      containers:
+        image: rabbitmq:3.8.2-management-alpine
+      initContainers:
+        image: busybox:1.30.0
+redis:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/redis
+    tag: *tag
+  name: redis
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 6379
+    name: redis
+    type: ClusterIP
+release: null
+report_import_scheduler:
+  image:
+    pullPolicy: IfNotPresent
+    repository: curlimages/curl
+    tag: latest
+  name: report-import-scheduler
+  startingDeadlineSeconds: 100
+report_import_schedules:
+  "0": '*/15 * * * *'
+  "1": 0 * * * *
+  "6": 0 */6 * * *
+  "24": 0 0 * * *
+resource_discovery:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_discovery
+    tag: *tag
+  memory_limit: 1024
+  name: resource-discovery
+  replicaCount: 2
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+resource_discovery_settings:
+  debug: null
+  discover_size: 10000
+  observe_timeout: 7200
+  timeout: null
+  writing_timeout: 60
+resource_observer:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_observer
+    tag: *tag
+  name: resource-observer
+  replicaCount: 1
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+resource_violations:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_violations
+    tag: *tag
+  name: resource-violations
+  replicaCount: 1
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 100
+rest_api:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/rest_api
+    tag: *tag
+  name: restapi
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 8999
+    name: restapi
+    type: ClusterIP
+risp_scheduler:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_scheduler
+    tag: *tag
+  name: risp-scheduler
+  replicaCount: 1
+  schedule: 45 */1 * * *
+  startingDeadlineSeconds: 100
+risp_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_worker
+    tag: *tag
+  name: risp-worker
+  replicaCount: 1
+secrets:
+  cluster: fc83d31-461d-44c5-b4d5-41a32d6c36a1
+service_credentials:
+  alibaba:
+    access_key_id: accesskeyid
+    secret_access_key: secretaccesskey
+  aws:
+    access_key_id: accesskeyid
+    secret_access_key: secretaccesskey
+  azure:
+    client_id: clientid
+    secret: secret
+    subscription_id: subscriptionid
+    tenant: tenant
+  gcp:
+    credentials:
+      auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+      auth_uri: https://accounts.google.com/o/oauth2/auth
+      client_email: optscale-service-credentials@yourproject.iam.gserviceaccount.com
+      client_id: "111111111"
+      client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/optscale-service-credentials%40yourproject.iam.gserviceaccount.com
+      private_key: |
+        -----BEGIN PRIVATE KEY-----
+        -----END PRIVATE KEY-----
+      private_key_id: yourprivatekeyid
+      project_id: yourprojectid
+      token_uri: https://oauth2.googleapis.com/token
+      type: service_account
+    pricing_data:
+      dataset_name: pricing_dataset
+      table_name: cloud_pricing_export
+    project_id: yourprojectid
+skip_config_update: false
+slacker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker
+    tag: *tag
+  name: slacker
+  replicaCount: 1
+  service:
+    externalPort: 80
+    internalPort: 80
+    name: slacker
+    type: ClusterIP
+slacker_executor:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker_executor
+    tag: *tag
+  name: slacker-executor
+  replicaCount: 1
+smtp: {}
+ssl:
+  cert_manager:
+    enabled: false
+    issuer_type: issuer
+  certificate_name: defaultcert
+  force_redirect: true
+tag: local
+thanos_compactor:
+  consistencyDelay: 4h
+  cronJob:
+    backoffLimit: 0
+    concurrencyPolicy: Forbid
+    failedJobsHistoryLimit: 2
+    schedule: 0 */12 * * *
+    startingDeadlineSeconds: 100
+    successfulJobsHistoryLimit: 1
+    suspend: false
+  dataSize: 10Gi
+  deleteDelay: 6h
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  job:
+    spec:
+      containers:
+        image: thanosio/thanos:v0.39.1
+  name: thanos-compactor
+  retentionResolution1h: 120d
+  retentionResolution5m: 90d
+  retentionResolutionRaw: 30d
+  service:
+    httpExternalPort: 10902
+    name: thanos-compactor
+    type: ClusterIP
+thanos_query:
+  deployment:
+    spec:
+      template:
+        containers:
+          image: thanosio/thanos:v0.39.1
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  name: thanos-query
+  replicaCount: 1
+  service:
+    grpcExternalPort: 10901
+    grpcType: ClusterIP
+    httpExternalPort: 10902
+    httpNodePort: 0
+    httpType: ClusterIP
+    name: thanos-query
+thanos_receive:
+  cpu_limit: 2
+  dataSize: 10Gi
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  maxConcurrency: 20
+  memory_limit: 8192
+  name: thanos-receive
+  remoteWritePath: api/v1/receive
+  replicaCount: 1
+  service:
+    grpcExternalPort: 10901
+    httpExternalPort: 10902
+    name: thanos-receive
+    remoteWriteExternalPort: 19291
+    type: ClusterIP
+  statefulSet:
+    spec:
+      containers:
+        image: thanosio/thanos:v0.39.1
+  tsdbRetention: 4h
+thanos_storegateway:
+  dataSize: 10Gi
+  ignoreDeletionMarksDelay: 3h
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  name: thanos-storegateway
+  replicaCount: 1
+  service:
+    grpcExternalPort: 10901
+    httpExternalPort: 10902
+    name: thanos-storegateway
+    type: ClusterIP
+  statefulSet:
+    spec:
+      containers:
+        image: thanosio/thanos:v0.39.1
+thanos_web:
+  httpPort: 10902
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+  name: thanos-web
+  refreshInterval: 10m
+  service:
+    httpExternalPort: 10902
+    name: thanos-web
+    type: ClusterIP
+  statefulSet:
+    spec:
+      containers:
+        image: thanosio/thanos:v0.39.1
+token_expiration: 168
+trapper_scheduler:
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_scheduler
+    tag: *tag
+  name: trapper-scheduler
+  replicaCount: 1
+  schedule: 45 */1 * * *
+  startingDeadlineSeconds: 100
+trapper_worker:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_worker
+    tag: *tag
+  name: trapper-worker
+  replicaCount: 1
+users_dataset_generator:
+  aws_access_key_id: null
+  aws_secret_access_key: null
+  bucket: null
+  enable: false
+  filename: null
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/users_dataset_generator
+    tag: *tag
+  name: users-dataset-generator
+  s3_path: null
+  schedule: 0 0 * * *
+  startingDeadlineSeconds: 100
+webhook_executor:
+  image:
+    id: null
+    pullPolicy: IfNotPresent
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/webhook_executor
+    tag: *tag
+  name: webhook-executor
+  replicaCount: 1
+zohocrm:
+  regapp: null

@@ -16,7 +16,7 @@ import { RESOURCE_PAGE_TABS } from "utils/constants";
 import { formatUTC, EN_FULL_FORMAT } from "utils/datetime";
 import { SPACING_2 } from "utils/layouts";
 import { MetadataNodes } from "utils/metadata";
-import { isEmpty } from "utils/objects";
+import { isEmptyObject } from "utils/objects";
 import CollapsableTableCell from "../CollapsableTableCell";
 
 const renderKeyValueLabels = (options) => options.map((opt) => <KeyValueLabel key={opt.keyMessageId} {...opt} />);
@@ -341,8 +341,8 @@ const ResourceDetails = (props) => {
   const resourceProperties = getResourceProperties(props);
   const { tags } = props;
 
-  const shouldRenderTagsTable = !isEmpty(tags) && Object.values(tags).filter(Boolean);
-  const shouldRenderMetadata = !isEmpty(metadataTags) && Object.values(metadataTags).filter(Boolean);
+  const shouldRenderTagsTable = !isEmptyObject(tags) && Object.values(tags).filter(Boolean);
+  const shouldRenderMetadata = !isEmptyObject(metadataTags) && Object.values(metadataTags).filter(Boolean);
 
   const columnSize = getColumnSize(shouldRenderTagsTable, shouldRenderMetadata);
 
