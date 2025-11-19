@@ -1,10 +1,10 @@
 import logging
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 
-from bumiworker.bumiworker.modules.base import ModuleBase
+from bumiworker.bumiworker.modules.base import ModuleBase, DAYS_IN_MONTH
 from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import DEFAULT as CWL_PRICING
 
 SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
@@ -183,6 +183,90 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         except Exception:
             return 0.0
 
+    def _calculate_saving(self, resource: Dict, today: date) -> Dict[str, float]:
+        """
+        Combine estimated savings with real CUR-based costs whenever possible.
+        """
+        estimated = float(self._estimate_saving(resource))
+        real_payload = self._real_saving_payload(resource, today, estimated)
+        if real_payload:
+            return real_payload
+        return {
+            "saving": estimated,
+            "estimated_monthly_cost": estimated,
+        }
+
+    def _real_saving_payload(
+        self,
+        resource: Dict[str, Any],
+        today: date,
+        estimated_monthly_cost: float
+    ) -> Optional[Dict[str, float]]:
+        """
+        Build saving payload backed by ClickHouse expenses for the log group.
+        """
+        cloud_account_id = resource.get("cloud_account_id")
+        resource_id = resource.get("resource_id")
+        if not cloud_account_id or not resource_id:
+            return None
+
+        real_cost = self._log_group_monthly_cost(cloud_account_id, resource_id, today)
+        if real_cost is None:
+            return None
+
+        stored_bytes = int(resource.get("stored_bytes") or 0)
+        stored_gb = stored_bytes / BYTES_PER_GIB if stored_bytes else 0.0
+
+        return {
+            "saving": max(0.0, float(real_cost)),
+            "current_cost_month": float(real_cost),
+            "estimated_monthly_cost": estimated_monthly_cost,
+            "stored_gb": stored_gb,
+        }
+
+    def _log_group_monthly_cost(
+        self,
+        cloud_account_id: str,
+        resource_id: str,
+        today: date
+    ) -> Optional[float]:
+        """
+        Sum daily CUR expenses for the log group over the last month.
+        """
+        start_date = today - timedelta(days=DAYS_IN_MONTH)
+        query = """
+            SELECT date, sum(cost)
+            FROM expenses
+            WHERE cloud_account_id = %(cloud_account_id)s
+              AND resource_id = %(resource_id)s
+              AND date >= %(start_date)s
+              AND date < %(end_date)s
+            GROUP BY date
+        """
+        try:
+            rows = self.clickhouse_client.query(
+                query=query,
+                parameters={
+                    "cloud_account_id": cloud_account_id,
+                    "resource_id": resource_id,
+                    "start_date": start_date,
+                    "end_date": today,
+                }
+            ).result_rows
+        except Exception as exc:
+            LOG.warning(
+                "Failed to fetch CUR expenses for log group %s: %s",
+                resource_id, str(exc)
+            )
+            return None
+        total = 0.0
+        for _, cost in rows:
+            try:
+                total += float(cost or 0)
+            except (TypeError, ValueError):
+                continue
+        return total
+
     def _aggregate_resources(
             self, cloud_account_id: str) -> List[Dict[str, Any]]:
         """
@@ -233,6 +317,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         ca_map = self.get_cloud_accounts(
             SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
 
+        today = (
+            datetime.utcfromtimestamp(self.created_at).date()
+            if self.created_at else self._utc_now().date()
+        )
         result: List[Dict[str, Any]] = []
 
         for ca in ca_map:
@@ -253,7 +341,8 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 if not self._is_inactive(r, days_threshold):
                     continue
 
-                saving = self._estimate_saving(r)
+                saving_payload = self._calculate_saving(r, today)
+                saving = saving_payload.get("saving", 0.0)
                 ca_info = ca_map.get(r['cloud_account_id'], {})
 
                 metrics = self._get_metrics(r)
@@ -263,7 +352,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 query_occurrences = self._count_occurrences_in_threshold(
                     metrics.get(MetricKey.QUERY.value, []), days_threshold)
 
-                result.append({
+                item = {
                     'cloud_resource_id': r.get('resource_id'),
                     'resource_id': r.get('resource_id'),
                     'resource_name': r.get('name'),
@@ -282,7 +371,16 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                     'ingestion': int(ingestion_occurrences),
                     'query': int(query_occurrences),
                     'saving': saving,
-                })
+                }
+                if "current_cost_month" in saving_payload:
+                    item["current_cost_month"] = round(
+                        saving_payload["current_cost_month"], 2)
+                if "estimated_monthly_cost" in saving_payload:
+                    item["estimated_monthly_cost"] = round(
+                        saving_payload["estimated_monthly_cost"], 2)
+                if "stored_gb" in saving_payload:
+                    item["stored_gb"] = round(saving_payload["stored_gb"], 3)
+                result.append(item)
 
         return result
 
