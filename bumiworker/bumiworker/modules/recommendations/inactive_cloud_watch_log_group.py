@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 
 from bumiworker.bumiworker.modules.base import ModuleBase, DAYS_IN_MONTH
-from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import DEFAULT as CWL_PRICING
 
 SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
@@ -145,62 +144,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         except Exception:
             return False
 
-    def _estimate_saving(self, resource: Dict) -> float:
-        """
-        Calculate potential monthly savings for an inactive log group based on AWS pricing,
-        without considering lifecycle policy changes.
-
-        Uses three components:
-        - Ingestion (IngestionBytes): USD 0.50 per GB (last 30 days)
-        - Storage (stored_bytes): USD 0.03 per GB-month compressed (apply 0.15 compression factor)
-        - Query (QueryBytes): USD 0.005 per GB scanned (last 30 days)
-        """
-
-        try:
-            stored_bytes = self._get_from_resource(
-                resource, 'stored_bytes', 0) or 0
-
-            uncompressed_gb = stored_bytes / BYTES_PER_GIB
-            compressed_gb = uncompressed_gb * CWL_PRICING.compression_factor
-            storage_monthly_cost = compressed_gb * CWL_PRICING.storage_usd_per_gb_month
-
-            metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(
-                MetricKey.INGESTION.value, []) or []
-            query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
-
-            ingestion_bytes = self._sum_metrics_last_month(ingestion_metrics)
-            query_bytes = self._sum_metrics_last_month(query_metrics)
-
-            ingestion_gb = ingestion_bytes / BYTES_PER_GIB
-            query_gb = query_bytes / BYTES_PER_GIB
-
-            ingestion_cost = ingestion_gb * CWL_PRICING.ingestion_usd_per_gb
-            query_cost = query_gb * CWL_PRICING.query_usd_per_gb
-
-            total = storage_monthly_cost + ingestion_cost + query_cost
-            return float(total)
-        except Exception:
-            return 0.0
-
-    def _calculate_saving(self, resource: Dict, today: date) -> Dict[str, float]:
-        """
-        Combine estimated savings with real CUR-based costs whenever possible.
-        """
-        estimated = float(self._estimate_saving(resource))
-        real_payload = self._real_saving_payload(resource, today, estimated)
-        if real_payload:
-            return real_payload
-        return {
-            "saving": estimated,
-            "estimated_monthly_cost": estimated,
-        }
-
     def _real_saving_payload(
         self,
         resource: Dict[str, Any],
-        today: date,
-        estimated_monthly_cost: float
+        today: date
     ) -> Optional[Dict[str, float]]:
         """
         Build saving payload backed by ClickHouse expenses for the log group.
@@ -220,7 +167,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         return {
             "saving": max(0.0, float(real_cost)),
             "current_cost_month": float(real_cost),
-            "estimated_monthly_cost": estimated_monthly_cost,
             "stored_gb": stored_gb,
         }
 
@@ -341,7 +287,9 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 if not self._is_inactive(r, days_threshold):
                     continue
 
-                saving_payload = self._calculate_saving(r, today)
+                saving_payload = self._real_saving_payload(r, today)
+                if not saving_payload:
+                    continue
                 saving = saving_payload.get("saving", 0.0)
                 ca_info = ca_map.get(r['cloud_account_id'], {})
 
@@ -375,9 +323,6 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 if "current_cost_month" in saving_payload:
                     item["current_cost_month"] = round(
                         saving_payload["current_cost_month"], 2)
-                if "estimated_monthly_cost" in saving_payload:
-                    item["estimated_monthly_cost"] = round(
-                        saving_payload["estimated_monthly_cost"], 2)
                 if "stored_gb" in saving_payload:
                     item["stored_gb"] = round(saving_payload["stored_gb"], 3)
                 result.append(item)

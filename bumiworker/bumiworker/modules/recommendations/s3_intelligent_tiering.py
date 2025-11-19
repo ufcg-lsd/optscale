@@ -6,8 +6,6 @@ from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
 from bumiworker.bumiworker.modules.base import DAYS_IN_MONTH
 from tools.cloud_adapter.cloud import Cloud as CloudAdapter
 from .constants import (
-    PRICES,
-    IT_MONITOR_FEE_PER_1000,
     RETURN_LIMIT,
     BYTES_PER_GIB,
     ACCESS_PATTERNS,
@@ -44,21 +42,6 @@ def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
                 continue
             out.append({"name": name, "gb": gb})
     return out
-
-
-def _current_monthly_cost(total_gb: float, tiers_gb: List[Dict[str, float]]) -> float:
-    """
-    Estimate current monthly storage cost for the bucket.
-    - If we have per-tier breakdown (tiers_gb), sum gb * PRICES[tier].
-    - Otherwise, assume all at Standard price.
-    """
-    if tiers_gb:
-        cost = 0.0
-        for item in tiers_gb:
-            price = PRICES.get(item["name"], PRICES["Standard"])
-            cost += item["gb"] * price
-        return cost
-    return total_gb * PRICES["Standard"]
 
 
 def _parse_date_loose(s: Any) -> Optional[date]:
@@ -101,31 +84,6 @@ def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> s
         return ACCESS_PATTERNS[1]
     else:
         return ACCESS_PATTERNS[2]
-
-
-def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
-    """
-    Map inferred access class to the corresponding IT storage price.
-    """
-    tier = (access_tier or "").lower()
-    if tier == ACCESS_PATTERNS[1]:
-        return PRICES["IT_IA"]
-    if tier == ACCESS_PATTERNS[2]:
-        return PRICES["IT_AIA"]
-    return PRICES["IT_FA"]
-
-
-def _intelligent_tiering_cost_by_access(total_gb: float, eligible_objects: int, access_tier: str) -> float:
-    """
-    Project monthly cost under S3 Intelligent-Tiering for a bucket:
-      IT storage cost (per GB) + monitoring fee per 1,000 objects.
-
-      cost_it = total_gb * IT_price(access_tier) + (objects / 1000) * IT_MONITOR_FEE_PER_1000
-    """
-    price_per_gb = _it_price_per_gb_for_access_tier(access_tier)
-    storage = total_gb * price_per_gb
-    monitor = float(eligible_objects) * IT_MONITOR_FEE_PER_1000
-    return storage + monitor
 
 
 class S3IntelligentTiering(S3AbandonedBucketsBase):
@@ -232,19 +190,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             if not has_standard_positive:
                 return false_candidate
 
-            eligible_objects = object_count
-            cost_now = _current_monthly_cost(total_gb, tiers_gb)
-            cost_it = _intelligent_tiering_cost_by_access(total_gb, eligible_objects, access_tier)
-            saving = max(0.0, cost_now - cost_it)
-
             real_saving = self._real_saving_payload(
                 doc, total_gb, today, cloud_account)
-            if real_saving:
-                saving = real_saving["saving"]
-            else:
-                real_saving = {}
+            if not real_saving:
+                return false_candidate
             LOG.debug("it_eval ok")
-            result = {"is_candidate": True, "saving": saving, "is_with_it": False}
+            result = {"is_candidate": True, "saving": real_saving["saving"], "is_with_it": False}
             result.update(real_saving)
             return result
         except Exception as exc:
