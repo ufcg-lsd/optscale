@@ -14,6 +14,7 @@ import InstancesGenerationUpgrade from "./InstancesGenerationUpgrade";
 import InstancesInStoppedStateForALongTime from "./InstancesInStoppedStateForALongTime";
 import InstancesMigration from "./InstancesMigration";
 import InstanceSubscription from "./InstanceSubscription";
+import IntelligentTiering from "./IntelligentTiering";
 import {
   CrossRegionTraffic,
   ExecutorsReservation,
@@ -58,6 +59,7 @@ export const OPTSCALE_RECOMMENDATIONS = Object.fromEntries(
     InactiveUsers,
     InactiveConsoleUsers,
     InactiveCloudWatchLogGroup,
+    IntelligentTiering,
     AbandonedS3Buckets,
     AbandonedKinesisStreams,
     AbandonedInstances,
