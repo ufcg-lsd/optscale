@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag old
+tag: &tag no-hard-coded
 
 global:
   storageclass: gp2
@@ -10,7 +10,7 @@ auth:
   google_oauth_client_secret: ""
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/auth
     tag: *tag
   microsoft_oauth_client_id: ""
@@ -24,7 +24,7 @@ auth:
 bi_exporter:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_exporter
     tag: *tag
   name: bi-exporter
@@ -32,7 +32,7 @@ bi_exporter:
 bi_scheduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bi_scheduler
     tag: *tag
   name: bi-scheduler
@@ -44,7 +44,7 @@ bi_settings:
   task_wait_timeout: 259200
 booking_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/booking_observer
     tag: *tag
   name: booking-observer
@@ -60,7 +60,7 @@ bumi_worker:
 bumischeduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumischeduler
     tag: *tag
   name: bumischeduler
@@ -68,14 +68,14 @@ bumischeduler:
 bumiworker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/bumiworker
     tag: *tag
   name: bumiworker
   replicaCount: 1
 calendar_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/calendar_observer
     tag: *tag
   name: calendar-observer
@@ -87,7 +87,7 @@ certificates:
 
 cleanelkdb:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanelkdb
     tag: *tag
   log_max_size: 5120
@@ -97,7 +97,7 @@ cleanelkdb:
 cleaninfluxdb:
   days_to_store: 90
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleaninfluxdb
     tag: *tag
   influxdb_host: influxdb
@@ -111,7 +111,7 @@ cleanmongodb:
   file_max_rows: 10000
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/cleanmongodb
     tag: *tag
   name: cleanmongodb
@@ -126,7 +126,7 @@ clickhouse:
   external: false
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/clickhouse
     tag: *tag
   name: clickhouse
@@ -143,8 +143,8 @@ clusterDomain: cluster.local
 company_name: Hystax
 configurator:
   image:
-    pullPolicy: IfNotPresent
-    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
+    pullPolicy: Always
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:no-hard-coded
     tag: *tag
 databases:
 - auth-db
@@ -163,7 +163,7 @@ deactivatorg:
   days_limit: 30
   enable: true
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/deactivatorg
     tag: *tag
   name: deactivatorg
@@ -174,7 +174,7 @@ demo:
 demo_org_cleanup:
   demo_org_lifetime_hrs: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/demo_org_cleanup
     tag: *tag
   name: demoorgcleanup
@@ -185,7 +185,7 @@ deploy_cleaninfluxdb: "true"
 diproxy:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diproxy
     tag: *tag
   name: diproxy
@@ -199,7 +199,7 @@ disable_email_verification: true
 diworker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/diworker
     tag: *tag
   name: diworker
@@ -223,7 +223,7 @@ elk:
   es_heap_size: 1g
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/elk
     tag: *tag
   ls_heap_size: 2g
@@ -242,7 +242,7 @@ encryption_salt_auth: null
 error_pages:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/error_pages
     tag: *tag
   name: error-pages
@@ -257,12 +257,12 @@ etcd:
   hb_interval: 500
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/etcd
     tag: *tag
   job:
     containers:
-      image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:old
+      image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:dev
   name: etcd
   pod:
     busyboxImage: busybox:1.30.0
@@ -282,7 +282,7 @@ failed_imports_dataset_generator:
   enable: false
   filename: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/failed_imports_dataset_generator
     tag: *tag
   name: failed-imports-dataset-generator
@@ -293,7 +293,7 @@ fake_cad_enabled: 0
 filebeat:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/filebeat
     tag: *tag
   name: filebeat
@@ -306,7 +306,7 @@ force_aws_edp_strip: null
 gemini_scheduler:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_scheduler
     tag: *tag
   name: gemini-scheduler
@@ -315,7 +315,7 @@ gemini_scheduler:
 gemini_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/gemini_worker
     tag: *tag
   name: gemini-worker
@@ -348,7 +348,7 @@ grafana:
     name: grafana-nginx
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
     tag: *tag
   internalPort: 3000
@@ -361,7 +361,7 @@ grafana:
     type: NodePort
 grafana_nginx:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana_nginx
     tag: *tag
 herald:
@@ -373,7 +373,7 @@ herald:
     role: engine
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald
     tag: *tag
   name: herald
@@ -385,7 +385,7 @@ herald:
 herald_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/herald_executor
     tag: *tag
   name: herald-executor
@@ -393,7 +393,7 @@ herald_executor:
 influxdb:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/influxdb
     tag: *tag
   name: influxdb
@@ -406,7 +406,7 @@ influxdb:
 insider_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_api
     tag: *tag
   name: insider-api
@@ -418,7 +418,7 @@ insider_api:
     type: ClusterIP
 insider_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_scheduler
     tag: *tag
   name: insider-scheduler
@@ -428,7 +428,7 @@ insider_scheduler:
 insider_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/insider_worker
     tag: *tag
   name: insider-worker
@@ -437,7 +437,7 @@ invite_expiration_days: 30
 jira_bus:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_bus
     tag: *tag
   name: jira-bus
@@ -450,7 +450,7 @@ jira_bus:
 jira_ui:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/jira_ui
     tag: *tag
   name: jira-ui
@@ -467,7 +467,7 @@ katara_service:
     role: api
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_service
     tag: *tag
   name: katara
@@ -482,7 +482,7 @@ katara_service:
 katara_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/katara_worker
     tag: *tag
   name: kataraworker
@@ -490,7 +490,7 @@ katara_worker:
 keeper:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper
     tag: *tag
   name: keeper
@@ -503,7 +503,7 @@ keeper:
 keeper_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/keeper_executor
     tag: *tag
   name: keeper-executor
@@ -511,7 +511,7 @@ keeper_executor:
 layout_cleaner:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/layout_cleaner
     tag: *tag
   name: layout-cleaner
@@ -519,7 +519,7 @@ layout_cleaner:
   startingDeadlineSeconds: 100
 live_demo_generator:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/live_demo_generator
     tag: *tag
   name: live-demo-generator
@@ -532,7 +532,7 @@ mariadb:
     username: root
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb
     tag: *tag
   name: mariadb
@@ -545,7 +545,7 @@ mariadb:
 metroculus_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_api
     tag: *tag
   name: metroculusapi
@@ -557,7 +557,7 @@ metroculus_api:
     type: ClusterIP
 metroculus_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_scheduler
     tag: *tag
   name: metroculusscheduler
@@ -567,7 +567,7 @@ metroculus_scheduler:
 metroculus_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/metroculus_worker
     tag: *tag
   name: metroculusworker
@@ -578,7 +578,7 @@ minio:
     secret: secret_password
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/minio
     tag: *tag
   name: minio
@@ -597,7 +597,7 @@ mongo:
   external: false
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mongo
     tag: *tag
   name: mongo
@@ -623,7 +623,7 @@ ngui:
     microsoft_oauth_client_id: ""
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/ngui
     tag: *tag
   name: ngui
@@ -643,7 +643,7 @@ optscale_service_emails:
   recipient: null
 organization_violations:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/organization_violations
     tag: *tag
   name: organization-violations
@@ -655,7 +655,7 @@ password_strength_settings: {}
 phpmyadmin:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: myadmin
   replicaCount: 1
   service:
@@ -665,7 +665,7 @@ phpmyadmin:
     type: NodePort
 power_schedule:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/power_schedule
     tag: *tag
   name: power-schedule
@@ -681,7 +681,7 @@ rabbitmq:
     username: optscale
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   memory_limit: 512
   mnesiaSize: 10Gi
   name: rabbitmq
@@ -702,7 +702,7 @@ rabbitmq:
 redis:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/redis
     tag: *tag
   name: redis
@@ -715,7 +715,7 @@ redis:
 release: null
 report_import_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: curlimages/curl
     tag: latest
   name: report-import-scheduler
@@ -727,7 +727,7 @@ report_import_schedules:
   "24": 0 0 * * *
 resource_discovery:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_discovery
     tag: *tag
   memory_limit: 1024
@@ -743,7 +743,7 @@ resource_discovery_settings:
   writing_timeout: 60
 resource_observer:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_observer
     tag: *tag
   name: resource-observer
@@ -752,7 +752,7 @@ resource_observer:
   startingDeadlineSeconds: 100
 resource_violations:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/resource_violations
     tag: *tag
   name: resource-violations
@@ -762,7 +762,7 @@ resource_violations:
 rest_api:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/rest_api
     tag: *tag
   name: restapi
@@ -774,7 +774,7 @@ rest_api:
     type: ClusterIP
 risp_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_scheduler
     tag: *tag
   name: risp-scheduler
@@ -784,7 +784,7 @@ risp_scheduler:
 risp_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/risp_worker
     tag: *tag
   name: risp-worker
@@ -825,7 +825,7 @@ skip_config_update: false
 slacker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker
     tag: *tag
   name: slacker
@@ -838,7 +838,7 @@ slacker:
 slacker_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/slacker_executor
     tag: *tag
   name: slacker-executor
@@ -864,7 +864,7 @@ thanos_compactor:
   deleteDelay: 6h
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   job:
     spec:
       containers:
@@ -885,7 +885,7 @@ thanos_query:
           image: thanosio/thanos:v0.39.1
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-query
   replicaCount: 1
   service:
@@ -900,7 +900,7 @@ thanos_receive:
   dataSize: 10Gi
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   maxConcurrency: 20
   memory_limit: 8192
   name: thanos-receive
@@ -922,7 +922,7 @@ thanos_storegateway:
   ignoreDeletionMarksDelay: 3h
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-storegateway
   replicaCount: 1
   service:
@@ -938,7 +938,7 @@ thanos_web:
   httpPort: 10902
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   name: thanos-web
   refreshInterval: 10m
   service:
@@ -952,7 +952,7 @@ thanos_web:
 token_expiration: 168
 trapper_scheduler:
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_scheduler
     tag: *tag
   name: trapper-scheduler
@@ -962,7 +962,7 @@ trapper_scheduler:
 trapper_worker:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/trapper_worker
     tag: *tag
   name: trapper-worker
@@ -974,7 +974,7 @@ users_dataset_generator:
   enable: false
   filename: null
   image:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/users_dataset_generator
     tag: *tag
   name: users-dataset-generator
@@ -984,7 +984,7 @@ users_dataset_generator:
 webhook_executor:
   image:
     id: null
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
     repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/webhook_executor
     tag: *tag
   name: webhook-executor
