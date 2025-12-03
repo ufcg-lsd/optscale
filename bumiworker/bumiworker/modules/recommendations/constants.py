@@ -5,12 +5,30 @@ PRICES: Final[Dict[str, float]] = {
     "IT_FA": 0.023,
     "IT_IA": 0.0125,
     "IT_AIA": 0.0040,
+    "IT_DAA": 0.00099,
     "Glacier": 0.0036,
     "Glacier Flexible Retrieval": 0.0036,
     "Glacier Instant Retrieval": 0.0040,
     "Glacier Deep Archive": 0.00099,
     "Deep Archive": 0.00099,
 }
+
+CATEGORY_MAP: Final[Dict[str, List[str]]] = {
+            "frequent": [
+                "standard",
+                "express one zone",
+            ],
+            "infrequent": [
+                "standard-ia",
+                "one zone-infrequent access",
+            ],
+            "archive": [
+                "glacier instant retrieval",
+                "glacier flexible retrieval",
+                "glacier deep archive",
+            ],
+        }
+
 
 IT_MONITOR_FEE_PER_1000: Final[float] = 0.0000025
 
