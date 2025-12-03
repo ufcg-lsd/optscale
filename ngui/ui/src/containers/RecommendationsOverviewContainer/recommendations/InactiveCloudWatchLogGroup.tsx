@@ -77,11 +77,11 @@ class InactiveCloudWatchLogGroup extends BaseRecommendation {
   get previewItems() {
     return this.items.map((item) => [
       {
-        key: `${item.cloud_resource_id} - label`,
+        key: `${item.cloud_resource_id}-label`,
         value: <RecommendationListItemResourceLabel item={item} />
       },
       {
-        key: `${item.cloud_resource_id} - saving`,
+        key: `${item.cloud_resource_id}-saving`,
         value: <FormattedMoney type={FORMATTED_MONEY_TYPES.COMMON} value={item.saving} />
       }
     ]);
