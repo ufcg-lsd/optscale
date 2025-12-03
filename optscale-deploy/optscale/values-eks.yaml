@@ -3,7 +3,7 @@
 tag: &tag no-hard-coded
 
 global:
-  storageclass: gp2
+  storageclass: gp3-tagged
 
 auth:
   google_oauth_client_id: ""
