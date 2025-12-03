@@ -9,7 +9,6 @@ from .constants import (
     IT_POSITIVE_STATUS,
     FREQUENT_TIER_THRESHOLD_DAYS,
     INFREQUENT_TIER_THRESHOLD_DAYS,
-    PRICES,
     IT_MONITOR_FEE_PER_1000,
 )
 
@@ -143,7 +142,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
     def _aggregate_resources(self, cloud_account_id: str) -> List[Dict[str, Any]]:
         """
-        Pull bucket docs for the given cloud account with only the fields we need
+        Pull bucket resources for the given cloud account with only the fields we need
         for candidate selection and saving computation.
         """
         pipeline = [
@@ -171,12 +170,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             }}
         ]
         try:
-            docs = list(self.mongo_client.restapi.resources.aggregate(pipeline))
+            resources = list(self.mongo_client.restapi.resources.aggregate(pipeline))
         except Exception as exc:
-            LOG.warning("it_docs error: %s", str(exc))
+            LOG.warning("it_resources error: %s", str(exc))
             return []
-        LOG.debug("it_docs ok")
-        return docs
+        LOG.debug("it_resources ok")
+        return resources
     
 
     def _classify_wrong_access_tier(self, category_bucket: str, last_checked: List[Any]) -> bool:
@@ -214,7 +213,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         return "unknown"
 
 
-    def _is_candidate(self, doc: Dict[str, Any]) -> bool:
+    def _is_candidate(self, resource: Dict[str, Any]) -> bool:
         """
         Check if the bucket is a candidate for Intelligent-Tiering.
 
@@ -228,25 +227,25 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         Returns:
             bool: True if bucket is a candidate for IT, False otherwise.
         """
-        it_status = str(doc.get("it_status_bucket", "")).lower()
+        it_status = str(resource.get("it_status_bucket", "")).lower()
         it_on = it_status in IT_POSITIVE_STATUS
         if it_on:
             return False
-        tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
+        tiers_gb = _parse_tiers_gb(resource.get("tiers") or [])
         total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
         if total_gb <= 0.0:
             return False
 
-        has_lifecycle_flag = bool(doc.get("has_lifecycle"))
-        lifecycle_rules = doc.get("lifecycle_rules")
+        has_lifecycle_flag = bool(resource.get("has_lifecycle"))
+        lifecycle_rules = resource.get("lifecycle_rules")
         if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
             return False
         
-        object_count = int(doc.get("object_count") or 0)
+        object_count = int(resource.get("object_count") or 0)
         if object_count <= 0:
             return False
         
-        tiers_gb = _parse_tiers_gb(doc.get("tiers") or [])
+        tiers_gb = _parse_tiers_gb(resource.get("tiers") or [])
         category_bucket = "unknown"
         if tiers_gb:
             standard_tier = next((t for t in tiers_gb if str(t["name"]).lower() == "standard"), None)
@@ -256,7 +255,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 largest_tier = max(tiers_gb, key=lambda x: x["gb"])
                 category_bucket = self._classify_category_from_tier(largest_tier["name"])
         
-        wrong_access_tier = self._classify_wrong_access_tier(category_bucket, doc.get("last_checked"))
+        wrong_access_tier = self._classify_wrong_access_tier(category_bucket, resource.get("last_checked"))
         if not wrong_access_tier:
             return False
         
@@ -265,7 +264,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
    
     def _real_saving_payload(
         self,
-        doc: Dict[str, Any],
+        resource: Dict[str, Any],
         total_gb: float,
         today: date,
         cloud_account: Optional[Dict[str, Any]]
@@ -276,12 +275,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         """
         if not cloud_account:
             return None
-        resource_id = doc.get("resource_id")
-        cloud_account_id = doc.get("cloud_account_id")
+        resource_id = resource.get("resource_id")
+        cloud_account_id = resource.get("cloud_account_id")
         if not resource_id or not cloud_account_id:
             return None
 
-        size_gb = doc.get("size_gb", total_gb)
+        size_gb = resource.get("size_gb", total_gb)
         try:
             size_gb_value = float(size_gb)
         except (TypeError, ValueError):
@@ -293,11 +292,9 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         if real_cost is None:
             return None
 
-        # Get access tier for distribution estimation
-        access_tier = _classify_access_tier_from_last_checked(doc.get("last_checked"), today)
-        object_count = int(doc.get("object_count") or 0)
+        access_tier = _classify_access_tier_from_last_checked(resource.get("last_checked"), today)
+        object_count = int(resource.get("object_count") or 0)
 
-        # Calculate IT cost with improved method
         it_cost_breakdown = self._calculate_it_cost(
             size_gb_value, access_tier, object_count, cloud_account
         )
@@ -307,19 +304,15 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         cost_if_it = it_cost_breakdown["total_cost"]
         saving_real = real_cost - cost_if_it
 
-        # Calculate average price per GB for backward compatibility
-        avg_price_per_gb = cost_if_it / size_gb_value if size_gb_value > 0 else 0.0
 
         result = {
             "saving": max(0.0, saving_real),
             "current_cost_month": real_cost,
             "cost_if_intelligent_tiering": cost_if_it,
             "size_gb": size_gb_value,
-            "price_intelligent_tiering": avg_price_per_gb,  # Average for compatibility
-            # Additional detailed breakdown
+            "price_intelligent_tiering": it_cost_breakdown["price_per_gb"],
             "it_storage_cost": it_cost_breakdown["storage_cost"],
             "it_monitoring_cost": it_cost_breakdown["monitoring_cost"],
-            "it_tier_distribution": it_cost_breakdown["tier_distribution"],
         }
         return result
 
@@ -365,17 +358,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 continue
         return total
 
-    def _get_intelligent_tiering_price(
-        self,
-        cloud_account: Dict[str, Any]
-    ) -> Optional[float]:
-        """
-        Legacy method: Returns average Intelligent-Tiering price (for backward compatibility).
-        Uses Frequent Access tier price as approximation.
-        """
-        prices = self._get_intelligent_tiering_prices(cloud_account)
-        # Return FA price as average approximation (legacy behavior)
-        return prices.get("FA")
 
     def _get_intelligent_tiering_prices(
         self,
@@ -388,19 +370,15 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         """
         cloud_account_id = self._extract_cloud_account_id(cloud_account)
         if not cloud_account_id:
-            return self._get_default_it_prices()
+            return None
 
-        # Check cache first
         cached = self._it_price_cache.get(cloud_account_id)
         if cached is not None:
             return cached
 
-        # Try to get prices from API
         adapter = self._cloud_adapter_for_account(cloud_account_id, cloud_account)
         if not adapter:
-            default_prices = self._get_default_it_prices()
-            self._it_price_cache[cloud_account_id] = default_prices
-            return default_prices
+            return None
 
         prices = {}
         tier_mappings = {
@@ -426,125 +404,13 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 except Exception as exc:
                     LOG.debug("it_price lookup for %s failed: %s", storage_class_name, str(exc))
                     continue
-
-            # Use default price if API lookup failed
             if tier_price is None:
-                tier_price = PRICES.get(f"IT_{tier_key}")
-            prices[tier_key] = tier_price if tier_price is not None else PRICES.get(f"IT_{tier_key}", 0.0)
-
-        # Get monitoring price and add to cache
-        monitoring_price = self._get_monitoring_price(cloud_account)
-        prices["MONITORING"] = monitoring_price if monitoring_price is not None else IT_MONITOR_FEE_PER_1000
+                return None 
+            prices[tier_key] = tier_price
 
         # Cache the results
         self._it_price_cache[cloud_account_id] = prices
         return prices
-
-    def _get_default_it_prices(self) -> Dict[str, float]:
-        """Return default Intelligent Tiering prices from constants."""
-        return {
-            "FA": PRICES.get("IT_FA", 0.023),
-            "IA": PRICES.get("IT_IA", 0.0125),
-            "AIA": PRICES.get("IT_AIA", 0.0040),
-            "DAA": PRICES.get("IT_DAA", 0.00099),
-            "MONITORING": IT_MONITOR_FEE_PER_1000,
-        }
-
-    def _get_monitoring_price(
-        self,
-        cloud_account: Dict[str, Any]
-    ) -> Optional[float]:
-        """
-        Fetch Intelligent-Tiering monitoring fee price using the CloudAdapter Pricing API.
-        Monitoring fee is charged per 1000 objects monitored per month.
-        
-        Returns price per 1000 objects or uses default constant if lookup fails.
-        """
-        cloud_account_id = self._extract_cloud_account_id(cloud_account)
-        if not cloud_account_id:
-            return IT_MONITOR_FEE_PER_1000  # Use default
-
-        # Check if monitoring price is already cached
-        cached = self._it_price_cache.get(cloud_account_id)
-        if cached is not None and "MONITORING" in cached:
-            return cached["MONITORING"]
-
-        adapter = self._cloud_adapter_for_account(cloud_account_id, cloud_account)
-        if not adapter:
-            return IT_MONITOR_FEE_PER_1000  # Use default
-
-        # Try different usagetype patterns for monitoring fee
-        # AWS Pricing API uses usagetype like "TimedStorage-INT-Monitoring" or similar
-        monitoring_usagetypes = [
-            "TimedStorage-INT-Monitoring",
-            "TimedStorage-INT-FA-Monitoring",
-            "IntelligentTiering-Monitoring",
-            "INT-Monitoring",
-        ]
-
-        for usagetype in monitoring_usagetypes:
-            try:
-                price_payload = adapter.get_prices({
-                    "resource_type": "Bucket",
-                    "usagetype": usagetype,
-                })
-                if isinstance(price_payload, list) and price_payload:
-                    for entry in price_payload:
-                        # Check if this is the monitoring fee
-                        price_unit = entry.get("price_unit", "").lower()
-                        price_value = self._normalize_price_value(entry.get("price"))
-                        
-                        if price_value is not None:
-                            # If unit is per 1000 objects, use directly
-                            if "1000" in price_unit or "per 1000" in price_unit:
-                                return price_value
-                            # If unit is per object, multiply by 1000
-                            elif "object" in price_unit:
-                                return price_value * 1000.0
-                            # If unit is unclear but price seems reasonable, assume per 1000
-                            elif price_value < 0.01:  # Likely per 1000 if very small
-                                return price_value
-            except Exception as exc:
-                LOG.debug("it_monitoring_price lookup for %s failed: %s", usagetype, str(exc))
-                continue
-
-        # If all lookups failed, use default
-        return IT_MONITOR_FEE_PER_1000
-
-    def _estimate_tier_distribution(
-        self,
-        access_tier: str,
-        total_gb: float
-    ) -> Dict[str, float]:
-        """
-        Estimate distribution of data across Intelligent Tiering tiers based on access pattern.
-        
-        Returns dict with GB per tier: {"FA": gb, "IA": gb, "AIA": gb, "DAA": gb}
-        
-        Distribution logic:
-        - frequent: 100% FA (but this case is filtered out in candidate selection)
-        - infrequent: 50% FA, 50% IA (typical for data accessed occasionally)
-        - archive: 20% FA, 30% IA, 40% AIA, 10% DAA (typical for rarely accessed data)
-        """
-        if access_tier == "frequent":
-            # Shouldn't happen as frequent is filtered, but handle it
-            return {"FA": total_gb, "IA": 0.0, "AIA": 0.0, "DAA": 0.0}
-        elif access_tier == "infrequent":
-            # Mix of frequent and infrequent access
-            return {
-                "FA": total_gb * 0.5,
-                "IA": total_gb * 0.5,
-                "AIA": 0.0,
-                "DAA": 0.0,
-            }
-        else:  # archive
-            # Mostly archive tiers with some infrequent
-            return {
-                "FA": total_gb * 0.2,
-                "IA": total_gb * 0.3,
-                "AIA": total_gb * 0.4,
-                "DAA": total_gb * 0.1,
-            }
 
     def _calculate_it_cost(
         self,
@@ -555,35 +421,21 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate Intelligent Tiering cost considering:
-        - Distribution across different tiers (FA, IA, AIA, DAA)
-        - Storage cost per tier
+        - Consider the access tier to define the class of the bucket
+        - Storage cost
         - Monitoring fee per 1000 objects
         
-        Returns dict with detailed cost breakdown or None if calculation fails.
+        Returns dict with the total cost, storage cost, monitoring cost, monitoring price per 1000 objects.
         """
         if size_gb <= 0.0 or object_count <= 0:
             return None
 
-        # Get prices for each tier
         tier_prices = self._get_intelligent_tiering_prices(cloud_account)
         
-        # Estimate distribution across tiers
-        tier_distribution = self._estimate_tier_distribution(access_tier, size_gb)
-        
-        # Calculate storage cost per tier
-        storage_costs = {}
-        total_storage_cost = 0.0
-        for tier in ["FA", "IA", "AIA", "DAA"]:
-            gb_in_tier = tier_distribution.get(tier, 0.0)
-            price_per_gb = tier_prices.get(tier, 0.0)
-            tier_cost = gb_in_tier * price_per_gb
-            storage_costs[tier] = tier_cost
-            total_storage_cost += tier_cost
+        price_per_gb = tier_prices.get(access_tier, 0.0)
+        total_storage_cost = size_gb * price_per_gb
 
-        # Calculate monitoring fee - get price from API or use default
-        monitoring_price_per_1000 = self._get_monitoring_price(cloud_account)
-        if monitoring_price_per_1000 is None:
-            monitoring_price_per_1000 = IT_MONITOR_FEE_PER_1000
+        monitoring_price_per_1000 = IT_MONITOR_FEE_PER_1000
         monitoring_cost = (object_count / 1000.0) * monitoring_price_per_1000
 
         total_cost = total_storage_cost + monitoring_cost
@@ -593,11 +445,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             "storage_cost": total_storage_cost,
             "monitoring_cost": monitoring_cost,
             "monitoring_price_per_1000": monitoring_price_per_1000,
-            "tier_distribution": tier_distribution,
-            "tier_prices": tier_prices,
-            "tier_costs": storage_costs,
-            "size_gb": size_gb,
-            "object_count": object_count,
         }
 
     def _cloud_adapter_for_account(
@@ -687,10 +534,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             if ca_id in skip_accounts:
                 continue
 
-            docs = self._aggregate_resources(ca_id)
+            resources = self._aggregate_resources(ca_id)
             today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
             
-            for d in docs:
+            for d in resources:
                 if excluded_pools and d.get("pool_id") in excluded_pools:
                     continue
 
