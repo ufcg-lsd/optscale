@@ -425,86 +425,6 @@ class TestInactivity:
         }]
         assert mod._is_inactive(resource, 7) is True
 
-class TestSaving:
-    """Tests for `_estimate_saving` method."""
-
-    def test_no_metrics(self, module_factory):
-        """No metrics or storage."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        
-        saving = mod._estimate_saving(resource)
-        assert saving == 0
-
-    def test_ingestion_last_month(self, module_factory):
-        """Ingestion metrics in the last month."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["metrics"]["ingestion"] = [ {
-            "timestamp" : "2025-10-21T12:15:00+00:00",
-            "value" : 2000
-        } ]
-        saving = mod._estimate_saving(resource)
-        assert saving == pytest.approx(9.31e-07, rel=1e-3)
-    
-    def test_query_last_month(self, module_factory):
-        """Query metrics in the last month."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["metrics"]["query"] = [{
-        "timestamp" : "2025-10-23T15:25:00+00:00",
-        "value" : 2500
-        }]
-        saving = mod._estimate_saving(resource)
-        assert saving == pytest.approx(1.12e-08, rel=5e-2)
-
-    def test_storage_only(self, module_factory):
-        """Storage metrics only."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
-        saving = mod._estimate_saving(resource)
-        assert saving == pytest.approx(0.0135, rel=1e-3)
-
-    def test_query_and_ingestion_and_storage(self, module_factory):
-        """Storage, ingestion and query metrics."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["stored_bytes"] = 3 * 1024 * 1024 * 1024  # 3 GiB
-        resource["meta"]["metrics"]["ingestion"] = [ {
-        "timestamp" : "2025-10-21T12:15:00+00:00",
-        "value" : 2000
-        }]
-        resource["meta"]["metrics"]["query"] = [{
-        "timestamp" : "2025-10-23T15:25:00+00:00",
-        "value" : 2500
-        }]
-        saving = mod._estimate_saving(resource)
-
-        assert saving == pytest.approx(0.013500943, rel=1e-3)
-
-    def test_ingestion_not_recently(self, module_factory):
-        """Ingestion metrics not recent."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["metrics"]["ingestion"] = [{
-        "timestamp" : "2025-08-07T08:15:00+00:00",
-        "value" : 1000
-    }]
-        saving = mod._estimate_saving(resource)
-        assert saving == 0
-
-    def test_query_not_recently(self, module_factory):
-        """Query metrics not recent."""
-        mod = module_factory()
-        resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        resource["meta"]["metrics"]["query"] = [{
-        "timestamp" : "2025-08-07T15:15:00+00:00",
-        "value" : 500
-    }]
-        saving = mod._estimate_saving(resource)
-        assert saving == 0
-
 class TestIntegration:
     """Tests for the `_get` method."""
 
@@ -524,13 +444,13 @@ class TestIntegration:
             "pool_id": "p1",
             "stored_bytes": 12345,
             "retention_in_days": 7,
+            "metrics": {
+                MetricKey.INGESTION.value: [],
+                MetricKey.QUERY.value: [],
+            }
         }]))
         mod._is_inactive = Mock(return_value=True)
-        mod._estimate_saving = Mock(return_value=0.5)
-        mod._get_metrics = Mock(return_value={
-            MetricKey.INGESTION.value: [],
-            MetricKey.QUERY.value: [],
-        })
+        mod._real_saving_payload = Mock(return_value={"saving": 0.5})
         mod._count_occurrences_in_threshold = Mock(return_value=2)
 
         result = mod._get()
@@ -555,11 +475,20 @@ class TestIntegration:
         mod.get_cloud_accounts = Mock(return_value=ca_map)
         mod._extract_cloud_account_id = Mock(return_value="acc1")
         mod._aggregate_resources = Mock(return_value = ([
-            {"resource_id": "r1", "cloud_account_id": "acc1", "pool_id": excluded_pool}
+            {
+                "resource_id": "r1",
+                "cloud_account_id": "acc1",
+                "pool_id": excluded_pool,
+                "name": "log-group-1",
+                "region": "us-east-1",
+                "metrics": {
+                    MetricKey.INGESTION.value: [],
+                    MetricKey.QUERY.value: []
+                }
+            }
         ]))
         mod._is_inactive = Mock(return_value=True)
-        mod._estimate_saving = Mock(return_value=0)
-        mod._get_metrics = Mock(return_value={MetricKey.INGESTION.value: [], MetricKey.QUERY.value: []})
+        mod._real_saving_payload = Mock(return_value={"saving": 0})
         mod._count_occurrences_in_threshold = Mock(return_value=0)
 
         result = mod._get()
@@ -583,14 +512,20 @@ class TestIntegration:
         mod.get_cloud_accounts = Mock(return_value=ca_map)
         mod._extract_cloud_account_id = Mock(return_value="acc1")
         mod._aggregate_resources = Mock(return_value = ([
-            {"resource_id": "r1", "cloud_account_id": "acc1", "pool_id": "p1"},
+            {
+                "resource_id": "r1",
+                "cloud_account_id": "acc1",
+                "pool_id": "p1",
+                "name": "log-group-1",
+                "region": "us-east-1",
+                "metrics": {
+                    MetricKey.INGESTION.value: [{"timestamp": "2025-11-04T00:00:00+00:00"}],
+                    MetricKey.QUERY.value: [{"timestamp": "2025-11-03T00:00:00+00:00"}],
+                }
+            },
         ]))
         mod._is_inactive = Mock(return_value=True)
-        mod._estimate_saving = Mock(return_value=0.42)
-        mod._get_metrics = Mock(return_value={
-            MetricKey.INGESTION.value: [{"timestamp": "2025-11-04T00:00:00+00:00"}],
-            MetricKey.QUERY.value: [{"timestamp": "2025-11-03T00:00:00+00:00"}],
-        })
+        mod._real_saving_payload = Mock(return_value={"saving": 0.42})
         mod._count_occurrences_in_threshold = Mock(side_effect=[3, 5])
 
         result = mod._get()
