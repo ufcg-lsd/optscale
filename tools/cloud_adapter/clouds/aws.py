@@ -1895,14 +1895,44 @@ class Aws(S3CloudMixin):
     def get_pricing(self, filters):
         session = self.get_session()
         pricing = session.client('pricing', 'us-east-1')
+        
+        # Determine ServiceCode based on resource_type or other indicators
+        service_code = 'AmazonEC2'  # Default
         api_filters = []
-        for field, value in filters.items():
-            api_filters.append({
-                'Type': 'TERM_MATCH',
-                'Field': field,
-                'Value': value,
-            })
-        body = {'ServiceCode': 'AmazonEC2', 'Filters': api_filters}
+        
+        # Check if this is an S3/Bucket request
+        if filters.get('resource_type') == 'Bucket':
+            service_code = 'AmazonS3'
+            # Map our filter fields to AWS Pricing API fields
+            # For S3, valid fields are: usagetype, storageClass, location, etc.
+            # Remove resource_type as it's not a valid API field
+            for field, value in filters.items():
+                if field == 'resource_type':
+                    continue  # Skip, not a valid API field
+                elif field == 'storage_class':
+                    # Map storage_class to storageClass (AWS API field name)
+                    api_filters.append({
+                        'Type': 'TERM_MATCH',
+                        'Field': 'storageClass',
+                        'Value': value,
+                    })
+                else:
+                    # Pass other fields as-is (usagetype, etc.)
+                    api_filters.append({
+                        'Type': 'TERM_MATCH',
+                        'Field': field,
+                        'Value': value,
+                    })
+        else:
+            # For EC2 and other services, use filters as-is
+            for field, value in filters.items():
+                api_filters.append({
+                    'Type': 'TERM_MATCH',
+                    'Field': field,
+                    'Value': value,
+                })
+        
+        body = {'ServiceCode': service_code, 'Filters': api_filters}
         result = []
         resp = pricing.get_products(**body)
         result.extend([json.loads(r) for r in resp['PriceList']])
