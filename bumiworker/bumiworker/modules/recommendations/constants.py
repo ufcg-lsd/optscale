@@ -7,11 +7,15 @@ CATEGORY_MAP: Final[Dict[str, List[str]]] = {
             ],
             "infrequent": [
                 "standard-ia",
+                "one zone-ia",
                 "one zone-infrequent access",
             ],
             "archive": [
+                "glacier",
+                "glacier ir",  # Glacier Instant Retrieval (as stored in DB)
                 "glacier instant retrieval",
                 "glacier flexible retrieval",
+                "deep archive",  # Deep Archive (as stored in DB)
                 "glacier deep archive",
             ],
         }

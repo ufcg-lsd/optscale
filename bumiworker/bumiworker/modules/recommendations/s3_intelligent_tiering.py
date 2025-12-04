@@ -42,21 +42,6 @@ def _parse_tiers_gb(tiers: List[Any]) -> List[Dict[str, float]]:
     return out
 
 
-def _current_monthly_cost(total_gb: float, tiers_gb: List[Dict[str, float]]) -> float:
-    """
-    Estimate current monthly storage cost for the bucket.
-    - If we have per-tier breakdown (tiers_gb), sum gb * PRICES[tier].
-    - Otherwise, assume all at Standard price.
-    """
-    if tiers_gb:
-        cost = 0.0
-        for item in tiers_gb:
-            price = PRICES.get(item["name"], PRICES["Standard"])
-            cost += item["gb"] * price
-        return cost
-    return total_gb * PRICES["Standard"]
-
-
 def _parse_date_loose(s: Any) -> Optional[date]:
     """
     Parse a date string leniently (YYYY-MM-DD or ISO-ish); return None if invalid.
@@ -195,17 +180,29 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         Mapping follows the table:
         - Frequent   → ["standard", "express one zone"]
-        - Infrequent → ["standard-ia", "one zone-infrequent access"]
-        - Archive    → ["glacier instant retrieval",
-                        "glacier flexible retrieval",
+        - Infrequent → ["standard-ia", "one zone-ia", "one zone-infrequent access"]
+        - Archive    → ["glacier", "glacier ir", "glacier instant retrieval",
+                        "glacier flexible retrieval", "deep archive",
                         "glacier deep archive"]
+        
+        Handles variations in tier names as they appear in the database:
+        - "Standard-IA" → infrequent
+        - "Glacier IR" → archive
+        - "Glacier" → archive
+        - "Deep Archive" → archive
+        - "RRS", "Glacier Overhead", "Deep Archive Overhead" → unknown (not real storage)
         """
 
         if not isinstance(tier, str):
             return "unknown"
 
         tier_norm = tier.strip().lower()
-
+        
+        # Skip overhead tiers (not real storage) - check before matching
+        if "overhead" in tier_norm:
+            return "unknown"
+        
+        # Exact match with CATEGORY_MAP
         for category, aws_tiers in CATEGORY_MAP.items():
             if tier_norm in (t.lower() for t in aws_tiers):
                 return category
