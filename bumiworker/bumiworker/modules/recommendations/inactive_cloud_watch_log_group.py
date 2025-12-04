@@ -1,11 +1,10 @@
 import logging
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
 
-from bumiworker.bumiworker.modules.base import ModuleBase
-from bumiworker.bumiworker.modules.pricing.aws_cloudwatch import DEFAULT as CWL_PRICING
+from bumiworker.bumiworker.modules.base import ModuleBase, DAYS_IN_MONTH
 
 SUPPORTED_CLOUD_TYPES = ("aws_cnr",)
 
@@ -145,43 +144,74 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         except Exception:
             return False
 
-    def _estimate_saving(self, resource: Dict) -> float:
+    def _real_saving_payload(
+        self,
+        resource: Dict[str, Any],
+        today: date
+    ) -> Optional[Dict[str, float]]:
         """
-        Calculate potential monthly savings for an inactive log group based on AWS pricing,
-        without considering lifecycle policy changes.
-
-        Uses three components:
-        - Ingestion (IngestionBytes): USD 0.50 per GB (last 30 days)
-        - Storage (stored_bytes): USD 0.03 per GB-month compressed (apply 0.15 compression factor)
-        - Query (QueryBytes): USD 0.005 per GB scanned (last 30 days)
+        Build saving payload backed by ClickHouse expenses for the log group.
         """
+        cloud_account_id = resource.get("cloud_account_id")
+        resource_id = resource.get("resource_id")
+        if not cloud_account_id or not resource_id:
+            return None
 
+        real_cost = self._log_group_monthly_cost(cloud_account_id, resource_id, today)
+        if real_cost is None:
+            return None
+
+        stored_bytes = int(resource.get("stored_bytes") or 0)
+        stored_gb = stored_bytes / BYTES_PER_GIB if stored_bytes else 0.0
+
+        return {
+            "saving": max(0.0, float(real_cost)),
+            "current_cost_month": float(real_cost),
+            "stored_gb": stored_gb,
+        }
+
+    def _log_group_monthly_cost(
+        self,
+        cloud_account_id: str,
+        resource_id: str,
+        today: date
+    ) -> Optional[float]:
+        """
+        Sum daily CUR expenses for the log group over the last month.
+        """
+        start_date = today - timedelta(days=DAYS_IN_MONTH)
+        query = """
+            SELECT date, sum(cost)
+            FROM expenses
+            WHERE cloud_account_id = %(cloud_account_id)s
+              AND resource_id = %(resource_id)s
+              AND date >= %(start_date)s
+              AND date < %(end_date)s
+            GROUP BY date
+        """
         try:
-            stored_bytes = self._get_from_resource(
-                resource, 'stored_bytes', 0) or 0
-
-            uncompressed_gb = stored_bytes / BYTES_PER_GIB
-            compressed_gb = uncompressed_gb * CWL_PRICING.compression_factor
-            storage_monthly_cost = compressed_gb * CWL_PRICING.storage_usd_per_gb_month
-
-            metrics = self._get_metrics(resource)
-            ingestion_metrics = metrics.get(
-                MetricKey.INGESTION.value, []) or []
-            query_metrics = metrics.get(MetricKey.QUERY.value, []) or []
-
-            ingestion_bytes = self._sum_metrics_last_month(ingestion_metrics)
-            query_bytes = self._sum_metrics_last_month(query_metrics)
-
-            ingestion_gb = ingestion_bytes / BYTES_PER_GIB
-            query_gb = query_bytes / BYTES_PER_GIB
-
-            ingestion_cost = ingestion_gb * CWL_PRICING.ingestion_usd_per_gb
-            query_cost = query_gb * CWL_PRICING.query_usd_per_gb
-
-            total = storage_monthly_cost + ingestion_cost + query_cost
-            return float(total)
-        except Exception:
-            return 0.0
+            rows = self.clickhouse_client.query(
+                query=query,
+                parameters={
+                    "cloud_account_id": cloud_account_id,
+                    "resource_id": resource_id,
+                    "start_date": start_date,
+                    "end_date": today,
+                }
+            ).result_rows
+        except Exception as exc:
+            LOG.warning(
+                "Failed to fetch CUR expenses for log group %s: %s",
+                resource_id, str(exc)
+            )
+            return None
+        total = 0.0
+        for _, cost in rows:
+            try:
+                total += float(cost or 0)
+            except (TypeError, ValueError):
+                continue
+        return total
 
     def _aggregate_resources(
             self, cloud_account_id: str) -> List[Dict[str, Any]]:
@@ -233,6 +263,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
         ca_map = self.get_cloud_accounts(
             SUPPORTED_CLOUD_TYPES, skip_cloud_accounts)
 
+        today = (
+            datetime.utcfromtimestamp(self.created_at).date()
+            if self.created_at else self._utc_now().date()
+        )
         result: List[Dict[str, Any]] = []
 
         for ca in ca_map:
@@ -253,7 +287,10 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 if not self._is_inactive(r, days_threshold):
                     continue
 
-                saving = self._estimate_saving(r)
+                saving_payload = self._real_saving_payload(r, today)
+                if not saving_payload:
+                    continue
+                saving = saving_payload.get("saving", 0.0)
                 ca_info = ca_map.get(r['cloud_account_id'], {})
 
                 metrics = self._get_metrics(r)
@@ -263,7 +300,7 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                 query_occurrences = self._count_occurrences_in_threshold(
                     metrics.get(MetricKey.QUERY.value, []), days_threshold)
 
-                result.append({
+                item = {
                     'cloud_resource_id': r.get('resource_id'),
                     'resource_id': r.get('resource_id'),
                     'resource_name': r.get('name'),
@@ -282,7 +319,13 @@ class InactiveCloudWatchLogGroup(ModuleBase):
                     'ingestion': int(ingestion_occurrences),
                     'query': int(query_occurrences),
                     'saving': saving,
-                })
+                }
+                if "current_cost_month" in saving_payload:
+                    item["current_cost_month"] = round(
+                        saving_payload["current_cost_month"], 2)
+                if "stored_gb" in saving_payload:
+                    item["stored_gb"] = round(saving_payload["stored_gb"], 3)
+                result.append(item)
 
         return result
 
