@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag no-hard-coded
+tag: &tag vivi
 
 global:
   storageclass: gp3-tagged
@@ -144,7 +144,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: Always
-    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:no-hard-coded
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:vivi
     tag: *tag
 databases:
 - auth-db
