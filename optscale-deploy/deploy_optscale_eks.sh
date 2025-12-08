@@ -158,6 +158,52 @@ EOF
   echo "    key : ${TLS_KEY_PATH}"
 }
 
+#--------------------------------------------------------------------------------
+# PVC wait helpers (NEW PART)
+#--------------------------------------------------------------------------------
+wait_for_pvc_bound() {
+  local pvc_name="$1"
+  local namespace="$2"
+  local timeout_seconds="${3:-900}"   # default: 15 minutes
+  local interval_seconds=10
+
+  echo "⏳ Waiting for PVC '${pvc_name}' in namespace '${namespace}' to be Bound (timeout: ${timeout_seconds}s)..."
+
+  local start_ts
+  start_ts=$(date +%s)
+
+  while true; do
+    local phase
+    phase=$(kubectl get pvc "${pvc_name}" -n "${namespace}" -o jsonpath='{.status.phase}' 2>/dev/null || echo "NotFound")
+
+    if [[ "${phase}" == "Bound" ]]; then
+      echo "✅ PVC '${pvc_name}' is Bound."
+      break
+    fi
+
+    local now_ts
+    now_ts=$(date +%s)
+    if (( now_ts - start_ts >= timeout_seconds )); then
+      error "Timeout waiting for PVC '${pvc_name}' to be Bound (last phase: ${phase})."
+    fi
+
+    echo "PVC '${pvc_name}' current phase: ${phase}. Retrying in ${interval_seconds}s..."
+    sleep "${interval_seconds}"
+  done
+}
+
+wait_for_required_pvcs() {
+  # If your PVCs are in another namespace (e.g., "optscale"), change here:
+  local PVC_NAMESPACE="default"
+
+  echo "4b. Waiting for required PVCs (mongo-claim, rabbitmq-claim) to be Bound in namespace '${PVC_NAMESPACE}'..."
+
+  wait_for_pvc_bound "mongo-claim" "${PVC_NAMESPACE}"
+  wait_for_pvc_bound "rabbitmq-claim" "${PVC_NAMESPACE}"
+
+  echo "All required PVCs are Bound. Proceeding to CoreDNS configuration."
+}
+
 #================================================================================
 # Main functions
 #================================================================================
@@ -190,7 +236,7 @@ install_nginx_and_ssl() {
 
   # Validate inputs (at this point either provided or generated)
   require_file "$TLS_CERT_PATH" "tls-cert"
-  require_file "$TLS_KEY_PATH"  "tls-key"
+  require_file "$TLS_KEY_PATH" "tls-key"
 
   echo "-> Ensuring namespace '$TLS_SECRET_NAMESPACE' exists..."
   kubectl get ns "$TLS_SECRET_NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$TLS_SECRET_NAMESPACE"
@@ -225,11 +271,11 @@ install_nginx_and_ssl() {
 
 configure_coredns() {
   if [[ "$CONFIGURE_DTS_DOMAIN" != "true" ]]; then
-    echo "☑️ 5. Skipping CoreDNS configuration."
+    echo "☑️ 6. Skipping CoreDNS configuration."
     return
   fi
 
-  echo "5. Configuring CoreDNS to forward '$DTS_DOMAIN' to '$DTS_FORWARD_IP'..."
+  echo "6. Configuring CoreDNS to forward '$DTS_DOMAIN' to '$DTS_FORWARD_IP'..."
   local corefile
   corefile="$(kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}')"
 
@@ -250,7 +296,7 @@ configure_coredns() {
 }
 
 label_current_node() {
-  echo "6. Labeling the current node (first Ready node) with node-role.kubernetes.io/control-plane=\"\" ..."
+  echo "5. Labeling nodes: one as control-plane and, if possible, another as mongo-node=true ..."
 
   if ! kubectl get --raw='/readyz' >/dev/null 2>&1; then
     echo "kubectl can’t reach the API server (readyz check failed)."
@@ -258,24 +304,57 @@ label_current_node() {
     exit 1
   fi
 
-  NODE_NAME="$(
+  # Get all Ready nodes into an array
+  mapfile -t READY_NODES < <(
     kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .status.conditions[?(@.type=="Ready")]}{.status}{"\n"}{end}{end}' \
-    | awk '$2=="True"{print $1; exit}'
-  )"
-  if [[ -z "$NODE_NAME" ]]; then
+      | awk '$2=="True"{print $1}'
+  )
+
+  if ((${#READY_NODES[@]} == 0)); then
     error "No Ready nodes found."
   fi
 
-  echo "-> Target node: $NODE_NAME"
-  if ! kubectl label node "$NODE_NAME" node-role.kubernetes.io/control-plane="" --overwrite; then
-    echo "⚠️  Labeling failed. Common causes:"
+  # First Ready node -> control-plane
+  CONTROL_NODE="${READY_NODES[0]}"
+  echo "-> Control-plane target node: ${CONTROL_NODE}"
+
+  if ! kubectl label node "${CONTROL_NODE}" node-role.kubernetes.io/control-plane="" --overwrite; then
+    echo "⚠️  Labeling control-plane failed. Common causes:"
     echo "   - RBAC: your identity lacks permissions to list/patch nodes."
     echo "   - Admission/PSA: cluster policy blocks labeling nodes."
     echo "   - Managed clusters: non-admin users can’t mutate Node objects."
     exit 1
   fi
 
-  echo "Labeled $NODE_NAME with node-role.kubernetes.io/control-plane=\"\""
+  echo "Labeled ${CONTROL_NODE} with node-role.kubernetes.io/control-plane=\"\""
+
+  # If there are 2+ Ready nodes, pick another one for mongo-node=true
+  if ((${#READY_NODES[@]} >= 2)); then
+    local MONGO_NODE=""
+    # Prefer a node different from the control-plane node
+    for n in "${READY_NODES[@]}"; do
+      if [[ "$n" != "${CONTROL_NODE}" ]]; then
+        MONGO_NODE="$n"
+        break
+      fi
+    done
+
+    if [[ -n "$MONGO_NODE" ]]; then
+      echo "-> Mongo target node: ${MONGO_NODE}"
+      if ! kubectl label node "${MONGO_NODE}" mongo-node=true --overwrite; then
+        echo "⚠️  Labeling mongo-node failed. Common causes:"
+        echo "   - RBAC: your identity lacks permissions to list/patch nodes."
+        echo "   - Admission/PSA: cluster policy blocks labeling nodes."
+        echo "   - Managed clusters: non-admin users can’t mutate Node objects."
+        exit 1
+      fi
+      echo "Labeled ${MONGO_NODE} with mongo-node=true"
+    else
+      echo "⚠️  Could not find a different Ready node to label as mongo-node=true."
+    fi
+  else
+    echo "Only one Ready node detected. Skipping mongo-node=true label."
+  fi
 }
 
 #================================================================================
@@ -296,7 +375,6 @@ main() {
   setup_kubectl_autocomplete
   install_dashboard
   install_nginx_and_ssl
-  configure_coredns
   label_current_node
 
   echo "Deploying 'optscale' with TLS files to Helm values..."
@@ -305,6 +383,10 @@ main() {
     --set-file optscale_key="${TLS_KEY_PATH}" \
     --set-file certificates.optscale="${TLS_CERT_PATH}" \
     optscale ./optscale/
+
+  # ✅ Only after optscale is deployed do we wait for PVCs and then touch CoreDNS
+  wait_for_required_pvcs
+  configure_coredns
 
   echo -e "\nScript finished successfully!"
   echo "ℹ️ Default SSL certificate in NGINX Ingress: ${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}"
