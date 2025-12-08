@@ -1,8 +1,10 @@
 import logging
 from typing import Any, Dict, List, Union, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
+from bumiworker.bumiworker.modules.base import DAYS_IN_MONTH
+from tools.cloud_adapter.cloud import Cloud as CloudAdapter
 from .constants import (
     CATEGORY_MAP,
     ACCESS_PATTERNS,
@@ -84,31 +86,6 @@ def _classify_access_tier_from_last_checked(last_checked: Any, today: date) -> s
         return ACCESS_PATTERNS[2]
 
 
-def _it_price_per_gb_for_access_tier(access_tier: str) -> float:
-    """
-    Map inferred access class to the corresponding IT storage price.
-    """
-    tier = (access_tier or "").lower()
-    if tier == ACCESS_PATTERNS[1]:
-        return PRICES["IT_IA"]
-    if tier == ACCESS_PATTERNS[2]:
-        return PRICES["IT_AIA"]
-    return PRICES["IT_FA"]
-
-
-def _intelligent_tiering_cost_by_access(total_gb: float, eligible_objects: int, access_tier: str) -> float:
-    """
-    Project monthly cost under S3 Intelligent-Tiering for a bucket:
-      IT storage cost (per GB) + monitoring fee per 1,000 objects.
-
-      cost_it = total_gb * IT_price(access_tier) + (objects / 1000) * IT_MONITOR_FEE_PER_1000
-    """
-    price_per_gb = _it_price_per_gb_for_access_tier(access_tier)
-    storage = total_gb * price_per_gb
-    monitor = float(eligible_objects) * IT_MONITOR_FEE_PER_1000
-    return storage + monitor
-
-
 class S3IntelligentTiering(S3AbandonedBucketsBase):
     """
     Identify S3 buckets that are good candidates for enabling Intelligent-Tiering
@@ -156,10 +133,16 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         ]
         try:
             resources = list(self.mongo_client.restapi.resources.aggregate(pipeline))
+            LOG.info(
+                "[IT] Aggregated %d bucket resources for cloud_account_id=%s",
+                len(resources), cloud_account_id
+            )
         except Exception as exc:
-            LOG.warning("it_resources error: %s", str(exc))
+            LOG.error(
+                "[IT] Failed to aggregate resources for cloud_account_id=%s: %s",
+                cloud_account_id, str(exc), exc_info=True
+            )
             return []
-        LOG.debug("it_resources ok")
         return resources
     
 
@@ -200,13 +183,16 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         
         # Skip overhead tiers (not real storage) - check before matching
         if "overhead" in tier_norm:
+            LOG.debug("[IT] Tier '%s' classified as 'unknown' (overhead tier)", tier)
             return "unknown"
         
         # Exact match with CATEGORY_MAP
         for category, aws_tiers in CATEGORY_MAP.items():
             if tier_norm in (t.lower() for t in aws_tiers):
+                LOG.debug("[IT] Tier '%s' classified as '%s'", tier, category)
                 return category
 
+        LOG.warning("[IT] Tier '%s' not found in CATEGORY_MAP, returning 'unknown'", tier)
         return "unknown"
 
 
@@ -224,22 +210,27 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         Returns:
             bool: True if bucket is a candidate for IT, False otherwise.
         """
+        resource_id = resource.get("resource_id", "unknown")
         it_status = str(resource.get("it_status_bucket", "")).lower()
         it_on = it_status in IT_POSITIVE_STATUS
         if it_on:
+            LOG.debug("[IT] Bucket %s is not a candidate: IT already enabled", resource_id)
             return False
         tiers_gb = _parse_tiers_gb(resource.get("tiers") or [])
         total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
         if total_gb <= 0.0:
+            LOG.debug("[IT] Bucket %s is not a candidate: total_gb=%.2f", resource_id, total_gb)
             return False
 
         has_lifecycle_flag = bool(resource.get("has_lifecycle"))
         lifecycle_rules = resource.get("lifecycle_rules")
         if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
+            LOG.debug("[IT] Bucket %s is not a candidate: has lifecycle policies", resource_id)
             return False
         
         object_count = int(resource.get("object_count") or 0)
         if object_count <= 0:
+            LOG.debug("[IT] Bucket %s is not a candidate: object_count=%d", resource_id, object_count)
             return False
         
         tiers_gb = _parse_tiers_gb(resource.get("tiers") or [])
@@ -254,8 +245,16 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         
         wrong_access_tier = self._classify_wrong_access_tier(category_bucket, resource.get("last_checked"))
         if not wrong_access_tier:
+            LOG.debug(
+                "[IT] Bucket %s is not a candidate: access tier matches storage category (%s)",
+                resource_id, category_bucket
+            )
             return False
         
+        LOG.info(
+            "[IT] Bucket %s is a candidate: category=%s, total_gb=%.2f, objects=%d",
+            resource_id, category_bucket, total_gb, object_count
+        )
         return True
 
    
@@ -271,35 +270,62 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         Now uses improved calculation considering different IT tiers and monitoring fees.
         """
         if not cloud_account:
+            LOG.warning("[IT] Cannot calculate saving: cloud_account is None")
             return None
         resource_id = resource.get("resource_id")
         cloud_account_id = resource.get("cloud_account_id")
         if not resource_id or not cloud_account_id:
+            LOG.warning(
+                "[IT] Cannot calculate saving: missing resource_id or cloud_account_id. "
+                "resource_id=%s, cloud_account_id=%s",
+                resource_id, cloud_account_id
+            )
             return None
 
         size_gb = resource.get("size_gb", total_gb)
         try:
             size_gb_value = float(size_gb)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
+            LOG.debug(
+                "[IT] Failed to parse size_gb=%s, using total_gb=%.2f: %s",
+                size_gb, total_gb, str(exc)
+            )
             size_gb_value = float(total_gb)
         if size_gb_value <= 0.0:
+            LOG.warning("[IT] Cannot calculate saving: size_gb_value=%.2f <= 0", size_gb_value)
             return None
 
         real_cost = self._bucket_monthly_cost(cloud_account_id, resource_id, today)
         if real_cost is None:
+            LOG.warning(
+                "[IT] Cannot calculate saving: failed to get current cost for bucket %s",
+                resource_id
+            )
             return None
 
         access_tier = _classify_access_tier_from_last_checked(resource.get("last_checked"), today)
         object_count = int(resource.get("object_count") or 0)
+        LOG.debug(
+            "[IT] Calculating IT cost for bucket %s: size_gb=%.2f, access_tier=%s, objects=%d",
+            resource_id, size_gb_value, access_tier, object_count
+        )
 
         it_cost_breakdown = self._calculate_it_cost(
             size_gb_value, access_tier, object_count, cloud_account
         )
         if it_cost_breakdown is None:
+            LOG.warning(
+                "[IT] Cannot calculate saving: failed to calculate IT cost for bucket %s",
+                resource_id
+            )
             return None
 
         cost_if_it = it_cost_breakdown["total_cost"]
         saving_real = real_cost - cost_if_it
+        LOG.info(
+            "[IT] Bucket %s savings calculated: current_cost=%.2f, it_cost=%.2f, saving=%.2f",
+            resource_id, real_cost, cost_if_it, saving_real
+        )
 
 
         result = {
@@ -344,15 +370,24 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "end_date": today,
                 }
             ).result_rows
+            LOG.debug(
+                "[IT] Retrieved %d expense rows for bucket %s (period: %s to %s)",
+                len(rows), resource_id, start_date, today
+            )
         except Exception as exc:
-            LOG.warning("it_clickhouse error for %s: %s", resource_id, str(exc))
+            LOG.error(
+                "[IT] ClickHouse query failed for bucket %s (cloud_account_id=%s): %s",
+                resource_id, cloud_account_id, str(exc), exc_info=True
+            )
             return None
         total = 0.0
         for _, cost in rows:
             try:
                 total += float(cost)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError) as exc:
+                LOG.debug("[IT] Skipping invalid cost value: %s (%s)", cost, str(exc))
                 continue
+        LOG.debug("[IT] Total monthly cost for bucket %s: %.2f", resource_id, total)
         return total
 
 
@@ -367,14 +402,21 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         """
         cloud_account_id = self._extract_cloud_account_id(cloud_account)
         if not cloud_account_id:
+            LOG.warning("[IT] Cannot fetch prices: cloud_account_id is empty")
             return None
 
         cached = self._it_price_cache.get(cloud_account_id)
         if cached is not None:
+            LOG.debug("[IT] Using cached prices for cloud_account_id=%s", cloud_account_id)
             return cached
 
+        LOG.info("[IT] Fetching IT prices from API for cloud_account_id=%s", cloud_account_id)
         adapter = self._cloud_adapter_for_account(cloud_account_id, cloud_account)
         if not adapter:
+            LOG.error(
+                "[IT] Cannot fetch prices: failed to get adapter for cloud_account_id=%s",
+                cloud_account_id
+            )
             return None
 
         prices = {}
@@ -397,16 +439,31 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                         entry = price_payload[0]
                         tier_price = self._normalize_price_value(entry.get("price"))
                         if tier_price is not None:
+                            LOG.debug(
+                                "[IT] Found price for tier %s (%s): %.6f",
+                                tier_key, storage_class_name, tier_price
+                            )
                             break
                 except Exception as exc:
-                    LOG.debug("it_price lookup for %s failed: %s", storage_class_name, str(exc))
+                    LOG.warning(
+                        "[IT] Price lookup failed for tier %s (%s): %s",
+                        tier_key, storage_class_name, str(exc)
+                    )
                     continue
             if tier_price is None:
+                LOG.error(
+                    "[IT] Failed to get price for tier %s (tried %d storage class names)",
+                    tier_key, len(storage_class_names)
+                )
                 return None 
             prices[tier_key] = tier_price
 
         # Cache the results
         self._it_price_cache[cloud_account_id] = prices
+        LOG.info(
+            "[IT] Successfully fetched and cached prices for cloud_account_id=%s: %s",
+            cloud_account_id, ", ".join(f"{k}=${v:.6f}" for k, v in prices.items())
+        )
         return prices
 
     def _calculate_it_cost(
@@ -425,11 +482,23 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         Returns dict with the total cost, storage cost, monitoring cost, monitoring price per 1000 objects.
         """
         if size_gb <= 0.0 or object_count <= 0:
+            LOG.warning(
+                "[IT] Cannot calculate IT cost: size_gb=%.2f, object_count=%d",
+                size_gb, object_count
+            )
             return None
 
         tier_prices = self._get_intelligent_tiering_prices(cloud_account)
+        if tier_prices is None:
+            LOG.error("[IT] Cannot calculate IT cost: failed to get tier prices")
+            return None
         
         price_per_gb = tier_prices.get(access_tier, 0.0)
+        if price_per_gb == 0.0:
+            LOG.warning(
+                "[IT] No price found for access_tier=%s in tier_prices. Available tiers: %s",
+                access_tier, list(tier_prices.keys())
+            )
         total_storage_cost = size_gb * price_per_gb
 
         monitoring_price_per_1000 = IT_MONITOR_FEE_PER_1000
@@ -437,11 +506,17 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         total_cost = total_storage_cost + monitoring_cost
 
+        LOG.debug(
+            "[IT] IT cost breakdown: storage=%.2f (%.2f GB × $%.6f), monitoring=%.2f, total=%.2f",
+            total_storage_cost, size_gb, price_per_gb, monitoring_cost, total_cost
+        )
+
         return {
             "total_cost": total_cost,
             "storage_cost": total_storage_cost,
             "monitoring_cost": monitoring_cost,
             "monitoring_price_per_1000": monitoring_price_per_1000,
+            "price_per_gb": price_per_gb,
         }
 
     def _cloud_adapter_for_account(
@@ -458,8 +533,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             config.update(nested_cfg)
         try:
             adapter = CloudAdapter.get_adapter(config)
+            LOG.debug("[IT] Successfully created adapter for cloud_account_id=%s", cloud_account_id)
         except Exception as exc:
-            LOG.warning("it_adapter error for %s: %s", cloud_account_id, str(exc))
+            LOG.error(
+                "[IT] Failed to create adapter for cloud_account_id=%s: %s",
+                cloud_account_id, str(exc), exc_info=True
+            )
             return None
         self._adapter_cache[cloud_account_id] = adapter
         return adapter
@@ -522,25 +601,44 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         employees = self.get_employees()
         pools = self.get_pools()
 
+        LOG.info(
+            "[IT] Starting recommendation processing for org_id=%s. "
+            "Excluded pools: %d, Skip accounts: %d",
+            self.organization_id, len(excluded_pools), len(skip_accounts)
+        )
         items: List[Dict[str, Any]] = []
+        total_buckets_processed = 0
+        total_candidates_found = 0
+        
         for ca in self.get_cloud_accounts():
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
-                LOG.warning("Skipping cloud account with unknown structure: %r", ca)
+                LOG.warning("[IT] Skipping cloud account with unknown structure: %r", ca)
                 continue
             if ca_id in skip_accounts:
+                LOG.debug("[IT] Skipping cloud_account_id=%s (in skip_accounts)", ca_id)
                 continue
 
             resources = self._aggregate_resources(ca_id)
             today = datetime.utcfromtimestamp(self.created_at).date() if self.created_at else date.today()
+            LOG.info(
+                "[IT] Processing %d buckets for cloud_account_id=%s",
+                len(resources), ca_id
+            )
             
             for d in resources:
+                total_buckets_processed += 1
+                resource_id = d.get("resource_id", "unknown")
+                
                 if excluded_pools and d.get("pool_id") in excluded_pools:
+                    LOG.debug("[IT] Bucket %s excluded (pool_id in excluded_pools)", resource_id)
                     continue
 
                 # Check if bucket is a candidate
                 if not self._is_candidate(d):
                     continue
+                
+                total_candidates_found += 1
 
                 # Calculate saving with improved IT cost calculation
                 tiers_gb = _parse_tiers_gb(d.get("tiers") or [])
@@ -548,7 +646,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 
                 saving_data = self._real_saving_payload(d, total_gb, today, ca)
                 if not saving_data or saving_data["saving"] <= 0.0:
-                    # Only include if IT would be cheaper
+                    LOG.debug(
+                        "[IT] Bucket %s excluded: IT would not be cheaper (saving=%.2f)",
+                        resource_id, saving_data["saving"] if saving_data else 0.0
+                    )
                     continue
 
                 # Determine IT status
@@ -583,7 +684,19 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     item["price_intelligent_tiering"] = round(
                         saving_data["price_intelligent_tiering"], 6)
                 items.append(item)
-        LOG.debug("it_list ok")
+                LOG.info(
+                    "[IT] Added recommendation for bucket %s: saving=%.2f, "
+                    "current_cost=%.2f, it_cost=%.2f",
+                    resource_id, item["saving"],
+                    item.get("current_cost_month", 0),
+                    item.get("cost_if_intelligent_tiering", 0)
+                )
+        
+        LOG.info(
+            "[IT] Recommendation processing completed: "
+            "processed=%d buckets, candidates=%d, recommendations=%d",
+            total_buckets_processed, total_candidates_found, len(items)
+        )
         return items
 
 
