@@ -457,3 +457,59 @@ class TestClassifyCategoryFromTier:
 
 		assert category == "archive"
           
+class TestWrongAccessTier:
+	"""Tests for `_classify_wrong_access_tier` method."""
+
+	def test_less_than_30_days_ago_frequent(self, module_factory):
+		"""Last checked less than 30 days ago and frequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("frequent",  ["2025-09-31", "2025-10-15", "2025-10-01"]) is False
+
+	def test_less_than_30_days_ago_infrequent(self, module_factory):
+		"""Last checked less than 30 days ago and infrequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("infrequent",  ["2025-09-31", "2025-10-15", "2025-10-01"]) is True
+	
+	def test_less_than_30_days_ago_archive(self, module_factory):
+		"""Last checked less than 30 days ago and archive."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("archive",  ["2025-09-31", "2025-10-15", "2025-10-01"]) is True
+
+	def test_more_than_30_less_than_60_days_ago_frequent(self, module_factory):
+		"""Last checked more than 30 but less than 60 days ago and frequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("frequent",  ["2025-05-01", "2025-08-15", "2025-10-01"]) is True
+
+	def test_more_than_30_less_than_60_days_ago_infrequent(self, module_factory):
+		"""Last checked more than 30 but less than 60 days ago and infrequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("infrequent",  ["2025-05-01", "2025-08-15", "2025-10-01"]) is False
+	
+	def test_more_than_30_less_than_60_days_ago_archive(self, module_factory):
+		"""Last checked more than 30 but less than 60 days ago and archive."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("archive",  ["2025-05-01", "2025-08-15", "2025-10-01"]) is True
+
+	def test_more_than_60_days_ago_frequent(self, module_factory):
+		"""Last checked more than 60 days ago and frequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("frequent",  ["2025-05-01", "2025-06-15", "2025-07-01"]) is True
+
+	def test_more_than_60_days_ago_infrequent(self, module_factory):
+		"""Last checked more than 60 days ago and infrequent."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("infrequent",  ["2025-05-01", "2025-06-15", "2025-07-01"]) is True
+
+	def test_more_than_60_days_ago_archive(self, module_factory):
+		"""Last checked more than 60 days ago and archive."""
+		mod = module_factory()
+
+		assert mod._classify_wrong_access_tier("archive",  ["2025-05-01", "2025-06-15", "2025-07-01"]) is False
