@@ -384,9 +384,7 @@ main() {
     --set-file certificates.optscale="${TLS_CERT_PATH}" \
     optscale ./optscale/
 
-  # ✅ Only after optscale is deployed do we wait for PVCs and then touch CoreDNS
   wait_for_required_pvcs
-  configure_coredns
 
   echo -e "\nScript finished successfully!"
   echo "ℹ️ Default SSL certificate in NGINX Ingress: ${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}"
