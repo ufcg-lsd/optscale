@@ -6,7 +6,7 @@ set -eo pipefail
 #================================================================================
 EKS_CLUSTER_NAME=
 AWS_REGION="us-east-1"
-CONFIGURE_DTS_DOMAIN=true
+CONFIGURE_DTS_DOMAIN=false
 DTS_DOMAIN="dts.loc"
 DTS_FORWARD_IP="172.22.1.2"
 
