@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag vivi
+tag: &tag jotas
 
 global:
   storageclass: gp3-tagged
@@ -144,7 +144,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: Always
-    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:vivi
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:jotas
     tag: *tag
 databases:
 - auth-db
@@ -342,7 +342,7 @@ grafana:
   grafana_nginx:
     image:
       id: null
-      pullPolicy: Never
+      pullPolicy: IfNotPresent
       repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/grafana
       tag: *tag
     name: grafana-nginx

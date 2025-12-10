@@ -1,7 +1,7 @@
 {{- define "wait_mariadb" -}}
 - name: wait-mariadb
   image: "{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
-  imagePullPolicy: Never
+  imagePullPolicy: IfNotPresent
   env:
   - name: MYSQL_ROOT_PASSWORD
     valueFrom:

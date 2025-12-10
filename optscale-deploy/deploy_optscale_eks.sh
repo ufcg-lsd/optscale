@@ -6,9 +6,6 @@ set -eo pipefail
 #================================================================================
 EKS_CLUSTER_NAME=
 AWS_REGION="us-east-1"
-CONFIGURE_DTS_DOMAIN=true
-DTS_DOMAIN="dts.loc"
-DTS_FORWARD_IP="172.22.1.2"
 
 # TLS defaults
 TLS_SECRET_NAMESPACE="default"
@@ -36,10 +33,6 @@ Options:
   --tls-secret-name NAME      Kubernetes TLS secret name (default: ${TLS_SECRET_NAME})
   --tls-secret-namespace NS   Kubernetes namespace for the secret (default: ${TLS_SECRET_NAMESPACE})
 
-  --configure-dts true|false  Configure CoreDNS forward for custom domain (default: ${CONFIGURE_DTS_DOMAIN})
-  --dts-domain DOMAIN         Domain to forward (default: ${DTS_DOMAIN})
-  --dts-forward-ip IP         Upstream DNS IP (default: ${DTS_FORWARD_IP})
-
   -h, --help                  Show this help and exit
 
 Behavior:
@@ -66,9 +59,6 @@ while [[ $# -gt 0 ]]; do
     --tls-key)                TLS_KEY_PATH="$2"; shift 2 ;;
     --tls-secret-name)        TLS_SECRET_NAME="$2"; shift 2 ;;
     --tls-secret-namespace)   TLS_SECRET_NAMESPACE="$2"; shift 2 ;;
-    --configure-dts)          CONFIGURE_DTS_DOMAIN="$2"; shift 2 ;;
-    --dts-domain)             DTS_DOMAIN="$2"; shift 2 ;;
-    --dts-forward-ip)         DTS_FORWARD_IP="$2"; shift 2 ;;
     -h|--help)                usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -158,52 +148,6 @@ EOF
   echo "    key : ${TLS_KEY_PATH}"
 }
 
-#--------------------------------------------------------------------------------
-# PVC wait helpers (NEW PART)
-#--------------------------------------------------------------------------------
-wait_for_pvc_bound() {
-  local pvc_name="$1"
-  local namespace="$2"
-  local timeout_seconds="${3:-900}"   # default: 15 minutes
-  local interval_seconds=10
-
-  echo "⏳ Waiting for PVC '${pvc_name}' in namespace '${namespace}' to be Bound (timeout: ${timeout_seconds}s)..."
-
-  local start_ts
-  start_ts=$(date +%s)
-
-  while true; do
-    local phase
-    phase=$(kubectl get pvc "${pvc_name}" -n "${namespace}" -o jsonpath='{.status.phase}' 2>/dev/null || echo "NotFound")
-
-    if [[ "${phase}" == "Bound" ]]; then
-      echo "✅ PVC '${pvc_name}' is Bound."
-      break
-    fi
-
-    local now_ts
-    now_ts=$(date +%s)
-    if (( now_ts - start_ts >= timeout_seconds )); then
-      error "Timeout waiting for PVC '${pvc_name}' to be Bound (last phase: ${phase})."
-    fi
-
-    echo "PVC '${pvc_name}' current phase: ${phase}. Retrying in ${interval_seconds}s..."
-    sleep "${interval_seconds}"
-  done
-}
-
-wait_for_required_pvcs() {
-  # If your PVCs are in another namespace (e.g., "optscale"), change here:
-  local PVC_NAMESPACE="default"
-
-  echo "4b. Waiting for required PVCs (mongo-claim, rabbitmq-claim) to be Bound in namespace '${PVC_NAMESPACE}'..."
-
-  wait_for_pvc_bound "mongo-claim" "${PVC_NAMESPACE}"
-  wait_for_pvc_bound "rabbitmq-claim" "${PVC_NAMESPACE}"
-
-  echo "All required PVCs are Bound. Proceeding to CoreDNS configuration."
-}
-
 #================================================================================
 # Main functions
 #================================================================================
@@ -269,32 +213,6 @@ install_nginx_and_ssl() {
   echo "NGINX Ingress is configured to use TLS secret '${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}'."
 }
 
-configure_coredns() {
-  if [[ "$CONFIGURE_DTS_DOMAIN" != "true" ]]; then
-    echo "☑️ 6. Skipping CoreDNS configuration."
-    return
-  fi
-
-  echo "6. Configuring CoreDNS to forward '$DTS_DOMAIN' to '$DTS_FORWARD_IP'..."
-  local corefile
-  corefile="$(kubectl get configmap coredns -n kube-system -o jsonpath='{.data.Corefile}')"
-
-  if grep -qE "^[[:space:]]*${DTS_DOMAIN}:" <<< "$corefile"; then
-    echo "CoreDNS already configured for $DTS_DOMAIN. Skipping."
-    return
-  fi
-
-  local COREFILE_PATCH
-  COREFILE_PATCH=$(printf '%s:53 {\n    errors\n    cache 30\n    forward . %s\n}\n' "$DTS_DOMAIN" "$DTS_FORWARD_IP")
-
-  kubectl get configmap coredns -n kube-system -o json | \
-    jq --arg patch "$COREFILE_PATCH" '.data.Corefile += $patch' | \
-    kubectl apply -f -
-
-  echo "Restarting CoreDNS to apply changes..."
-  kubectl rollout restart deployment coredns -n kube-system
-}
-
 label_current_node() {
   echo "5. Labeling nodes: one as control-plane and, if possible, another as mongo-node=true ..."
 
@@ -357,9 +275,6 @@ label_current_node() {
   fi
 }
 
-#================================================================================
-# Main
-#================================================================================
 main() {
   echo "Starting EKS Cluster Configuration Script..."
   check_command "aws"
@@ -383,8 +298,6 @@ main() {
     --set-file optscale_key="${TLS_KEY_PATH}" \
     --set-file certificates.optscale="${TLS_CERT_PATH}" \
     optscale ./optscale/
-
-  wait_for_required_pvcs
 
   echo -e "\nScript finished successfully!"
   echo "ℹ️ Default SSL certificate in NGINX Ingress: ${TLS_SECRET_NAMESPACE}/${TLS_SECRET_NAME}"

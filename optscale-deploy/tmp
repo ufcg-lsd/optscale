@@ -1,0 +1,183 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2025-12-10T18:43:05Z"
+  generateName: myadmin-6d94497f69-
+  labels:
+    app: myadmin
+    pod-template-hash: 6d94497f69
+    release: optscale
+  name: myadmin-6d94497f69-wn5c7
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: myadmin-6d94497f69
+    uid: 822ae761-0d7f-4ad1-81bc-982a3e714912
+  resourceVersion: "87885"
+  uid: 63f137d5-b35a-4355-ab06-254ea0903017
+spec:
+  containers:
+  - env:
+    - name: IMAGE_ID
+    - name: PMA_HOST
+      value: mariadb
+    image: phpmyadmin/phpmyadmin:4.7
+    imagePullPolicy: Always
+    name: myadmin
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    resources:
+      requests:
+        cpu: 15m
+        memory: 105M
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /etc/php.ini
+      name: configmap
+      subPath: php.ini
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-tfccx
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  initContainers:
+  - command:
+    - sh
+    - -c
+    - until mysql --connect-timeout=2 -h mariadb.default.svc.cluster.local -p$MYSQL_ROOT_PASSWORD
+      -e "SELECT 1"; do sleep 2; done
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: password
+          name: mariadb-secret
+    image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb:jotas
+    imagePullPolicy: Never
+    name: wait-mariadb
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-tfccx
+      readOnly: true
+  nodeName: ip-172-31-90-225.ec2.internal
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - configMap:
+      defaultMode: 420
+      name: php-config-vol
+    name: configmap
+  - name: kube-api-access-tfccx
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2025-12-10T18:43:07Z"
+    status: "True"
+    type: PodReadyToStartContainers
+  - lastProbeTime: null
+    lastTransitionTime: "2025-12-10T18:43:05Z"
+    message: 'containers with incomplete status: [wait-mariadb]'
+    reason: ContainersNotInitialized
+    status: "False"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2025-12-10T18:43:05Z"
+    message: 'containers with unready status: [myadmin]'
+    reason: ContainersNotReady
+    status: "False"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2025-12-10T18:43:05Z"
+    message: 'containers with unready status: [myadmin]'
+    reason: ContainersNotReady
+    status: "False"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2025-12-10T18:43:05Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - image: phpmyadmin/phpmyadmin:4.7
+    imageID: ""
+    lastState: {}
+    name: myadmin
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting:
+        reason: PodInitializing
+    volumeMounts:
+    - mountPath: /etc/php.ini
+      name: configmap
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-tfccx
+      readOnly: true
+      recursiveReadOnly: Disabled
+  hostIP: 172.31.90.225
+  hostIPs:
+  - ip: 172.31.90.225
+  initContainerStatuses:
+  - image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb:jotas
+    imageID: ""
+    lastState: {}
+    name: wait-mariadb
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting:
+        message: Container image "registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/mariadb:jotas"
+          is not present with pull policy of Never
+        reason: ErrImageNeverPull
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-tfccx
+      readOnly: true
+      recursiveReadOnly: Disabled
+  phase: Pending
+  podIP: 172.31.87.117
+  podIPs:
+  - ip: 172.31.87.117
+  qosClass: Burstable
+  startTime: "2025-12-10T18:43:05Z"
