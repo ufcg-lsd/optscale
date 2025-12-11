@@ -78,6 +78,13 @@ def module_factory(monkeypatch) -> Callable[..., S3IntelligentTiering]:
             config_client=Mock(),
             created_at=created_at,
         )
+
+        mod._get_intelligent_tiering_prices = Mock(return_value={
+            "frequent": 0.023,
+            "infrequent": 0.022,
+            "archive": 0.004,
+        })
+
         return mod
 
     return _factory
@@ -519,17 +526,118 @@ class Test_ClassifyAccessTierFromLastChecked:
 
     def test_frequent(self, module_factory):
         """Frequent access tier."""
-        category = _classify_access_tier_from_last_checked(["2025-09-31", "2025-10-15", "2025-10-01"], NOW_FIXED)
+        category = _classify_access_tier_from_last_checked(["2025-09-31", "2025-10-15", "2025-10-01"], NOW_FIXED.date())
         assert category == "frequent"
 
     def test_infrequent(self, module_factory):
         """Infrequent access tier."""
-        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-08-15", "2025-10-01"], NOW_FIXED)
+        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-08-15", "2025-10-01"], NOW_FIXED.date())
 
         assert category == "infrequent"
 
     def test_archive(self, module_factory):
         """Archive access tier."""
-        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-06-15", "2025-07-01"], NOW_FIXED)
+        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-06-15", "2025-07-01"], NOW_FIXED.date())
 
         assert category == "archive"
+
+class TestCalculateITCost:
+
+    def test_calculate_it_cost_frequent(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=100,
+            access_tier="frequent",
+            object_count=200000,
+            cloud_account={}
+        )
+
+        assert result == {
+            "total_cost": 2.8,
+            "storage_cost": 2.3,
+            "monitoring_cost": 0.5,
+            "monitoring_price_per_1000": 0.0025,
+        }
+
+    def test_calculate_it_cost_infrequent(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=100,
+            access_tier="infrequent",
+            object_count=200000,
+            cloud_account={}
+        )
+
+        assert result == {
+            "total_cost": 2.7,
+            "storage_cost": 2.2,
+            "monitoring_cost": 0.5,
+            "monitoring_price_per_1000": 0.0025,
+        }
+
+    def test_calculate_it_cost_archive(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=100,
+            access_tier="archive",
+            object_count=200000,
+            cloud_account={}
+        )
+
+        assert result == {
+            "total_cost": 0.9,
+            "storage_cost": 0.4,
+            "monitoring_cost": 0.5,
+            "monitoring_price_per_1000": 0.0025,
+        }
+
+    def test_calculate_it_cost_size_zero(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=0,
+            access_tier="frequent",
+            object_count=200000,
+            cloud_account={}
+        )
+
+        assert result is None
+
+    def test_calculate_it_cost_size_negative(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=-25,
+            access_tier="frequent",
+            object_count=200000,
+            cloud_account={}
+        )
+
+        assert result is None
+
+    def test_calculate_it_cost_object_count_zero(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=100,
+            access_tier="frequent",
+            object_count=0,
+            cloud_account={}
+        )
+
+        assert result is None
+
+    def test_calculate_it_cost_object_count_negative(self, module_factory):
+        mod = module_factory()
+
+        result = mod._calculate_it_cost(
+            size_gb=100,
+            access_tier="frequent",
+            object_count=-50000,
+            cloud_account={}
+        )
+
+        assert result is None
