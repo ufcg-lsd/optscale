@@ -59,7 +59,7 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                         'operation': '$lineItem/Operation'
                     },
                     'total_usage': {
-                        '$sum': {'$toDouble': '$lineItem/UsageAmount'}
+                        '$sum': '$lineItem/UsageAmount'
                     }
                 }
             }
