@@ -1,12 +1,10 @@
 import { FormattedMessage } from "react-intl";
 import FormattedMoney from "components/FormattedMoney";
-import HeaderHelperCell from "components/HeaderHelperCell";
 import RecommendationListItemResourceLabel from "components/RecommendationListItemResourceLabel";
 import AbandonedS3BucketsModal from "components/SideModalManager/SideModals/recommendations/AbandonedS3BucketsModal";
 import TextWithDataTestId from "components/TextWithDataTestId";
 import { AWS_S3 } from "hooks/useRecommendationServices";
 import { detectedAt, poolOwner, possibleMonthlySavings, resource, resourceLocation } from "utils/columns";
-import averageDataSize from "utils/columns/averageDataSize";
 import { AWS_CNR, FORMATTED_MONEY_TYPES } from "utils/constants";
 import BaseRecommendation, { CATEGORY } from "./BaseRecommendation";
 
@@ -22,27 +20,21 @@ const columns = [
     headerDataTestId: "lbl_s3_abandoned_buckets_pool_owner",
     id: "pool/owner"
   }),
-  averageDataSize({
-    headerDataTestId: "lbl_s3_abandoned_buckets_avg_data_size",
-    accessorKey: "avg_data_size"
-  }),
-  {
-    header: (
-      <HeaderHelperCell
-        titleDataTestId="lbl_s3_abandoned_buckets_tier1_requests"
-        titleMessageId="tier1Requests"
-        helperMessageId="tier1S3BucketRequestHelp"
-      />
-    ),
-    accessorKey: "tier_1_request_quantity"
-  },
   {
     header: (
       <TextWithDataTestId dataTestId="lbl_s3_abandoned_buckets_get_requests">
         <FormattedMessage id="getRequests" />
       </TextWithDataTestId>
     ),
-    accessorKey: "tier_2_request_quantity"
+    accessorKey: "get_object_count"
+  },
+  {
+    header: (
+      <TextWithDataTestId dataTestId="lbl_s3_abandoned_buckets_put_requests">
+        <FormattedMessage id="putRequests" />
+      </TextWithDataTestId>
+    ),
+    accessorKey: "put_object_count"
   },
   detectedAt({ headerDataTestId: "lbl_s3_abandoned_buckets_detected_at" }),
   possibleMonthlySavings({
@@ -62,13 +54,10 @@ class AbandonedS3Buckets extends BaseRecommendation {
 
   get descriptionMessageValues() {
     const {
-      days_threshold: daysThreshold,
-      data_size_threshold: dataSizeAvg,
-      tier_1_request_quantity_threshold: tier1RequestsQuantity,
-      tier_2_request_quantity_threshold: tier2RequestsQuantity
+      days_threshold: daysThreshold
     } = this.options;
 
-    return { daysThreshold, dataSizeAvg, tier1RequestsQuantity, tier2RequestsQuantity };
+    return { daysThreshold };
   }
 
   emptyMessageId = "noAbandonedS3Buckets";
