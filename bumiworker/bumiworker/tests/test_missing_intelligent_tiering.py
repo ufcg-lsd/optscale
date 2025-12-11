@@ -5,7 +5,7 @@ import copy
 
 import pytest  # type: ignore
 
-from bumiworker.modules.recommendations.s3_intelligent_tiering import S3IntelligentTiering
+from bumiworker.modules.recommendations.s3_intelligent_tiering import S3IntelligentTiering, _classify_access_tier_from_last_checked
 
 NOW_FIXED = datetime(2025, 11, 7, 0, 0, 0, tzinfo=timezone.utc)
 
@@ -513,3 +513,23 @@ class TestWrongAccessTier:
 		mod = module_factory()
 
 		assert mod._classify_wrong_access_tier("archive",  ["2025-05-01", "2025-06-15", "2025-07-01"]) is False
+          
+class Test_ClassifyAccessTierFromLastChecked:
+    """Tests for `_classify_access_tier_from_last_checked` method."""
+
+    def test_frequent(self, module_factory):
+        """Frequent access tier."""
+        category = _classify_access_tier_from_last_checked(["2025-09-31", "2025-10-15", "2025-10-01"], NOW_FIXED)
+        assert category == "frequent"
+
+    def test_infrequent(self, module_factory):
+        """Infrequent access tier."""
+        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-08-15", "2025-10-01"], NOW_FIXED)
+
+        assert category == "infrequent"
+
+    def test_archive(self, module_factory):
+        """Archive access tier."""
+        category = _classify_access_tier_from_last_checked(["2025-05-01", "2025-06-15", "2025-07-01"], NOW_FIXED)
+
+        assert category == "archive"
