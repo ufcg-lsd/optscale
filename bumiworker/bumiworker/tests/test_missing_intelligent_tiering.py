@@ -122,7 +122,6 @@ class TestIsCandidate:
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
 
-    @pytest.mark.skip()
     def test_no_metrics_and_glacier_instant_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
@@ -130,7 +129,6 @@ class TestIsCandidate:
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
 
-    @pytest.mark.skip()
     def test_no_metrics_and_glacier_flexible_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
@@ -138,7 +136,6 @@ class TestIsCandidate:
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
 
-    @pytest.mark.skip()
     def test_no_metrics_and_deep_archive(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
@@ -238,8 +235,7 @@ class TestIsCandidate:
         ]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
-
-    @pytest.mark.skip()
+ 
     def test_last_checked_less_than_60_days_ago_one_zone_ia(self, module_factory):
         """Last checked less than 60 days ago an One Zone-IA tier."""
         mod = module_factory()
@@ -343,7 +339,7 @@ class TestIsCandidate:
         ]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
-    @pytest.mark.skip()
+    
     def test_last_checked_more_than_60_days_ago_glacier_instant_retrieval(self, module_factory):
         """Last checked more than 60 days ago an Glacier Instant Retrieval tier."""
         mod = module_factory()
@@ -356,7 +352,7 @@ class TestIsCandidate:
         ]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
-    @pytest.mark.skip()
+    
     def test_last_checked_more_than_60_days_ago_glacier_flexible_retrieval(self, module_factory):
         """Last checked more than 60 days ago an Glacier Flexible Retrieval tier."""
         mod = module_factory()
@@ -369,7 +365,7 @@ class TestIsCandidate:
         ]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
-    @pytest.mark.skip()
+    
     def test_last_checked_more_than_60_days_ago_deep_archive(self, module_factory):
         """Last checked more than 60 days ago an Deep Archive tier."""
         mod = module_factory()
@@ -542,6 +538,7 @@ class Test_ClassifyAccessTierFromLastChecked:
         assert category == "archive"
 
 class TestCalculateITCost:
+    """Tests for `_calculate_it_cost` method."""
 
     def test_calculate_it_cost_frequent(self, module_factory):
         mod = module_factory()
@@ -641,3 +638,199 @@ class TestCalculateITCost:
         )
 
         assert result is None
+
+class TestGetMethod:
+    def test_basic_flow_returns_items(self, module_factory, monkeypatch):
+        """Should return a list with one item when candidate and saving > 0."""
+        mod = module_factory()
+        
+        monkeypatch.setattr(mod, "_cloud_account_names",
+            Mock(return_value={"acc1": "Account One"}))
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value="acc1"))
+        monkeypatch.setattr(mod, "_aggregate_resources",
+            Mock(return_value=[{
+                "resource_id": "r1",
+                "bucket_name": "bucket-a",
+                "region": "us-east-1",
+                "cloud_account_id": "acc1",
+                "tiers": [{"tier": "frequent", "gb": 100}],
+                "pool_id": None,
+                "it_status_bucket": "",
+            }]))
+        monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
+        monkeypatch.setattr(mod, "_real_saving_payload", Mock(return_value={
+            "saving": 5.1234,
+            "current_cost_month": 10.0,
+            "cost_if_intelligent_tiering": 4.8766,
+            "size_gb": 100.0,
+            "price_intelligent_tiering": 0.023,
+        }))
+
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+
+        items = mod.get()
+
+        assert len(items) == 1
+        item = items[0]
+
+        assert item["resource_id"] == "r1"
+        assert item["resource_name"] == "bucket-a"
+        assert item["saving"] == 5.12
+        assert item["current_cost_month"] == 10.0
+        assert item["cost_if_intelligent_tiering"] == 4.88
+        assert item["size_gb"] == 100.0
+        assert item["price_intelligent_tiering"] == 0.023000
+        assert item["cloud_account_name"] == "Account One"
+
+    def test_skips_non_candidate(self, module_factory, monkeypatch):
+        """Should skip resource when _is_candidate returns False."""
+        mod = module_factory()
+
+        monkeypatch.setattr(mod, "_cloud_account_names",
+            Mock(return_value={"acc1": "Name"}))
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value="acc1"))
+        monkeypatch.setattr(mod, "_aggregate_resources",
+            Mock(return_value=[{"bucket_name": "b", "tiers": [], "cloud_account_id": "acc1"}]))
+
+        monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=False))
+
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+
+        items = mod.get()
+        assert items == []
+
+    def test_skips_when_saving_zero_or_negative(self, module_factory, monkeypatch):
+        """Should not include buckets where saving <= 0."""
+        mod = module_factory()
+
+        monkeypatch.setattr(mod, "_cloud_account_names",
+            Mock(return_value={"acc1": "Name"}))
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value="acc1"))
+        monkeypatch.setattr(mod, "_aggregate_resources",
+            Mock(return_value=[{
+                "bucket_name": "b",
+                "tiers": [{"tier": "frequent", "gb": 10}],
+                "cloud_account_id": "acc1",
+            }]))
+
+        monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
+
+        monkeypatch.setattr(mod, "_real_saving_payload",
+            Mock(return_value={"saving": 0.0}))
+        
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+        items = mod.get()
+        assert items == []
+
+    def test_skips_excluded_pools(self, module_factory, monkeypatch):
+        """Should not include resources whose pools are in excluded_pools."""
+        mod = module_factory()
+        mod.get_options = Mock(return_value =({
+            "excluded_pools": {"P1": True}
+        }))
+
+        monkeypatch.setattr(mod, "_cloud_account_names",
+            Mock(return_value={"acc1": "Name"}))
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value="acc1"))
+
+        monkeypatch.setattr(mod, "_aggregate_resources",
+            Mock(return_value=[{
+                "bucket_name": "b",
+                "tiers": [{"tier": "frequent", "gb": 10}],
+                "pool_id": "P1",
+                "cloud_account_id": "acc1",
+            }]))
+
+        monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
+
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+        items = mod.get()
+        assert items == []
+
+    def test_skip_cloud_accounts(self, module_factory, monkeypatch):
+        """Should fully skip cloud accounts listed in skip_cloud_accounts."""
+        mod = module_factory()
+        mod.get_options = Mock(return_value = ({
+            "skip_cloud_accounts": ["acc1"]
+        }))
+
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+        items = mod.get()
+        assert items == []
+
+    def test_invalid_cloud_account_structure(self, module_factory, monkeypatch):
+        """Should ignore cloud accounts with no extractable ID."""
+        mod = module_factory()
+
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"??": "bad"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value=None))
+        
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+        items = mod.get()
+        assert items == []
+
+    def test_status_with_it(self, module_factory, monkeypatch):
+        """Should mark resource as already using IT when status is positive."""
+        mod = module_factory()
+
+        monkeypatch.setattr(mod, "_cloud_account_names",
+            Mock(return_value={"acc1": "Name"}))
+        monkeypatch.setattr(mod, "get_cloud_accounts",
+            Mock(return_value=[{"id": "acc1"}]))
+        monkeypatch.setattr(mod, "_extract_cloud_account_id",
+            Mock(return_value="acc1"))
+
+        monkeypatch.setattr(mod, "_aggregate_resources",
+            Mock(return_value=[{
+                "bucket_name": "b",
+                "tiers": [{"tier": "frequent", "gb": 10}],
+                "cloud_account_id": "acc1",
+                "it_status_bucket": "Enabled"
+            }]))
+
+        monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
+        monkeypatch.setattr(mod, "_real_saving_payload",
+            Mock(return_value={"saving": 1.5}))
+        
+        monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
+        monkeypatch.setattr(mod, "get_pools", Mock(return_value={}))
+
+        items = mod.get()
+        assert len(items) == 1
+        assert items[0]["is_with_intelligent_tiering"] is True
