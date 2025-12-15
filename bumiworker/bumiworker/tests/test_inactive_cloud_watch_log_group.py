@@ -13,6 +13,10 @@ from bumiworker.modules.recommendations.inactive_cloud_watch_log_group import (
 
 NOW_FIXED = datetime(2025, 11, 7, 0, 0, 0, tzinfo=timezone.utc)
 
+# Common thresholds used by tests (7 days and 30 days)
+THRESHOLD_WEEK = 7
+THRESHOLD_MONTH = 30
+
 # Base resource template for tests
 RESOURCE_LOG_GROUP = {
     "_id": "1",
@@ -48,7 +52,8 @@ def module_factory(monkeypatch) -> Callable[[], InactiveCloudWatchLogGroup]:
     """
     Factory for module instances with frozen `now` and basic dependencies.
 
-    Adjust as needed per test scenario.
+    The factory freezes the module's current time (`_utc_now`) to
+    `NOW_FIXED` so tests are deterministic.
     """
 
     def _factory(
@@ -73,26 +78,31 @@ def module_factory(monkeypatch) -> Callable[[], InactiveCloudWatchLogGroup]:
 
 @pytest.fixture
 def mod_base(module_factory):
-    """ Basic module with default options."""
+    """
+    Basic module instance with default configuration.
+    Returns a module with a 7-day threshold and no exclusions.
+    """
+
     mod = module_factory()
-    mod.get_options_values = Mock(return_value=(7, set(), set()))
+    mod.get_options_values = Mock(return_value=(THRESHOLD_WEEK, set(), set()))
     return mod
 
-#
-# Note: No module-level skip to allow running implemented tests (e.g., TC-06).
-
 class TestHasRecentMetrics:
-    """Tests for `_has_recent_metrics` method."""
+    """Tests for the `_has_recent_metrics` helper.
+
+    These verify edge cases: no metrics, metrics outside/inside the
+    threshold and metrics exactly on the threshold boundary.
+    """
 
     def test_no_metrics(self, module_factory):
-        """No metrics."""
+        """Return False when the metric series is empty."""
         mod = module_factory()
         series = []
-        assert mod._has_recent_metrics(series, days_threshold=7) is False
-        assert mod._count_occurrences_in_threshold(series, days_threshold=7) == 0
+        assert mod._has_recent_metrics(series, days_threshold=THRESHOLD_WEEK) is False
+        assert mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK) == 0
 
     def test_metrics_outside_threshold(self, module_factory):
-        """Metrics outside the threshold."""
+        """Metrics older than the threshold should not be counted."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-10-21T12:15:00+00:00",
@@ -102,10 +112,10 @@ class TestHasRecentMetrics:
                 "timestamp" : "2025-10-07T12:35:00+00:00",
                 "value" : 1000
         } ]
-        assert mod._has_recent_metrics(series, days_threshold=7) is False
+        assert mod._has_recent_metrics(series, days_threshold=THRESHOLD_WEEK) is False
     
     def test_metrics_within_threshold(self, module_factory):
-        """Metrics within the threshold."""
+        """Recent metrics within the threshold return True."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -115,46 +125,50 @@ class TestHasRecentMetrics:
                 "timestamp" : "2025-11-01T16:05:00+00:00",
                 "value" : 2500
         } ]
-        assert mod._has_recent_metrics(series, days_threshold=7) is True
+        assert mod._has_recent_metrics(series, days_threshold=THRESHOLD_WEEK) is True
 
     def test_metrics_exact_threshold(self, module_factory):
-        """Metrics exactly on the threshold edge."""
+        """A metric on the threshold boundary is treated as recent."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-01T12:00:00+00:00",
             "value" : 2500
         } ]
-        assert mod._has_recent_metrics(series, days_threshold=7) is True
+        assert mod._has_recent_metrics(series, days_threshold=THRESHOLD_WEEK) is True
 
 class TestCountOccurrencesInThreshold:
-    """Tests for `_count_occurrences_in_threshold` method."""
+    """Tests for `_count_occurrences_in_threshold`.
+
+    Verifies handling of missing timestamps, empty series and counting
+    occurrences for different thresholds.
+    """
 
     def test_missing_timestamp(self, module_factory):
-        """Metric entry missing 'timestamp' key."""
+        """Entries without a timestamp should be ignored (count 0)."""
         mod = module_factory()
         series = [{"value": 123}]
-        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        count = mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK)
         assert count == 0
 
     def test_no_metrics(self, module_factory):
-        """No metrics."""
+        """Empty series returns zero occurrences."""
         mod = module_factory()
         series = []
-        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        count = mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK)
         assert count == 0
 
     def test_metrics_within_threshold_7_days(self, module_factory):
-        """Metrics within 7 days."""
+        """Count metrics that fall into a 7-day window."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-04T22:01:00+00:00",
             "value" : 500
         } ]
-        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        count = mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK)
         assert count == 1
     
     def test_metrics_within_threshold_30_days(self, module_factory):
-        """Metrics within 30 days."""
+        """Count metrics that fall into a 30-day window."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-10-21T12:15:00+00:00",
@@ -168,7 +182,7 @@ class TestCountOccurrencesInThreshold:
         assert count == 2
 
     def test_metrics_within_and_outside_threshold(self, module_factory):
-        """Metrics both within and outside the 7-day threshold."""
+        """Mix of recent and old metrics should only count recent ones."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -182,21 +196,33 @@ class TestCountOccurrencesInThreshold:
                 "timestamp" : "2025-10-08T12:35:00+00:00",
                 "value" : 1000
         } ]
-        count = mod._count_occurrences_in_threshold(series, days_threshold=7)
+        count = mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK)
+        assert count == 1
+
+    def test_invalid_timestamp_format(self, module_factory):
+        """Invalid timestamp strings should be ignored and not counted."""
+        mod = module_factory()
+        series = [{"timestamp": "not-a-timestamp", "value": 100},
+                  {"timestamp": "2025-11-04T22:01:00+00:00", "value": 1}]
+        count = mod._count_occurrences_in_threshold(series, days_threshold=THRESHOLD_WEEK)
         assert count == 1
 
 class TestSumMetricsLastMonth:
-    """Tests for `_sum_metrics_last_month` method."""
+    """Tests for `_sum_metrics_last_month`.
+
+    Ensures only metrics inside the last 30 days are summed and that
+    the exact 30-day boundary is included.
+    """
 
     def test_no_metrics(self, module_factory):
-        """No metrics."""
+        """Empty series returns sum of zero."""
         mod = module_factory()
         series = []
         sum = mod._sum_metrics_last_month(series)
         assert sum == 0
 
     def test_metrics_within_7_days(self, module_factory):
-        """Metrics within 7 days."""
+        """Recent metrics within 7 days contribute to the sum."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-04T22:22:01+00:00",
@@ -206,7 +232,7 @@ class TestSumMetricsLastMonth:
         assert sum == 500
 
     def test_metrics_within_30_days(self, module_factory):
-        """Metrics within 30 days."""
+        """Metrics within 30 days are included in the monthly sum."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-11-01T00:00:00+00:00",
@@ -216,7 +242,7 @@ class TestSumMetricsLastMonth:
         assert sum == 3000
 
     def test_metrics_exact_30_days(self, module_factory):
-        """Metrics exactly 30 days ago."""
+        """Metric exactly 30 days old should be included in the sum."""
         mod = module_factory()
         series= [{
             "timestamp" : "2025-10-08T00:00:00+00:00",
@@ -226,7 +252,7 @@ class TestSumMetricsLastMonth:
         assert sum == 1500
 
     def test_metrics_outside_threshold(self, module_factory):
-        """Metrics outside the 30-day threshold."""
+        """All metrics older than 30 days are ignored (sum 0)."""
         mod = module_factory()
         series= [{
                 "timestamp" : "2025-08-07T08:15:00+00:00",
@@ -240,7 +266,7 @@ class TestSumMetricsLastMonth:
         assert sum == 0
 
     def test_metrics_within_and_outside_threshold(self, module_factory):
-        """Metrics both within and outside the 30-day threshold."""
+        """Only metrics within 30 days contribute to the returned sum."""
         mod = module_factory()
         series= [ {
                 "timestamp" : "2025-11-04T22:01:00+00:00",
@@ -277,44 +303,76 @@ class TestSumMetricsLastMonth:
         sum = mod._sum_metrics_last_month(series)
         assert sum == 10500
 
+    def test_negative_values_are_ignored(self, module_factory):
+        """Negative values should be ignored in the sum."""
+        mod = module_factory()
+        series = [
+            {"timestamp": "2025-11-04T22:00:00+00:00", "value": 1000},
+            {"timestamp": "2025-11-03T00:00:00+00:00", "value": -500},
+        ]
+        total = mod._sum_metrics_last_month(series)
+        assert total == 1000
+
+    def test_invalid_values_are_ignored(self, module_factory):
+        """Non-numeric values should not affect the sum."""
+        mod = module_factory()
+        series = [
+            {"timestamp": "2025-11-04T22:01:00+00:00", "value": 1000},
+            {"timestamp": "2025-11-03T00:00:00+00:00"},
+        ]
+        total = mod._sum_metrics_last_month(series)
+    
+        assert total == 1000
+
+    def test_invalid_timestamp_formats_are_ignored(self, module_factory):
+        """Entries with invalid timestamp formats should be ignored when summing recent metrics."""
+        mod = module_factory()
+        series = [
+            {"timestamp": "not-a-timestamp", "value": 500},
+            {"timestamp": "2025-11-04T22:01:00+00:00", "value": 1000},
+        ]
+        total = mod._sum_metrics_last_month(series)
+        assert total == 1000
+
 class TestInactivity:
-    """Tests for `_is_inactive` method."""
+    """Tests for `_is_inactive` which decides if a resource is inactive.
+    """
 
     def test_empty_resource(self, module_factory):
-        """No lifecycle and no metrics."""
+        """Resource without retention or metrics is considered inactive."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
-        assert mod._is_inactive(resource, 7) is True
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is True
 
     def test_has_lifecycle(self, module_factory):
-        """Has retention policy."""
+        """Presence of a retention policy marks the resource as active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["retention_in_days"] = 3
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_recent_ingestion(self, module_factory):
-        """Ingestion metrics in the threshold."""
+        """Recent ingestion metric makes the resource active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
          "timestamp" : "2025-11-04T22:01:00+00:00",
           "value" : 500
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_ingestion_exact_threshold(self, module_factory):
-        """Ingestion metrics on the threshold edge."""
+        """An ingestion metric on the edge of the threshold counts as recent."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
          "timestamp" : "2025-10-31T00:00:00+00:00",
           "value" : 2500
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_ingestion_outside_threshold(self, module_factory):
-        """Ingestion metrics outside the threshold."""
+        """Only old ingestion metrics makes the resource inactive."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -325,10 +383,10 @@ class TestInactivity:
         "timestamp" : "2025-10-07T12:35:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is True
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is True
 
     def test_ingestion_inside_and_outside_threshold(self, module_factory):
-        """Ingestion metrics both inside and outside the threshold."""
+        """If any ingestion metric is recent, resource is active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -339,30 +397,30 @@ class TestInactivity:
         "timestamp" : "2025-10-07T12:35:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_recent_query(self, module_factory):
-        """Query metrics in the threshold."""
+        """Recent query metric makes the resource active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
         "timestamp" : "2025-11-04T18:30:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_query_exact_threshold(self, module_factory):
-        """Query metrics on the threshold edge."""
+        """A query metric exactly on the threshold counts as recent."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
         "timestamp" : "2025-10-31T00:00:00+00:00",
         "value" : 2000
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_query_outside_threshold(self, module_factory):
-        """Query metrics outside the threshold."""
+        """Old query metrics do not prevent resource from being inactive."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -373,10 +431,10 @@ class TestInactivity:
         "timestamp" : "2025-10-07T13:35:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is True
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is True
 
     def test_query_inside_and_outside_threshold(self, module_factory):
-        """Query metrics both inside and outside the threshold."""
+        """Presence of any recent query metric marks resource as active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["query"] = [{
@@ -387,10 +445,10 @@ class TestInactivity:
         "timestamp" : "2025-10-07T13:35:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
     def test_recent_query_and_ingestion(self, module_factory):
-        """Both query and ingestion metrics in the threshold."""
+        """Recent metrics across multiple categories keep resource active."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
         resource["meta"]["metrics"]["ingestion"] = [{
@@ -401,9 +459,9 @@ class TestInactivity:
         "timestamp" : "2025-10-31T17:55:00+00:00",
         "value" : 1500
         }]
-        assert mod._is_inactive(resource, 7) is False
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is False
 
-    def test_querry_and_ingestion_outside_threshold(self, module_factory):
+    def test_query_and_ingestion_outside_threshold(self, module_factory):
         """Both query and ingestion metrics outside the threshold."""
         mod = module_factory()
         resource = copy.deepcopy(RESOURCE_LOG_GROUP)
@@ -423,7 +481,7 @@ class TestInactivity:
         "timestamp" : "2025-10-07T13:35:00+00:00",
         "value" : 1000
         }]
-        assert mod._is_inactive(resource, 7) is True
+        assert mod._is_inactive(resource, THRESHOLD_WEEK) is True
 
 class TestIntegration:
     """Tests for the `_get` method."""
@@ -470,7 +528,7 @@ class TestIntegration:
         """Filters out resources in excluded pools."""
         mod = mod_base
         excluded_pool = "pool_excl"
-        mod.get_options_values = Mock(return_value=(7, {excluded_pool}, set()))
+        mod.get_options_values = Mock(return_value=(THRESHOLD_WEEK, {excluded_pool}, set()))
         ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
         mod.get_cloud_accounts = Mock(return_value=ca_map)
         mod._extract_cloud_account_id = Mock(return_value="acc1")
@@ -497,7 +555,7 @@ class TestIntegration:
     def test_skip_cloud_accounts(self, mod_base):
         """"Skips cloud accounts in `skip_cloud_accounts`."""
         mod = mod_base
-        mod.get_options_values = Mock(return_value=(7, set(), {"acc1"}))
+        mod.get_options_values = Mock(return_value=(THRESHOLD_WEEK, set(), {"acc1"}))
         ca_map = {"acc1": {"id": "acc1", "type": "aws", "name": "Account 1"}}
         mod.get_cloud_accounts = Mock(return_value=ca_map)
         mod._extract_cloud_account_id = Mock(return_value="acc1")
@@ -546,9 +604,3 @@ class TestIntegration:
 
         mod._aggregate_resources.assert_called_once_with("acc1")
         assert result == []
-
-
-# Enum used in many scenarios — imported here to avoid unused symbol lint.
-_ = MetricKey
-
-
