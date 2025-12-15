@@ -53,9 +53,7 @@ class AbandonedS3Buckets extends BaseRecommendation {
   descriptionMessageId = "abandonedS3BucketsDescription";
 
   get descriptionMessageValues() {
-    const {
-      days_threshold: daysThreshold
-    } = this.options;
+    const { days_threshold: daysThreshold } = this.options;
 
     return { daysThreshold };
   }
