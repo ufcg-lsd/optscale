@@ -609,14 +609,17 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         items: List[Dict[str, Any]] = []
         total_buckets_processed = 0
         total_candidates_found = 0
-        
-        for ca in self.get_cloud_accounts():
+
+        # Get full cloud account objects, filtered by supported types and skipped IDs
+        cloud_accounts_map = self.get_cloud_accounts(
+            supported_cloud_types=self.SUPPORTED_CLOUD_TYPES,
+            skip_cloud_accounts=skip_accounts,
+        )
+
+        for ca in cloud_accounts_map.values():
             ca_id = self._extract_cloud_account_id(ca)
             if not ca_id:
                 LOG.warning("[IT] Skipping cloud account with unknown structure: %r", ca)
-                continue
-            if ca_id in skip_accounts:
-                LOG.info("[IT] Skipping cloud_account_id=%s (in skip_accounts)", ca_id)
                 continue
 
             resources = self._aggregate_resources(ca_id)
