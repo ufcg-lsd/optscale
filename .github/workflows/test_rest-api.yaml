@@ -1,13 +1,13 @@
+---
 name: Build restapi test image and run tests on it
-run-name: Build restapi test image and run tests on it - started by ${{ github.actor }}
+run-name: Build restapi test image and run tests on it
 permissions: read-all
 on:
   pull_request:
     types: [opened, synchronize]
     paths:
-    - 'rest_api/**'
+      - "rest_api/**"
   workflow_dispatch:
-
 
 jobs:
   build_image:
@@ -15,6 +15,7 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+
       - name: Login to Docker Hub (optional)
         env:
           username: ${{ secrets.EXT_DOCKER_LOGIN }}
@@ -24,7 +25,27 @@ jobs:
         with:
           username: ${{ env.username }}
           password: ${{ env.password }}
+
+      - name: Set up etcd service
+        run: |
+          docker run -d --name etcd -p 2379:2379 -p 2380:2380 \
+            quay.io/coreos/etcd:v3.5 \
+            etcd \
+            --listen-peer-urls http://0.0.0.0:2380 \
+            --listen-client-urls http://0.0.0.0:2379 \
+            --advertise-client-urls http://127.0.0.1:2379 \
+            --initial-cluster-token etcd-cluster-1 \
+            --initial-advertise-peer-urls http://127.0.0.1:2380 \
+            --initial-cluster default=http://127.0.0.1:2380
+
+      - name: Verify etcd is running
+        run: |
+          curl -L http://127.0.0.1:2379/health
+
       - name: Build image
         run: bash -x build.sh rest_api build
+
       - name: Build test image and run tests
+        env:
+          ETCD_HOST: http://127.0.0.1:2379
         run: bash -x rest_api/run_test.sh
