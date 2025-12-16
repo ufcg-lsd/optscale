@@ -1,5 +1,5 @@
-import { FormattedMessage } from "react-intl";
 import { FormProvider } from "react-hook-form";
+import { FormattedMessage } from "react-intl";
 import { SETTINGS_TYPE_SUCCESS_MESSAGE, COMMON_YEAR_LENGTH } from "utils/constants";
 import { lessOrEqual } from "utils/validation";
 import BaseSideModal from "../BaseSideModal";
