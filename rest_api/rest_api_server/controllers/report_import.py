@@ -2,6 +2,7 @@ import logging
 import uuid
 import tools.optscale_time as opttime
 from sqlalchemy import and_, true, or_, exists
+from sqlalchemy.orm import sessionmaker, joinedload
 import boto3
 from tools.optscale_exceptions.common_exc import (
     NotFoundException, FailedDependency, WrongArgumentsException
@@ -24,6 +25,7 @@ from rest_api.rest_api_server.utils import (raise_unexpected_exception,
 ACTIVE_IMPORT_THRESHOLD = 1800  # 30 min
 DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS = 10800  # 3 hrs
 DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS = 10800  # 3 hrs
+DEFAULT_IN_PROGRESS_TIMEOUT_SECONDS = 3600  # 1 hr
 DEFAULT_IN_PROGRESS_TIMEOUT_SECONDS = 3600  # 1 hr
 LOG = logging.getLogger(__name__)
 
@@ -60,12 +62,25 @@ class ReportImportBaseController(BaseController):
         if timeout_seconds <= 0:
             return
         expiration_ts = opttime.utcnow_timestamp() - timeout_seconds
-        expired_imports = self.session.query(ReportImport).filter(
-            ReportImport.cloud_account_id == cloud_account_id,
-            ReportImport.deleted_at.is_(False),
-            ReportImport.state == ImportStates.IN_PROGRESS,
-            ReportImport.created_at <= expiration_ts
-        ).all()
+        engine = self.session.bind
+        session_factory = sessionmaker(bind=engine)
+        local_session = session_factory()
+        expired_imports = []
+        try:
+            expired_imports = local_session.query(ReportImport).options(
+                joinedload(ReportImport.cloud_account)
+            ).filter(
+                ReportImport.cloud_account_id == cloud_account_id,
+                ReportImport.deleted_at.is_(False),
+                ReportImport.state == ImportStates.IN_PROGRESS,
+                ReportImport.created_at <= expiration_ts
+            ).all()
+        except Exception:
+            local_session.close()
+            raise
+        if not expired_imports:
+            local_session.close()
+            return
         if not expired_imports:
             return
         reason = 'Import timeout after %s seconds' % timeout_seconds
@@ -78,7 +93,7 @@ class ReportImportBaseController(BaseController):
             report.state = ImportStates.FAILED.value
             report.state_reason = reason
             report.updated_at = now
-        self.session.commit()
+        local_session.commit()
         for report in expired_imports:
             if report.is_recalculation:
                 self._publish_report_import_activity(
@@ -88,6 +103,7 @@ class ReportImportBaseController(BaseController):
                 self._publish_report_import_activity(
                     report, 'report_import_failed',
                     error_reason=reason, level='ERROR')
+        local_session.close()
 
     def check_unprocessed_imports(self, cloud_account_id):
         self._expire_in_progress_imports(cloud_account_id)
