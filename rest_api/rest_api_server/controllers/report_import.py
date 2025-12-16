@@ -69,16 +69,25 @@ class ReportImportBaseController(BaseController):
         if not expired_imports:
             return
         reason = 'Import timeout after %s seconds' % timeout_seconds
+        now = opttime.utcnow_timestamp()
         for report in expired_imports:
             LOG.warning(
                 'Marking report import %s as failed due to timeout (%ss)',
                 report.id, timeout_seconds
             )
-            self.edit(
-                report.id,
-                state=ImportStates.FAILED.value,
-                state_reason=reason
-            )
+            report.state = ImportStates.FAILED.value
+            report.state_reason = reason
+            report.updated_at = now
+        self.session.commit()
+        for report in expired_imports:
+            if report.is_recalculation:
+                self._publish_report_import_activity(
+                    report, 'recalculation_failed',
+                    error_reason=reason, level='ERROR')
+            else:
+                self._publish_report_import_activity(
+                    report, 'report_import_failed',
+                    error_reason=reason, level='ERROR')
 
     def check_unprocessed_imports(self, cloud_account_id):
         self._expire_in_progress_imports(cloud_account_id)

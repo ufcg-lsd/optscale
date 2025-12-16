@@ -1,0 +1,1412 @@
+Pycodestyle tests>>>
+<<<Pycodestyle tests
+Pylint tests>>>
+<<Pylint tests
+Alembic down revision tests>>>
+<<Alembic down revision tests
+Unit tests>>>
+============================= test session starts ==============================
+platform linux -- Python 3.12.11, pytest-8.1.0, pluggy-1.6.0
+rootdir: /usr/src/app/rest_api
+configfile: pyproject.toml
+plugins: xdist-3.5.0
+created: 3/3 workers
+3 workers [1664 items]
+
+...........................F............................................ [  4%]
+..........................F.................F........................... [  8%]
+.........................F..F..F.FF.F..FFF.F.FF..F.F...F.F..F...F....... [ 12%]
+........................................................................ [ 17%]
+............FF........F.....................................F........... [ 21%]
+..........FFF........................................................... [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 34%]
+........................................................................ [ 38%]
+......F................................................................. [ 43%]
+........................................................................ [ 47%]
+.....................................................................F.. [ 51%]
+......................................................................F. [ 56%]
+............F........................................................... [ 60%]
+........................................................................ [ 64%]
+........................................................................ [ 69%]
+........................................................................ [ 73%]
+........................................................................ [ 77%]
+........................................................................ [ 82%]
+........................................................................ [ 86%]
+........................................................................ [ 90%]
+........................................................................ [ 95%]
+........................................................................ [ 99%]
+........                                                                 [100%]
+==================================== ERRORS ====================================
+__ ERROR collecting rest_api_server/tests/unittests/test_schedule_imports.py ___
+ImportError while importing test module '/usr/src/app/rest_api/rest_api_server/tests/unittests/test_schedule_imports.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+rest_api/rest_api_server/tests/unittests/test_schedule_imports.py:6: in <module>
+    from rest_api.rest_api_server.controllers.report_import import (
+E   ImportError: cannot import name 'DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS' from 'rest_api.rest_api_server.controllers.report_import' (/usr/src/app/rest_api/rest_api_server/controllers/report_import.py)
+=================================== FAILURES ===================================
+_ TestAvailableFiltersApi.test_available_filters_default_values_if_filtered_by_entity _
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_available_filters.TestAvailableFiltersApi testMethod=test_available_filters_default_values_if_filtered_by_entity>
+
+    def test_available_filters_default_values_if_filtered_by_entity(self):
+        filters = {
+            'pool_id': [self.org['pool_id']],
+        }
+        min_timestamp = 0
+        max_timestamp = int(datetime.max.replace(
+            tzinfo=timezone.utc).timestamp()) - 1
+        code, response = self.client.available_filters_get(
+            self.org_id, min_timestamp, max_timestamp, filters)
+        self.assertEqual(code, 200)
+>       self.assertEqual(response['filter_values']['pool'], [
+            {
+                'id': self.org['pool_id'],
+                'name': self.org['name'],
+                'purpose': 'business_unit'
+            }
+        ])
+E       AssertionError: Lists differ: [] != [{'id': '36d0c717-64d2-4d4b-953d-7e68884ca[53 chars]it'}]
+E       
+E       Second list contains 1 additional elements.
+E       First extra element 0:
+E       {'id': '36d0c717-64d2-4d4b-953d-7e68884ca04f', 'name': 'organization', 'purpose': 'business_unit'}
+E       
+E       - []
+E       + [{'id': '36d0c717-64d2-4d4b-953d-7e68884ca04f',
+E       +   'name': 'organization',
+E       +   'purpose': 'business_unit'}]
+
+rest_api/rest_api_server/tests/unittests/test_available_filters.py:205: AssertionError
+______________ TestCloudAccountApi.test_create_cloud_key_acc_key _______________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_create_cloud_key_acc_key>
+
+    def test_create_cloud_key_acc_key(self):
+        valid_config = {
+            'name': 'my cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'access_key_id': 'key',
+                'secret_access_key': 'secret',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, valid_config)
+        cloud_acc_id = cloud_acc["id"]
+        valid_config.pop('type')
+        c1 = copy.deepcopy(valid_config)
+        c1['config'].pop('secret_access_key')
+    
+        code, cloud_acc = self.client.cloud_account_update(cloud_acc_id, c1)
+        self.assertEqual(code, 400)
+>       self.assertEqual(cloud_acc['error']['error_code'], 'OE0548')
+E       AssertionError: 'OE0216' != 'OE0548'
+E       - OE0216
+E       + OE0548
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:183: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 PATCH /restapi/v2/cloud_accounts/ea5234a3-3026-4238-a557-ba2d61891765 (127.0.0.1): HTTP 400: secret_access_key is not provided
+WARNING  tornado.access:web.py:2407 400 PATCH /restapi/v2/cloud_accounts/ea5234a3-3026-4238-a557-ba2d61891765 (127.0.0.1) 57.15ms
+_____________ TestCloudAccountApi.test_create_kubernetes_cloud_acc _____________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_create_kubernetes_cloud_acc>
+
+    def test_create_kubernetes_cloud_acc(self):
+        code, cloud_acc = self.create_cloud_account(
+            self.org_id, self.valid_kubernetes_cloud_acc)
+        self.assertEqual(code, 201)
+>       self.assertDictEqual(self.valid_kubernetes_response['config'],
+                             cloud_acc['config'], '%s and %s' % (
+                                 self.valid_kubernetes_response['config'],
+                                 cloud_acc['config']))
+E       AssertionError: {'use[19 chars]odel': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01}} != {'use[19 chars]odel': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001}}
+E       - {'cost_model': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01},
+E       + {'cost_model': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001},
+E       ?                                       +                           +
+E       
+E          'user': 'user'} : {'user': 'user', 'cost_model': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01}} and {'user': 'user', 'cost_model': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001}}
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:1624: AssertionError
+___________________ TestBreakdownMetaApi.test_breakdown_meta ___________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta>
+
+    def test_breakdown_meta(self):
+        start = int(datetime(2022, 1, 1).timestamp())
+        end = int(datetime(2022, 1, 5).timestamp())
+    
+        day_1_ts = int(datetime(2022, 1, 1).timestamp())
+        day_2_ts = int(datetime(2022, 1, 2).timestamp())
+        day_3_ts = int(datetime(2022, 1, 3).timestamp())
+        day_4_ts = int(datetime(2022, 1, 4).timestamp())
+        day_5_ts = int(datetime(2022, 1, 5).timestamp())
+    
+        res1 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_2_ts,
+            meta={'meta_key': 'day_1_2'})
+        res2 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_3_ts, last_seen=day_4_ts,
+            meta={'meta_key': 'day_3_4', 'meta_2': 'day_3_4'})
+        res3 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_2_ts,
+            meta={'meta_key': 'day_1_2'})
+        res4 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_2_ts, last_seen=day_5_ts,
+            meta={'meta_key': 'day_2_5'})
+        res5 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_5_ts,
+            meta={'meta_2': 'day_1_5'})
+    
+        # res_id: [(day, cost)]
+        for res_id, info in {
+            res1['id']: [(1, 10)],
+            res2['id']: [(3, 20)],
+            res3['id']: [(2, 30)],
+            res4['id']: [(2, 40), (3, 40)],
+        }.items():
+            for day, cost in info:
+                self.expenses.append({
+                    'cloud_account_id': self.cloud_acc1['id'],
+                    'resource_id': res_id,
+                    'date': datetime(2022, 1, day),
+                    'cost': cost,
+                    'sign': 1
+                })
+    
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start, end, 'meta_key')
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:189: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/1009a4e5-8de0-4f15-b1c3-d3b19bcb1d42/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/1009a4e5-8de0-4f15-b1c3-d3b19bcb1d42/cloud_accounts (127.0.0.1) 5.18ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/1009a4e5-8de0-4f15-b1c3-d3b19bcb1d42/breakdown_meta?breakdown_by=meta_key&start_date=1640995200&end_date=1641340800 (127.0.0.1) 0.26ms
+______________ TestBreakdownMetaApi.test_breakdown_meta_clusters _______________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_clusters>
+
+    def test_breakdown_meta_clusters(self):
+        code, cluster_type = self.client.cluster_type_create(
+            self.org_id, {'name': 'awesome', 'tag_key': 'tag1'})
+        self.assertEqual(code, 201)
+        dt = datetime(2021, 2, 1)
+        first_seen = int((dt - timedelta(days=1)).timestamp())
+        last_seen = int(dt.timestamp())
+        self._create_resource(
+            self.cloud_acc1['id'], tags={'tag1': 'val1'}, region='us-east',
+            first_seen=first_seen, last_seen=last_seen,
+            meta={'os': 'windows'})
+        self._create_resource(
+            self.cloud_acc1['id'], tags={'tag2': 'val2'},
+            first_seen=first_seen, last_seen=last_seen,
+            meta={'os': 'windows'})
+        self._create_resource(
+            self.cloud_acc1['id'], tags={'tag1': 'val1', 'tag3': 'val3'},
+            region='us-west', first_seen=first_seen, last_seen=last_seen,
+            meta={'os': 'linux', 'arch': 'x64'}
+        )
+        self._create_resource(
+            self.cloud_acc1['id'], tags={'tag3': 'val3'}, region='us-test',
+            first_seen=first_seen, last_seen=last_seen
+        )
+    
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, first_seen, last_seen, 'os')
+        expected_breakdown = {
+            str(first_seen): {
+                'windows': {'cost': 0, 'count': 2},
+                'linux': {'cost': 0, 'count': 1},
+                '(not set)': {'cost': 0, 'count': 1}
+            },
+            str(last_seen): {
+                'windows': {'cost': 0, 'count': 2},
+                'linux': {'cost': 0, 'count': 1},
+                '(not set)': {'cost': 0, 'count': 1}
+            }
+        }
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:387: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/03d634b5-228d-413d-abbd-09fb0b46c479/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/03d634b5-228d-413d-abbd-09fb0b46c479/cloud_accounts (127.0.0.1) 1.89ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/03d634b5-228d-413d-abbd-09fb0b46c479/breakdown_meta?breakdown_by=os&start_date=1612051200&end_date=1612137600 (127.0.0.1) 0.23ms
+____________ TestBreakdownMetaApi.test_breakdown_meta_dates_values _____________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_dates_values>
+
+    def test_breakdown_meta_dates_values(self):
+        filters = {
+            'cloud_account_id': [self.cloud_acc1['id']],
+        }
+        min_timestamp = 0
+        max_timestamp = int(datetime.max.replace(
+            tzinfo=timezone.utc).timestamp()) - 1
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, min_timestamp - 1, max_timestamp, 'test', filters)
+>       self.assertEqual(code, 400)
+E       AssertionError: 404 != 400
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:100: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/8f8156c8-3801-42f2-9239-4b2e146ce9d9/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/8f8156c8-3801-42f2-9239-4b2e146ce9d9/cloud_accounts (127.0.0.1) 2.06ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/8f8156c8-3801-42f2-9239-4b2e146ce9d9/breakdown_meta?breakdown_by=test&start_date=-1&end_date=253402300799&cloud_account_id=8012cf85-63db-420e-952d-97ee6c44f3d8 (127.0.0.1) 0.22ms
+____________ TestBreakdownMetaApi.test_breakdown_meta_expenses_sum _____________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_expenses_sum>
+
+    def test_breakdown_meta_expenses_sum(self):
+        day_1_ts = int(datetime(2022, 2, 1).timestamp())
+        res1 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+            meta={'arch': 'x64'})
+        cost_map = [
+            (datetime(2022, 1, 31), 5),
+            (datetime(2022, 2, 1), 10),
+            (datetime(2022, 2, 1), 20),
+            (datetime(2022, 2, 2), 30),
+        ]
+        for dt, cost in cost_map:
+            self.expenses.append({
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res1['id'],
+                'date': dt,
+                'cost': cost,
+                'sign': 1
+            })
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, day_1_ts, day_1_ts, 'arch')
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:338: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/ab623459-bd38-4afb-a095-6782c7a5eecc/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/ab623459-bd38-4afb-a095-6782c7a5eecc/cloud_accounts (127.0.0.1) 2.98ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/ab623459-bd38-4afb-a095-6782c7a5eecc/breakdown_meta?breakdown_by=arch&start_date=1643673600&end_date=1643673600 (127.0.0.1) 0.34ms
+_________________ TestCloudAccountApi.test_edit_assumed_linked _________________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_edit_assumed_linked>
+t_schedule = <MagicMock name='schedule' id='281472630866480'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_linked(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'linked': True,  # linked acc with assumed role
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+    
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test1',  # valid
+                'linked': False  # not allowed, linked is immutable
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(
+            ca_id, ch_config)
+>       self.assertEqual(code, 400)
+E       AssertionError: 200 != 400
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:341: AssertionError
+________ TestBreakdownMetaApi.test_breakdown_meta_filter_by_first_seen _________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_filter_by_first_seen>
+
+    def test_breakdown_meta_filter_by_first_seen(self):
+        day_in_month = datetime(2025, 1, 1)
+        time = int(day_in_month.timestamp())
+        resource1 = self._create_resource(
+            self.cloud_acc1['id'], name='res1', first_seen=time,
+            last_seen=time + 1, meta={'os': 'win'})
+        resource2 = self._create_resource(
+            self.cloud_acc1['id'], name='res2', first_seen=time - 1,
+            last_seen=time)
+        expenses = [
+            {
+                'cost': 300,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'resource_id': resource1['id'],
+            },
+            {
+                'cost': 70,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'resource_id': resource2['id'],
+            }
+        ]
+    
+        for e in expenses:
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+    
+        filters = {'first_seen_lte': time - 1}
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, time, time + 1, 'os', filters)
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:572: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/e6e9d215-c0db-4d90-8901-302ef76db5ab/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/e6e9d215-c0db-4d90-8901-302ef76db5ab/cloud_accounts (127.0.0.1) 3.99ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/e6e9d215-c0db-4d90-8901-302ef76db5ab/breakdown_meta?breakdown_by=os&start_date=1735689600&end_date=1735689601&first_seen_lte=1735689599 (127.0.0.1) 0.38ms
+_________ TestBreakdownMetaApi.test_breakdown_meta_filter_by_last_seen _________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_filter_by_last_seen>
+
+    def test_breakdown_meta_filter_by_last_seen(self):
+        day_in_month = datetime(2025, 1, 1)
+        time = int(day_in_month.timestamp())
+        resource1 = self._create_resource(
+            self.cloud_acc1['id'], name='res1', first_seen=time,
+            last_seen=time + 1, meta={'test': 'val1'})
+        resource2 = self._create_resource(
+            self.cloud_acc1['id'], name='res2', first_seen=time - 1,
+            last_seen=time, meta={'test': 'val2'})
+        expenses = [
+            {
+                'cost': 300,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'resource_id': resource1['id'],
+            },
+            {
+                'cost': 70,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'resource_id': resource2['id'],
+            }
+        ]
+    
+        for e in expenses:
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+    
+        filters = {'last_seen_lte': time}
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, time, time + 1, 'test', filters)
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:645: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/1865a305-0cd5-4d6c-b61c-0c2e48d1acd7/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/1865a305-0cd5-4d6c-b61c-0c2e48d1acd7/cloud_accounts (127.0.0.1) 4.40ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/1865a305-0cd5-4d6c-b61c-0c2e48d1acd7/breakdown_meta?breakdown_by=test&start_date=1735689600&end_date=1735689601&last_seen_lte=1735689600 (127.0.0.1) 0.38ms
+_________ TestBreakdownMetaApi.test_breakdown_meta_incorrect_identity __________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_incorrect_identity>
+
+    def test_breakdown_meta_incorrect_identity(self):
+        start = int(datetime(2022, 2, 1).timestamp())
+        end = int(datetime(2022, 3, 1).timestamp())
+    
+        day_1_ts = int(datetime(2022, 2, 2, tzinfo=timezone.utc).timestamp())
+        res = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+            r_type='Instance')
+        self.expenses = [
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res['id'],
+                'date': datetime(2022, 2, 1),
+                'cost': 10,
+                'sign': 1
+            },
+        ]
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start, end, 'test', {'resource_type': 'Instance:unknown'})
+>       self.assertEqual(code, 400)
+E       AssertionError: 404 != 400
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:276: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/0c6931dd-0ebf-43c5-a28c-0630446dfe5a/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/0c6931dd-0ebf-43c5-a28c-0630446dfe5a/cloud_accounts (127.0.0.1) 2.92ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/0c6931dd-0ebf-43c5-a28c-0630446dfe5a/breakdown_meta?breakdown_by=test&start_date=1643673600&end_date=1646092800&resource_type=Instance%3Aunknown (127.0.0.1) 0.30ms
+_____________ TestCloudAccountApi.test_edit_assumed_role_required ______________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_edit_assumed_role_required>
+t_schedule = <MagicMock name='schedule' id='281472630879200'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_role_required(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+                'linked': True,  # linked acc with assumed role
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+    
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                'assume_role_name': 'va-test1',  # valid
+                'linked': False  # not allowed
+    
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(ca_id,
+                                                               ch_config)
+>       self.assertEqual(code, 400)
+E       AssertionError: 200 != 400
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:401: AssertionError
+________________ TestBreakdownMetaApi.test_breakdown_meta_limit ________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_limit>
+
+    def test_breakdown_meta_limit(self):
+        time = opttime.utcnow_timestamp()
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, time, time + 1, 'test', {'limit': 1})
+>       self.assertEqual(code, 400)
+E       AssertionError: 404 != 400
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:116: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/9a7650ca-94c8-4087-8e01-3eb7774b13af/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/9a7650ca-94c8-4087-8e01-3eb7774b13af/cloud_accounts (127.0.0.1) 2.72ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/9a7650ca-94c8-4087-8e01-3eb7774b13af/breakdown_meta?breakdown_by=test&start_date=1765908035&end_date=1765908036&limit=1 (127.0.0.1) 0.27ms
+___________ TestBreakdownMetaApi.test_breakdown_meta_traffic_filters ___________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_traffic_filters>
+
+    def test_breakdown_meta_traffic_filters(self):
+        day_1_ts = int(datetime(2022, 2, 1).timestamp())
+        res1 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+            meta={'os': 'win', 'arch': 'x64'})
+        res2 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+            meta={'os': 'linux'}
+        )
+        res3 = self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+            meta={'os': 'win'})
+        self.expenses = [
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res1['id'],
+                'date': datetime(2022, 2, 1),
+                'cost': 10,
+                'sign': 1
+            },
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res2['id'],
+                'date': datetime(2022, 2, 1),
+                'cost': 15,
+                'sign': 1
+            },
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res3['id'],
+                'date': datetime(2022, 2, 1),
+                'cost': 30,
+                'sign': 1
+            },
+        ]
+        self.traffic_expenses = [
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res1['cloud_resource_id'],
+                'date': int(datetime(2022, 2, 1).timestamp()),
+                'type': 1,
+                'from': 'from_1',
+                'to': 'to_1',
+                'usage': 1,
+                'cost': 1,
+                'sign': 1
+            },
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': res2['cloud_resource_id'],
+                'date': int(datetime(2022, 2, 1).timestamp()),
+                'type': 1,
+                'from': 'from_2',
+                'to': 'to_2',
+                'usage': 2,
+                'cost': 2,
+                'sign': 1
+            }
+        ]
+        for body in [
+            {
+                'traffic_from': 'from_2:aws_cnr'
+            },
+            {
+                'traffic_to': 'to_2:aws_cnr'
+            }
+        ]:
+            code, response = self.client.breakdown_meta_get(
+                self.org_id, day_1_ts, day_1_ts, 'os', body)
+            expected_breakdown = {
+                str(day_1_ts): {
+                    'linux': {'cost': 15, 'count': 1}
+                }
+            }
+>           self.assertEqual(code, 200)
+E           AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:496: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/7c0c90d6-3511-4605-892c-4c87e21b086d/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/7c0c90d6-3511-4605-892c-4c87e21b086d/cloud_accounts (127.0.0.1) 3.12ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/7c0c90d6-3511-4605-892c-4c87e21b086d/breakdown_meta?breakdown_by=os&start_date=1643673600&end_date=1643673600&traffic_from=from_2%3Aaws_cnr (127.0.0.1) 0.29ms
+________ TestCloudAccountApi.test_edit_assumed_role_required_if_acc_set ________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_edit_assumed_role_required_if_acc_set>
+t_schedule = <MagicMock name='schedule' id='281472652101968'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_edit_assumed_role_required_if_acc_set(self, t_schedule):
+        config = {
+            'name': 'assume_cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'assume_role_account_id': '87629',
+                'assume_role_name': 'va-test',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, config)
+        ca_id = cloud_acc["id"]
+        # check service creds account id in config
+        patch('tools.cloud_adapter.clouds.aws.Aws.validate_credentials',
+              return_value={'account_id': ca_id, 'warnings': []}).start()
+    
+        ch_config = {
+            'config': {
+                'assume_role_account_id': '87629',  # valid
+                # role is required, but not set
+            }
+        }
+        code, new_cloud_acc = self.client.cloud_account_update(ca_id,
+                                                               ch_config)
+>       self.assertEqual(code, 400)
+E       AssertionError: 200 != 400
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:429: AssertionError
+________________ TestBreakdownMetaApi.test_breakdown_meta_types ________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_types>
+
+    def test_breakdown_meta_types(self):
+        start = int(datetime(2022, 2, 2).timestamp())
+        end = int(datetime(2022, 2, 2).timestamp())
+    
+        day_1_ts = int(datetime(2022, 2, 2).timestamp())
+        meta_values = [
+            ['1', '2'], 'win', {'key': 'value'}, None, 2, True, False, 0
+        ]
+        for meta_value in meta_values:
+            self._create_resource(
+                self.cloud_acc1['id'], first_seen=day_1_ts, last_seen=day_1_ts,
+                meta={'key': meta_value})
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start, end, 'key')
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:696: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/cd3de918-070c-4fb1-938a-29819c77d617/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/cd3de918-070c-4fb1-938a-29819c77d617/cloud_accounts (127.0.0.1) 2.64ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/cd3de918-070c-4fb1-938a-29819c77d617/breakdown_meta?breakdown_by=key&start_date=1643760000&end_date=1643760000 (127.0.0.1) 0.30ms
+_________ TestBreakdownMetaApi.test_breakdown_meta_unexpected_filters __________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_unexpected_filters>
+
+    def test_breakdown_meta_unexpected_filters(self):
+        start_ts = int(datetime(2022, 2, 1).timestamp())
+        filters = {
+            'unexpected': 'value',
+        }
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start_ts, start_ts, 'os', filters)
+>       self.assertEqual(code, 400)
+E       AssertionError: 404 != 400
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:88: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/cf1e49a0-3328-4a5e-8259-a109681625d9/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/cf1e49a0-3328-4a5e-8259-a109681625d9/cloud_accounts (127.0.0.1) 3.68ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/cf1e49a0-3328-4a5e-8259-a109681625d9/breakdown_meta?breakdown_by=os&start_date=1643673600&end_date=1643673600&unexpected=value (127.0.0.1) 0.27ms
+_________ TestBreakdownMetaApi.test_breakdown_meta_withot_breakdown_by _________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_withot_breakdown_by>
+
+    def test_breakdown_meta_withot_breakdown_by(self):
+        start_ts = int(datetime(2022, 2, 1).timestamp())
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start_ts, start_ts, None)
+>       self.assertEqual(code, 400)
+E       AssertionError: 404 != 400
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:78: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/9ad5441f-4cfe-4298-bc24-cc2badbe44b6/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/9ad5441f-4cfe-4298-bc24-cc2badbe44b6/cloud_accounts (127.0.0.1) 2.21ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/9ad5441f-4cfe-4298-bc24-cc2badbe44b6/breakdown_meta?start_date=1643673600&end_date=1643673600 (127.0.0.1) 0.22ms
+__________ TestBreakdownMetaApi.test_breakdown_meta_without_expenses ___________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_breakdown_meta_without_expenses>
+
+    def test_breakdown_meta_without_expenses(self):
+        start = int(datetime(2022, 2, 1).timestamp())
+        end = int(datetime(2022, 2, 3).timestamp())
+        day_2_ts = int(datetime(2022, 2, 2).timestamp())
+        self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_2_ts, last_seen=day_2_ts,
+            meta={'os': 'linux'})
+        self._create_resource(
+            self.cloud_acc1['id'], first_seen=day_2_ts, last_seen=day_2_ts,
+            meta={'os': 'windows'})
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start, end, 'os')
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:302: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/7e8a4724-5c50-47c5-81d8-bfe7cbf1dafd/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/7e8a4724-5c50-47c5-81d8-bfe7cbf1dafd/cloud_accounts (127.0.0.1) 6.02ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/7e8a4724-5c50-47c5-81d8-bfe7cbf1dafd/breakdown_meta?breakdown_by=os&start_date=1643673600&end_date=1643846400 (127.0.0.1) 0.37ms
+________________ TestBreakdownMetaApi.test_empty_breakdown_meta ________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_empty_breakdown_meta>
+
+    def test_empty_breakdown_meta(self):
+        start = int(datetime(2022, 2, 1).timestamp())
+        end = int(datetime(2022, 2, 28).timestamp())
+        code, response = self.client.breakdown_meta_get(
+            self.org_id, start, end, 'test')
+>       self.assertEqual(code, 200)
+E       AssertionError: 404 != 200
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:284: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/71d33b2e-b51e-4071-b8eb-7aec7ef23882/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/71d33b2e-b51e-4071-b8eb-7aec7ef23882/cloud_accounts (127.0.0.1) 2.54ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/71d33b2e-b51e-4071-b8eb-7aec7ef23882/breakdown_meta?breakdown_by=test&start_date=1643673600&end_date=1646006400 (127.0.0.1) 0.26ms
+________________ TestBreakdownMetaApi.test_invalid_organization ________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_breakdown_meta.TestBreakdownMetaApi testMethod=test_invalid_organization>
+
+    def test_invalid_organization(self):
+        day_in_month = datetime(2020, 1, 14)
+    
+        time = int(day_in_month.timestamp())
+        valid_aws_cloud_acc = {
+            'name': 'my cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'access_key_id': 'key',
+                'secret_access_key': 'secret',
+                'config_scheme': 'create_report'
+            }
+        }
+        code, cloud_acc1 = self.create_cloud_account(
+            self.org_id, valid_aws_cloud_acc)
+        self.assertEqual(code, 201)
+        _, organization2 = self.client.organization_create(
+            {'name': "organization2"})
+        filters = {
+            'cloud_account_id': [cloud_acc1['id']]
+        }
+        code, response = self.client.breakdown_meta_get(
+            organization2['id'], time, time + 1, 'test', filters)
+        self.assertEqual(code, 404)
+>       self.verify_error_code(response, 'OE0470')
+
+rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+rest_api/rest_api_server/tests/unittests/test_api_base.py:315: in verify_error_code
+    self.assertEqual(code, resp['error']['error_code'],
+E   AssertionError: 'OE0470' != 'OE0257'
+E   - OE0470
+E   + OE0257
+E    : Unexpected error code
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/8fdc750f-22b6-41a9-a708-f5aedbe0ddb5/cloud_accounts (127.0.0.1): HTTP 400: Unexpected parameters: ['url', 'port']
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/8fdc750f-22b6-41a9-a708-f5aedbe0ddb5/cloud_accounts (127.0.0.1) 2.34ms
+WARNING  tornado.access:web.py:2407 404 GET /restapi/v2/organizations/e58a1819-40d3-4231-b4a2-35c5b17a3e01/breakdown_meta?breakdown_by=test&start_date=1578960000&end_date=1578960001&cloud_account_id=6f7f24a2-ced8-4770-a8f8-54410df6a687 (127.0.0.1) 0.49ms
+__________________ TestCloudAccountApi.test_patch_kubernetes ___________________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_patch_kubernetes>
+schedule_patch = <MagicMock name='schedule' id='281472633269248'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_patch_kubernetes(self, schedule_patch):
+        code, cloud_acc = self.create_cloud_account(
+            self.org_id, self.valid_kubernetes_cloud_acc)
+        self.assertEqual(code, 201)
+>       self.assertDictEqual(self.valid_kubernetes_response['config'],
+                             cloud_acc['config'])
+E       AssertionError: {'use[19 chars]odel': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01}} != {'use[19 chars]odel': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001}}
+E       - {'cost_model': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01},
+E       + {'cost_model': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001},
+E       ?                                       +                           +
+E       
+E          'user': 'user'}
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:1666: AssertionError
+________ TestCloudAccountApi.test_patch_kubernetes_cost_model_duplicate ________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_patch_kubernetes_cost_model_duplicate>
+schedule_patch = <MagicMock name='schedule' id='281472402174848'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_patch_kubernetes_cost_model_duplicate(self, schedule_patch):
+        code, cloud_acc = self.create_cloud_account(
+            self.org_id, self.valid_kubernetes_cloud_acc)
+        self.assertEqual(code, 201)
+>       self.assertDictEqual(self.valid_kubernetes_response['config'],
+                             cloud_acc['config'])
+E       AssertionError: {'use[19 chars]odel': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01}} != {'use[19 chars]odel': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001}}
+E       - {'cost_model': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01},
+E       + {'cost_model': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001},
+E       ?                                       +                           +
+E       
+E          'user': 'user'}
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:1794: AssertionError
+__________ TestCloudAccountApi.test_patch_kubernetes_cost_model_only ___________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_patch_kubernetes_cost_model_only>
+schedule_patch = <MagicMock name='schedule' id='281472630446976'>
+
+    @patch('rest_api.rest_api_server.controllers.cloud_account.'
+           'ExpensesRecalculationScheduleController.schedule')
+    def test_patch_kubernetes_cost_model_only(self, schedule_patch):
+        code, cloud_acc = self.create_cloud_account(
+            self.org_id, self.valid_kubernetes_cloud_acc)
+        self.assertEqual(code, 201)
+>       self.assertDictEqual(self.valid_kubernetes_response['config'],
+                             cloud_acc['config'])
+E       AssertionError: {'use[19 chars]odel': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01}} != {'use[19 chars]odel': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001}}
+E       - {'cost_model': {'cpu_hourly_cost': 0.02, 'memory_hourly_cost': 0.01},
+E       + {'cost_model': {'cpu_hourly_cost': 0.002, 'memory_hourly_cost': 0.001},
+E       ?                                       +                           +
+E       
+E          'user': 'user'}
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:1726: AssertionError
+_____________ TestCloudAccountApi.test_restrict_change_to_assumed ______________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_accounts.TestCloudAccountApi testMethod=test_restrict_change_to_assumed>
+
+    def test_restrict_change_to_assumed(self):
+        valid_config = {
+            'name': 'my cloud_acc',
+            'type': 'aws_cnr',
+            'config': {
+                'access_key_id': 'key',
+                'secret_access_key': 'secret',
+            }
+        }
+        code, cloud_acc = self.create_cloud_account(self.org_id, valid_config)
+        cloud_acc_id = cloud_acc["id"]
+        valid_config.pop('type')
+        # add valid parameter set for assumed account
+        # but restrict changed account type
+        for i in ['assume_role_account_id', 'assume_role_name']:
+            update_cfg = copy.deepcopy(valid_config)
+            update_cfg['config'][i] = ''
+    
+            code, cloud_acc = self.client.cloud_account_update(
+                cloud_acc_id, update_cfg)
+            self.assertEqual(code, 400)
+>           self.assertEqual(cloud_acc['error']['error_code'], 'OE0212')
+E           AssertionError: 'OE0215' != 'OE0212'
+E           - OE0215
+E           ?      ^
+E           + OE0212
+E           ?      ^
+
+rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py:213: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 PATCH /restapi/v2/cloud_accounts/77b1c567-d13c-4dcb-a64d-2b64e73450bf (127.0.0.1): HTTP 400: assume_role_account_id should contain 1-255 characters
+WARNING  tornado.access:web.py:2407 400 PATCH /restapi/v2/cloud_accounts/77b1c567-d13c-4dcb-a64d-2b64e73450bf (127.0.0.1) 58.10ms
+__________ TestCloudPolicyGeneratorApi.test_generate_policy_linked_ok __________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_policy_generator.TestCloudPolicyGeneratorApi testMethod=test_generate_policy_linked_ok>
+
+    def test_generate_policy_linked_ok(self):
+        code, result = self.client.cloud_policy_get(
+            self.org_id, "aws_cnr", linked=True, bucket_name=None)
+>       self.assertTrue(result.get("role_policy", {}).get("Statement"))
+E       AssertionError: None is not true
+
+rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py:28: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 GET /restapi/v2/organizations/d3046aa8-1742-4930-ae77-b57523fa3662/cloud_policies?cloud_type=aws_cnr&linked=True (127.0.0.1): HTTP 400: Argument bucket_name is required
+WARNING  tornado.access:web.py:2407 400 GET /restapi/v2/organizations/d3046aa8-1742-4930-ae77-b57523fa3662/cloud_policies?cloud_type=aws_cnr&linked=True (127.0.0.1) 0.97ms
+_____________ TestCloudPolicyGeneratorApi.test_generate_policy_ok ______________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_policy_generator.TestCloudPolicyGeneratorApi testMethod=test_generate_policy_ok>
+
+    def test_generate_policy_ok(self):
+        code, result = self.client.cloud_policy_get(self.org_id, "aws_cnr",
+                                                    "test")
+>       self.assertTrue(result.get("role_policy", {}).get("Statement"))
+E       AssertionError: None is not true
+
+rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py:19: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 GET /restapi/v2/organizations/9d82be4b-dd1e-4198-9f11-42dbad6414bf/cloud_policies?cloud_type=aws_cnr&bucket_name=test&linked=False (127.0.0.1): HTTP 400: Unexpected parameters: linked
+WARNING  tornado.access:web.py:2407 400 GET /restapi/v2/organizations/9d82be4b-dd1e-4198-9f11-42dbad6414bf/cloud_policies?cloud_type=aws_cnr&bucket_name=test&linked=False (127.0.0.1) 1.08ms
+________________ TestCloudPolicyGeneratorApi.test_invalid_cloud ________________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_cloud_policy_generator.TestCloudPolicyGeneratorApi testMethod=test_invalid_cloud>
+
+    def test_invalid_cloud(self):
+        code, result = self.client.cloud_policy_get(self.org_id, "invalid",
+                                                    "test")
+        self.assertEqual(code, 400)
+>       self.assertEqual(result["error"]["error_code"], "OE0436")
+E       AssertionError: 'OE0212' != 'OE0436'
+E       - OE0212
+E       + OE0436
+
+rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py:38: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 GET /restapi/v2/organizations/ddccfdec-27e9-4575-b581-961644408c74/cloud_policies?cloud_type=invalid&bucket_name=test&linked=False (127.0.0.1): HTTP 400: Unexpected parameters: linked
+WARNING  tornado.access:web.py:2407 400 GET /restapi/v2/organizations/ddccfdec-27e9-4575-b581-961644408c74/cloud_policies?cloud_type=invalid&bucket_name=test&linked=False (127.0.0.1) 0.76ms
+___________________ TestExpensesApi.test_clean_expenses_meta ___________________
+[gw0] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_expenses_api.TestExpensesApi testMethod=test_clean_expenses_meta>
+
+    def test_clean_expenses_meta(self):
+        day_in_month = datetime(2020, 1, 14)
+        time = int(day_in_month.timestamp())
+        _, resource1 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_1', first_seen=time, region='region_1',
+            service_name='service_name_1', resource_type='resource_type_1',
+            meta={'m_1': 'v1', 'link': 'some'})
+        _, resource2 = self.create_cloud_resource(
+            self.cloud_acc2['id'], self.employee2['id'], self.org['pool_id'],
+            name='name_2', first_seen=time, region='region_2',
+            service_name='service_name_2', resource_type='resource_type_2',
+            meta={'m_1': 'v2'})
+        _, resource3 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_3', first_seen=time, region='region_1',
+            service_name='service_name_1', resource_type='resource_type_1',
+            meta={'m_2': 'v3'})
+        expenses = [
+            {
+                'cost': 150, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-east',
+                'resource_id': resource1['id'],
+                'owner_id': self.employee1['id'],
+                'pool_id': self.org['pool_id'],
+            },
+            {
+                'cost': 300, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc2['id'],
+                'region': 'us-east',
+                'resource_id': resource2['id'],
+                'owner_id': self.employee2['id'],
+                'pool_id': self.org['pool_id'],
+            },
+            {
+                'cost': 70, 'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-west',
+                'resource_id': resource3['id'],
+                'pool_id': self.org['pool_id'],
+                'owner_id': self.employee1['id'],
+            },
+        ]
+    
+        for e in expenses:
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+    
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1)
+        self.assertEqual(code, 200)
+        meta_values = response['filter_values']['meta']
+        self.assertEqual(len(meta_values), 3)
+        for m in meta_values:
+            self.assertTrue(m in ['m_1', 'm_2', 'link'])
+    
+        code, response = self.client.clean_expenses_get(
+            self.org_id, time, time + 1, {'meta': ['m_1', 'm_3']})
+>       self.assertEqual(code, 200)
+E       AssertionError: 400 != 200
+
+rest_api/rest_api_server/tests/unittests/test_expenses_api.py:6346: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 GET /restapi/v2/organizations/ddfe0bf1-21c6-45e9-b0db-1bf214c3367b/clean_expenses?start_date=1578960000&end_date=1578960001&meta=m_1&meta=m_3 (127.0.0.1): HTTP 400: Unexpected parameters: meta
+WARNING  tornado.access:web.py:2407 400 GET /restapi/v2/organizations/ddfe0bf1-21c6-45e9-b0db-1bf214c3367b/clean_expenses?start_date=1578960000&end_date=1578960001&meta=m_1&meta=m_3 (127.0.0.1) 1.93ms
+__________ TestExpensesApi.test_summary_clean_expenses_filter_by_tag ___________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_expenses_api.TestExpensesApi testMethod=test_summary_clean_expenses_filter_by_tag>
+
+    def test_summary_clean_expenses_filter_by_tag(self):
+        day_in_month = datetime(2020, 1, 14)
+        time = int(day_in_month.timestamp())
+    
+        _, resource1 = self.create_cloud_resource(
+            self.cloud_acc1['id'], name='res1',
+            first_seen=time, last_seen=time + 1, tags={'hello': 'world'})
+        _, resource2 = self.create_cloud_resource(
+            self.cloud_acc1['id'], name='res2',
+            first_seen=time, last_seen=time + 1, tags={'world': 'hello'})
+        _, resource3 = self.create_cloud_resource(
+            self.cloud_acc1['id'], name='res3',
+            first_seen=time, last_seen=time + 1,
+            tags={'hello': 'world', 'world': 'hello'})
+        expenses = [
+            {
+                'cost': 200,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-east',
+                'resource_id': resource1['id'],
+                'raw': [{'name': 'raw 2'}]
+            },
+            {
+                'cost': 100,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-west',
+                'resource_id': resource2['id'],
+                'raw': [{'name': 'raw 4'}, {'name': 'raw 5'}, {'name': 'raw 6'}]
+            },
+            {
+                'cost': 300,
+                'date': day_in_month,
+                'cloud_acc': self.cloud_acc1['id'],
+                'region': 'us-west',
+                'resource_id': resource3['id'],
+                'raw': [{'name': 'raw 7'}, {'name': 'raw 8'}]
+            },
+        ]
+    
+        for e in expenses:
+            raw_data = e.get('raw')
+            raw = self.raw_expenses.insert_many(raw_data)
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+    
+        filters = {'tag': 'hello'}
+        code, response = self.get_expenses_with_available_filters(
+            self.org_id, time, time + 1, filters)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 500)
+        self.assertEqual(len(response['clean_expenses']), 2)
+        self.assertEqual(response['total_count'], 2)
+        self.assertTrue('hello' in response['clean_expenses'].pop().get('tags'))
+        filter_without_tags = response.get('filter_values', {}).get('without_tag')
+        self.assertListEqual(filter_without_tags, ['world'])
+    
+        code, response = self.get_expenses_with_available_filters(
+            self.org_id, time, time + 1, filters, is_clean=False)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 500)
+        self.assertEqual(response['total_count'], 2)
+    
+        filters = {'without_tag': 'hello'}
+        code, response = self.get_expenses_with_available_filters(
+            self.org_id, time, time + 1, filters)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 100)
+        self.assertEqual(len(response['clean_expenses']), 1)
+        self.assertEqual(response['total_count'], 1)
+        self.assertFalse('hello' in response['clean_expenses'].pop().get('tags'))
+        filter_with_tags = response.get('filter_values', {}).get('tag')
+        self.assertListEqual(filter_with_tags, ['world'])
+    
+        code, response = self.get_expenses_with_available_filters(
+            self.org_id, time, time + 1, filters, is_clean=False)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 100)
+        self.assertEqual(response['total_count'], 1)
+    
+        filters = {'tag': 'hello', 'without_tag': 'world'}
+        code, response = self.get_expenses_with_available_filters(
+            self.org_id, time, time + 1, filters)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 200)
+        self.assertEqual(len(response['clean_expenses']), 1)
+        self.assertEqual(response['total_count'], 1)
+        response_tags = response['clean_expenses'].pop().get('tags')
+        self.assertTrue('hello' in response_tags)
+        self.assertFalse('world' in response_tags)
+        filter_with_tags = response.get('filter_values', {}).get('tag')
+        filter_without_tags = response.get('filter_values', {}).get('without_tag')
+>       self.assertListEqual(filter_with_tags, ['hello'])
+E       AssertionError: Lists differ: [] != ['hello']
+E       
+E       Second list contains 1 additional elements.
+E       First extra element 0:
+E       'hello'
+E       
+E       - []
+E       + ['hello']
+
+rest_api/rest_api_server/tests/unittests/test_expenses_api.py:3055: AssertionError
+_____________________ TestExpensesApi.test_traffic_filters _____________________
+[gw1] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_expenses_api.TestExpensesApi testMethod=test_traffic_filters>
+
+    def test_traffic_filters(self):
+        day_in_month = datetime(2020, 1, 14)
+        time = int(day_in_month.timestamp())
+        _, resource1 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_1', first_seen=time, tags={'tag': 'val'},
+            service_name='service_name_1', resource_type='resource_type_1')
+        _, resource2 = self.create_cloud_resource(
+            self.cloud_acc2['id'], self.employee2['id'], self.org['pool_id'],
+            name='name_2', first_seen=time, tags={'tag_2': 'val'},
+            service_name='service_name_2', resource_type='resource_type_2')
+        _, resource3 = self.create_cloud_resource(
+            self.cloud_acc1['id'], self.employee1['id'], self.org['pool_id'],
+            name='name_3', first_seen=time, tags={'tag': 'val'},
+            service_name='service_name_1', resource_type='resource_type_1')
+        expenses = [
+            {
+                'cost': 150, 'resource_id': resource1['id'],
+                'date': day_in_month, 'cloud_acc': self.cloud_acc1['id'],
+            },
+            {
+                'cost': 300, 'resource_id': resource2['id'],
+                'date': day_in_month, 'cloud_acc': self.cloud_acc2['id'],
+            },
+            {
+                'cost': 70, 'resource_id': resource3['id'],
+                'date': day_in_month, 'cloud_acc': self.cloud_acc1['id'],
+            },
+        ]
+    
+        for e in expenses:
+            self.expenses.append({
+                'cost': e['cost'],
+                'date': e['date'],
+                'resource_id': e['resource_id'],
+                'cloud_account_id': e['cloud_acc'],
+                'sign': 1
+            })
+        self.traffic_expenses = [
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': resource1['cloud_resource_id'],
+                'date': datetime.fromtimestamp(time),
+                'type': 1,
+                'from': 'from_1',
+                'to': 'to_1',
+                'usage': 1,
+                'cost': 1,
+                'sign': 1
+            },
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': resource1['cloud_resource_id'],
+                'date': datetime.fromtimestamp(time),
+                'type': 1,
+                'from': 'from_2',
+                'to': 'to_1',
+                'usage': 2,
+                'cost': 2,
+                'sign': 1
+            },
+            {
+                'cloud_account_id': self.cloud_acc1['id'],
+                'resource_id': resource2['cloud_resource_id'],
+                'date': datetime.fromtimestamp(time),
+                'type': 1,
+                'from': 'from_2',
+                'to': 'to_1',
+                'usage': 3,
+                'cost': 3,
+                'sign': 1
+            }
+        ]
+    
+        for body in [
+            {
+                'traffic_from': ['from_1:aws_cnr', 'from_2:aws_cnr'],
+                'traffic_to': 'to_1:aws_cnr'
+            },
+            {
+                'traffic_to': 'to_1:aws_cnr'
+            },
+            {
+                'traffic_from': 'ANY'
+            },
+        ]:
+            code, response = self.client.clean_expenses_get(
+                self.org_id, time, time + 1, body)
+            self.assertEqual(code, 200)
+            clean_expenses = response['clean_expenses']
+            self.assertEqual(len(clean_expenses), 2)
+            expected_traf_ex_map = {
+                resource1['id']: [
+                    {'from': 'from_1', 'to': 'to_1', 'usage': 1, 'cost': 1},
+                    {'from': 'from_2', 'to': 'to_1', 'usage': 2, 'cost': 2}
+                ],
+                resource2['id']: [
+                    {'from': 'from_2', 'to': 'to_1', 'usage': 3, 'cost': 3}
+                ]
+            }
+            for e in clean_expenses:
+                self.assertEqual(
+                    sorted(e['traffic_expenses'], key=lambda x: x['cost']),
+                    expected_traf_ex_map[e['id']])
+    
+            code, response = self.client.summary_expenses_get(
+                self.org_id, time, time + 1, body)
+            self.assertEqual(code, 200)
+            self.assertEqual(response['total_count'], 2)
+            self.assertEqual(response['total_cost'], 450)
+    
+        body = {
+            'traffic_from': 'from_1:aws_cnr',
+            'traffic_to': 'to_1:aws_cnr'
+        }
+        code, response = self.client.clean_expenses_get(
+            self.org_id, time, time + 1, body)
+        self.assertEqual(code, 200)
+        clean_expenses = response['clean_expenses']
+        self.assertEqual(len(clean_expenses), 1)
+        expected_traf_ex_map = {
+            resource1['id']: [
+                {'from': 'from_1', 'to': 'to_1', 'usage': 1, 'cost': 1},
+            ]
+        }
+        for e in clean_expenses:
+            self.assertEqual(
+                sorted(e['traffic_expenses'], key=lambda x: x['cost']),
+                expected_traf_ex_map[e['id']])
+    
+        code, response = self.client.summary_expenses_get(
+            self.org_id, time, time + 1, body)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_count'], 1)
+        self.assertEqual(response['total_cost'], 150)
+    
+        body = {'traffic_to': 'to_1:azure_cnr'}
+        code, response = self.client.clean_expenses_get(
+            self.org_id, time, time + 1, body)
+        self.assertEqual(code, 200)
+        self.assertEqual(len(response['clean_expenses']), 0)
+        code, response = self.client.summary_expenses_get(
+            self.org_id, time, time + 1, body)
+        self.assertEqual(code, 200)
+        self.assertEqual(response['total_cost'], 0)
+        self.assertEqual(response['total_count'], 0)
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1)
+        self.assertEqual(code, 200)
+        self.assertFalse('traffic_from' not in response['filter_values'])
+        self.assertFalse('traffic_to' not in response['filter_values'])
+    
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1)
+        self.assertEqual(code, 200)
+        for k in [
+            {'name': 'from_1', 'cloud_type': 'aws_cnr'},
+            {'name': 'from_2', 'cloud_type': 'aws_cnr'},
+            {'name': 'from_2', 'cloud_type': 'azure_cnr'}
+        ]:
+            self.assertTrue(k in response['filter_values']['traffic_from'])
+        for k in [
+            {'name': 'to_1', 'cloud_type': 'azure_cnr'},
+            {'name': 'to_1', 'cloud_type': 'aws_cnr'}
+        ]:
+            self.assertTrue(k in response['filter_values']['traffic_to'])
+    
+        code, response = self.client.available_filters_get(
+            self.org_id, time, time + 1, {'traffic_from': 'from_1:aws_cnr'})
+        self.assertEqual(code, 200)
+>       self.assertEqual(len(response['filter_values']['traffic_from']), 3)
+E       AssertionError: 0 != 3
+
+rest_api/rest_api_server/tests/unittests/test_expenses_api.py:5839: AssertionError
+_______________ TestOrganizationConstraints.test_create_filters ________________
+[gw2] linux -- Python 3.12.11 /usr/src/app/rest_api/.venv/bin/python
+
+self = <test_organization_constraints.TestOrganizationConstraints testMethod=test_create_filters>
+
+    def test_create_filters(self):
+        region = 'us-west-1'
+        service_name = 'AWS svc'
+        resource_type = 'Instance'
+        tag_key = 'tag_key'
+        meta_key = 'flavor'
+    
+        _, resource = self.create_cloud_resource(
+            self.cloud_acc['id'], name='name_1', region=region,
+            resource_type=resource_type,
+            service_name=service_name,
+            tags={tag_key: 'tag_val'}, meta={meta_key: 'fl1'})
+        self._make_resources_active([resource['id']])
+        _, resource2 = self.create_cloud_resource(
+            self.cloud_acc['id'], name='name_2', region=region,
+            resource_type=resource_type, service_name=service_name,
+            tags={tag_key: 'tag_val'}, meta={meta_key: 'fl1'})
+    
+        params = self.valid_constraint_params.copy()
+        params['filters'] = {
+            'region': [region],
+            'service_name': [service_name],
+            'resource_type': ['%s:regular' % resource_type],
+            'cloud_account_id': [self.cloud_acc['id']],
+            'tag': [tag_key],
+            'active': [True, False],
+            'meta': [meta_key]
+        }
+    
+        code, resp = self.client.organization_constraint_create(
+            self.org_id, params)
+        params['organization_id'] = self.org_id
+        params['filters'].pop('cloud_account_id', None)
+        params['filters']['cloud_account'] = [{
+            'id': self.cloud_acc['id'],
+            'name': self.cloud_acc['name'],
+            'type': self.cloud_acc['type']}]
+        params['filters']['region'] = [{
+            'name': region,
+            'cloud_type': self.cloud_acc['type']}]
+        params['filters']['service_name'] = [{
+            'name': service_name,
+            'cloud_type': self.cloud_acc['type']}]
+        params['filters']['resource_type'] = [{
+            'name': resource_type,
+            'type': 'regular'}]
+        params['filters']['active'] = [True, False]
+        for p in ['id', 'created_at', 'deleted_at', 'last_run',
+                  'last_run_result']:
+            resp.pop(p, None)
+>       self.assertEqual(code, 201)
+E       AssertionError: 400 != 201
+
+rest_api/rest_api_server/tests/unittests/test_organization_constraints.py:214: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  rest_api.rest_api_server.handlers.v1.base:base.py:158 400 POST /restapi/v2/organizations/9f3aeb45-5a9e-444c-aea9-822d723bae86/organization_constraints (127.0.0.1): HTTP 400: Unexpected parameters: meta
+WARNING  tornado.access:web.py:2407 400 POST /restapi/v2/organizations/9f3aeb45-5a9e-444c-aea9-822d723bae86/organization_constraints (127.0.0.1) 2.95ms
+=========================== short test summary info ============================
+FAILED rest_api/rest_api_server/tests/unittests/test_available_filters.py::TestAvailableFiltersApi::test_available_filters_default_values_if_filtered_by_entity
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_create_cloud_key_acc_key
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_create_kubernetes_cloud_acc
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_clusters
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_dates_values
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_expenses_sum
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_edit_assumed_linked
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_filter_by_first_seen
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_filter_by_last_seen
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_incorrect_identity
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_edit_assumed_role_required
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_limit
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_traffic_filters
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_edit_assumed_role_required_if_acc_set
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_types
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_unexpected_filters
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_withot_breakdown_by
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_breakdown_meta_without_expenses
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_empty_breakdown_meta
+FAILED rest_api/rest_api_server/tests/unittests/test_breakdown_meta.py::TestBreakdownMetaApi::test_invalid_organization
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_patch_kubernetes
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_patch_kubernetes_cost_model_duplicate
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_patch_kubernetes_cost_model_only
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_accounts.py::TestCloudAccountApi::test_restrict_change_to_assumed
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py::TestCloudPolicyGeneratorApi::test_generate_policy_linked_ok
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py::TestCloudPolicyGeneratorApi::test_generate_policy_ok
+FAILED rest_api/rest_api_server/tests/unittests/test_cloud_policy_generator.py::TestCloudPolicyGeneratorApi::test_invalid_cloud
+FAILED rest_api/rest_api_server/tests/unittests/test_expenses_api.py::TestExpensesApi::test_clean_expenses_meta
+FAILED rest_api/rest_api_server/tests/unittests/test_expenses_api.py::TestExpensesApi::test_summary_clean_expenses_filter_by_tag
+FAILED rest_api/rest_api_server/tests/unittests/test_expenses_api.py::TestExpensesApi::test_traffic_filters
+FAILED rest_api/rest_api_server/tests/unittests/test_organization_constraints.py::TestOrganizationConstraints::test_create_filters
+ERROR rest_api/rest_api_server/tests/unittests/test_schedule_imports.py
+====== 32 failed, 1632 passed, 242 warnings, 1 error in 310.05s (0:05:10) ======
