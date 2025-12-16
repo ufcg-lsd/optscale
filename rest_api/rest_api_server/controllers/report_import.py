@@ -24,6 +24,7 @@ from rest_api.rest_api_server.utils import (raise_unexpected_exception,
 ACTIVE_IMPORT_THRESHOLD = 1800  # 30 min
 DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS = 10800  # 3 hrs
 DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS = 10800  # 3 hrs
+DEFAULT_IN_PROGRESS_TIMEOUT_SECONDS = 3600  # 1 hr
 LOG = logging.getLogger(__name__)
 
 
@@ -47,7 +48,40 @@ class ReportImportBaseController(BaseController):
                 report_import, 'recalculation_started')
         return report_import
 
+    def _expire_in_progress_imports(self, cloud_account_id):
+        timeout_value = self._config.report_imports_setting().get(
+            'in_progress_timeout_secs',
+            DEFAULT_IN_PROGRESS_TIMEOUT_SECONDS
+        )
+        try:
+            timeout_seconds = int(timeout_value)
+        except (TypeError, ValueError):
+            timeout_seconds = DEFAULT_IN_PROGRESS_TIMEOUT_SECONDS
+        if timeout_seconds <= 0:
+            return
+        expiration_ts = opttime.utcnow_timestamp() - timeout_seconds
+        expired_imports = self.session.query(ReportImport).filter(
+            ReportImport.cloud_account_id == cloud_account_id,
+            ReportImport.deleted_at.is_(False),
+            ReportImport.state == ImportStates.IN_PROGRESS,
+            ReportImport.created_at <= expiration_ts
+        ).all()
+        if not expired_imports:
+            return
+        reason = 'Import timeout after %s seconds' % timeout_seconds
+        for report in expired_imports:
+            LOG.warning(
+                'Marking report import %s as failed due to timeout (%ss)',
+                report.id, timeout_seconds
+            )
+            self.edit(
+                report.id,
+                state=ImportStates.FAILED.value,
+                state_reason=reason
+            )
+
     def check_unprocessed_imports(self, cloud_account_id):
+        self._expire_in_progress_imports(cloud_account_id)
         dt = opttime.utcnow().timestamp()
         scheduled_threshold = dt - int(
             self._config.report_imports_setting().get(
@@ -356,6 +390,7 @@ class ReportImportFileController(ReportImportBaseController):
 
     def list(self, cloud_account_id, show_completed=False, show_active=False):
         self.check_cloud_account(cloud_account_id)
+        self._expire_in_progress_imports(cloud_account_id)
         query = self.session.query(self.model_type).filter(
             self.model_type.deleted_at.is_(False),
             self.model_type.cloud_account_id == cloud_account_id,
@@ -376,6 +411,7 @@ class ReportImportFileController(ReportImportBaseController):
         report = super().get(item_id, **kwargs)
         if report:
             self.check_cloud_account(report.cloud_account_id)
+            self._expire_in_progress_imports(report.cloud_account_id)
         return report
 
     def check_cloud_account(self, cloud_account_id):
