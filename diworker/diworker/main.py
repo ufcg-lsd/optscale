@@ -2,6 +2,7 @@
 import os
 import time
 import logging
+from queue import Queue as ThreadQueue, Empty
 
 import urllib3
 from concurrent.futures import ThreadPoolExecutor
@@ -39,6 +40,7 @@ LOG = logging.getLogger(__name__)
 ENVIRONMENT_CLOUD_TYPE = 'environment'
 HEARTBEAT_INTERVAL = 300
 DEFAULT_MAX_WORKERS = 4
+DEFAULT_REPORT_IMPORT_TIMEOUT = 60 * 60 * 4  # 4 hours
 
 
 class DIWorker(ConsumerMixin):
@@ -54,6 +56,10 @@ class DIWorker(ConsumerMixin):
         self.thread = Thread(
             target=self.heartbeat, args=(self.config_cl_params,))
         self.thread.start()
+        timeout_setting = self.diworker_settings.get(
+            'report_import_timeout', DEFAULT_REPORT_IMPORT_TIMEOUT)
+        self.report_import_timeout = int(
+            timeout_setting or DEFAULT_REPORT_IMPORT_TIMEOUT)
         self.executor = ThreadPoolExecutor(
             max_workers=int(
                 self.diworker_settings.get(
@@ -240,26 +246,104 @@ class DIWorker(ConsumerMixin):
             'cloud_account', 'report_import_failed',
             'organization.report_import.failed')
 
-    def process_task(self, body, message):
-        self.executor.submit(self._process_task, body, message)
+    def _report_import_worker(self, body, result_queue):
+        config_cl = self.get_config_cl(self.config_cl_params)
+        rest_cl = self.get_rest_cl(config_cl)
+        mongo_cl = self.get_mongo_cl(config_cl)
+        clickhouse_cl = self.get_clickhouse_cl(config_cl)
+        task_exception = None
+        try:
+            self.report_import(
+                body,
+                config_cl=config_cl,
+                rest_cl=rest_cl,
+                mongo_cl=mongo_cl,
+                clickhouse_cl=clickhouse_cl
+            )
+        except Exception as exc:
+            task_exception = exc
+        finally:
+            result_queue.put(task_exception)
+            mongo_cl.close()
+            clickhouse_cl.close()
+            rest_cl.close()
+            with self.active_reports_lock:
+                self.active_report_import_ids.discard(
+                    body.get('report_import_id'))
 
-    def _process_task(self, body, message):
+    def _handle_import_timeout(self, body):
+        report_import_id = body.get('report_import_id')
+        if not report_import_id:
+            LOG.error('Failed to handle timeout: report id is missing in %s',
+                      body)
+            return
+        reason = 'Import timeout after %s seconds' % self.report_import_timeout
+        LOG.error('Report import %s timed out after %s seconds',
+                  report_import_id, self.report_import_timeout)
         config_cl = self.get_config_cl(self.config_cl_params)
         rest_cl = self.get_rest_cl(config_cl)
         mongo_cl = self.get_mongo_cl(config_cl)
         clickhouse_cl = self.get_clickhouse_cl(config_cl)
         try:
-            self.report_import(body, config_cl=config_cl, rest_cl=rest_cl,
-                               mongo_cl=mongo_cl, clickhouse_cl=clickhouse_cl)
+            rest_cl.report_import_update(
+                report_import_id,
+                {'state': 'failed', 'state_reason': reason}
+            )
+            _, import_dict = rest_cl.report_import_get(report_import_id)
+            cloud_account_id = import_dict.get('cloud_account_id')
+            _, ca = rest_cl.cloud_account_get(cloud_account_id)
+            previous_attempt_ts = ca.get('last_import_attempt_at', 0)
+            importer_params = {
+                'cloud_account_id': cloud_account_id,
+                'rest_cl': rest_cl,
+                'config_cl': config_cl,
+                'mongo_raw': mongo_cl.restapi['raw_expenses'],
+                'mongo_resources': mongo_cl.restapi['resources'],
+                'clickhouse_cl': clickhouse_cl,
+                'import_file': import_dict.get('import_file'),
+                'recalculate': import_dict.get('is_recalculation', False)
+            }
+            importer = BaseReportImporter(**importer_params)
+            now = int(time.time())
+            importer.update_cloud_import_attempt(now, reason)
+            self.send_report_failed_email(ca, previous_attempt_ts, now)
         except Exception as exc:
-            LOG.exception('Data import failed: %s', str(exc))
+            LOG.exception(
+                'Failed to handle timeout for report import %s: %s',
+                report_import_id, str(exc))
         finally:
             mongo_cl.close()
             clickhouse_cl.close()
             rest_cl.close()
             with self.active_reports_lock:
-                self.active_report_import_ids.discard(body.get('report_import_id'))
-        message.ack()
+                self.active_report_import_ids.discard(report_import_id)
+
+    def process_task(self, body, message):
+        self.executor.submit(self._process_task, body, message)
+
+    def _process_task(self, body, message):
+        result_queue = ThreadQueue(maxsize=1)
+        worker_thread = Thread(
+            target=self._report_import_worker,
+            args=(body, result_queue),
+            daemon=True
+        )
+        worker_thread.start()
+        try:
+            worker_thread.join(timeout=self.report_import_timeout)
+            if worker_thread.is_alive():
+                self._handle_import_timeout(body)
+            else:
+                try:
+                    task_exception = result_queue.get_nowait()
+                except Empty:
+                    task_exception = None
+                if task_exception:
+                    raise task_exception
+        except Exception as exc:
+            LOG.exception('Data import failed: %s', str(exc))
+        finally:
+            message.ack()
 
 
 if __name__ == '__main__':
