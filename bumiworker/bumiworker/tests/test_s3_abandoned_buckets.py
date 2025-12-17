@@ -216,8 +216,8 @@ class TestGetDataSizeRequestMetrics:
         )
         
         assert "bucket-active-only-1" in result
-        assert result["bucket-active-only-1"][GET_OBJECT_KEY] == 100
-        assert result["bucket-active-only-1"][PUT_OBJECT_KEY] == 150
+        assert result["bucket-active-only-1"][GET_OBJECT_KEY] is True
+        assert result["bucket-active-only-1"][PUT_OBJECT_KEY] is True
 
 class TestIntegration:
     """End-to-end `_get` behavior focusing on recommendation inclusion/exclusion."""
@@ -236,8 +236,8 @@ class TestIntegration:
 
         assert len(result) == 1
         assert result[0]["cloud_resource_id"] == "bucket-abandoned-1"
-        assert result[0]["get_object_count"] == 0
-        assert result[0]["put_object_count"] == 0
+        assert result[0]["get_object_count"] is False
+        assert result[0]["put_object_count"] is False
         assert result[0]["saving"] == 10.5
 
     def test_active_bucket_not_recommended(self, mod_base):
@@ -292,8 +292,8 @@ class TestIntegration:
 
         assert len(result) == 1
         assert result[0]["cloud_resource_id"] == "bucket-active-list-operations-1"
-        assert result[0]["get_object_count"] == 0
-        assert result[0]["put_object_count"] == 0
+        assert result[0]["get_object_count"] is False
+        assert result[0]["put_object_count"] is False
         assert result[0]["saving"] == 10.5
 
         

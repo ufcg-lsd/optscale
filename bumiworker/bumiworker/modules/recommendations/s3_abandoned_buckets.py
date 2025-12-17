@@ -31,8 +31,8 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         # Buckets are considered abandoned if both GetObject and PutObject
         # operations are zero (no read or write activity)
         return {
-            GET_OBJECT_KEY: 0,
-            PUT_OBJECT_KEY: 0
+            GET_OBJECT_KEY: False,
+            PUT_OBJECT_KEY: False
         }
 
     def _get_data_size_request_metrics(self, cloud_account_id,
@@ -40,7 +40,7 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                                        days_threshold):
         # Query for GetObject and PutObject operations in API Request product family
         target_operations = ['GetObject', 'PutObject']
-        api_requests = self.mongo_client.restapi.raw_expenses.aggregate([
+        api_request_pipeline = [
             {
                 '$match': {
                     '$and': [
@@ -63,32 +63,35 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                     }
                 }
             }
-        ])
+        ]
+        api_requests = self.mongo_client.restapi.raw_expenses.aggregate(
+            api_request_pipeline)
         resource_meter_value = {}
-        # Initialize all resources with zero counts
+        # Initialize all resources with no recorded activity
         for res_id in cloud_resource_ids:
             resource_meter_value[res_id] = {
-                GET_OBJECT_KEY: 0,
-                PUT_OBJECT_KEY: 0
+                GET_OBJECT_KEY: False,
+                PUT_OBJECT_KEY: False
             }
-        # Aggregate operation counts (already summed by MongoDB)
+        # Aggregate operation usage (already summed by MongoDB)
         for api_request in api_requests:
             cloud_resource_id = api_request['_id']['_id']
             operation = api_request['_id']['operation']
             total_sum = int(api_request['total_usage'])
+            has_usage = bool(total_sum)
             if operation == 'GetObject':
                 resource_meter_value[cloud_resource_id][
-                    GET_OBJECT_KEY] = total_sum
+                    GET_OBJECT_KEY] = has_usage
             elif operation == 'PutObject':
                 resource_meter_value[cloud_resource_id][
-                    PUT_OBJECT_KEY] = total_sum
+                    PUT_OBJECT_KEY] = has_usage
         return resource_meter_value
 
     @staticmethod
     def metrics_result(data_req_map):
         return {
-            'get_object_count': data_req_map.get(GET_OBJECT_KEY, 0),
-            'put_object_count': data_req_map.get(PUT_OBJECT_KEY, 0),
+            'get_object_count': data_req_map.get(GET_OBJECT_KEY, False),
+            'put_object_count': data_req_map.get(PUT_OBJECT_KEY, False),
         }
 
 
