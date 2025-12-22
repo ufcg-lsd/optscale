@@ -32,7 +32,7 @@ jobs:
             docker rm -f etcd
           fi
           docker run -d --name etcd -p 2379:2379 -p 2380:2380 \
-            quay.io/coreos/etcd:v3.5 \
+            quay.io/coreos/etcd:v3.5.9 \
             etcd \
             --listen-peer-urls http://0.0.0.0:2380 \
             --listen-client-urls http://0.0.0.0:2379 \
