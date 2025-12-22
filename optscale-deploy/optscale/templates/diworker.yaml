@@ -45,3 +45,5 @@ spec:
           value: {{ .Values.etcd.service.externalPort | quote }}
         - name: FAKE_CAD_ENABLED
           value: {{ .Values.fake_cad_enabled | quote }}
+        - name: DEFAULT_REPORT_IMPORT_TIMEOUT
+          value: {{ $config.reportImportTimeout | default "14400" | quote }}

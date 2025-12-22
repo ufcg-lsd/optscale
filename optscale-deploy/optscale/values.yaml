@@ -255,6 +255,7 @@ diworker:
     repository: *diworker_name
     tag: *tag
     pullPolicy: Never
+  reportImportTimeout: 14400
 
 katara_service:
   name: &katara_name katara

@@ -40,7 +40,10 @@ LOG = logging.getLogger(__name__)
 ENVIRONMENT_CLOUD_TYPE = 'environment'
 HEARTBEAT_INTERVAL = 300
 DEFAULT_MAX_WORKERS = 4
-DEFAULT_REPORT_IMPORT_TIMEOUT = 60 * 60 * 4  # 4 hours
+# Allow overriding the default timeout through env for deployments
+DEFAULT_REPORT_IMPORT_TIMEOUT = int(
+    os.environ.get('DEFAULT_REPORT_IMPORT_TIMEOUT', 60 * 60 * 4)
+)
 
 
 class DIWorker(ConsumerMixin):

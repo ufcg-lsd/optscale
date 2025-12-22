@@ -28,6 +28,9 @@ jobs:
 
       - name: Set up etcd service
         run: |
+          if [ "$(docker ps -aq -f name=^/etcd$)" ]; then
+            docker rm -f etcd
+          fi
           docker run -d --name etcd -p 2379:2379 -p 2380:2380 \
             quay.io/coreos/etcd:v3.5 \
             etcd \
@@ -49,3 +52,13 @@ jobs:
         env:
           ETCD_HOST: http://127.0.0.1:2379
         run: bash -x rest_api/run_test.sh
+
+      - name: Stop and remove etcd container
+        if: ${{ always() }}
+        run: |
+          if [ "$(docker ps -q -f name=^/etcd$)" ]; then
+            docker stop etcd || true
+          fi
+          if [ "$(docker ps -aq -f name=^/etcd$)" ]; then
+            docker rm etcd || true
+          fi
