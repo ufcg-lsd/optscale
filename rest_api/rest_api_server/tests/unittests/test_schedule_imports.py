@@ -6,12 +6,13 @@ from freezegun import freeze_time
 from rest_api.rest_api_server.controllers.report_import import (
     DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS,
     DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS,
+    IMPORT_TIMEOUT_REASON,
 )
 from rest_api.rest_api_server.models.db_factory import DBFactory, DBType
 from rest_api.rest_api_server.models.db_base import BaseDB
-from rest_api.rest_api_server.models.models import CloudAccount
+from rest_api.rest_api_server.models.models import CloudAccount, ReportImport
 from rest_api.rest_api_server.models.enums import (
-    CloudTypes
+    CloudTypes, ImportStates
 )
 from rest_api.rest_api_server.tests.unittests.test_api_base import TestApiBase
 from rest_api.rest_api_server.utils import MAX_32_INT, encode_config
@@ -198,6 +199,34 @@ class TestScheduleImportsApi(TestApiBase):
                          'Cannot use cloud_account_type without organization_id')
         self.assertEqual(ret['error']['error_code'],
                          'OE0529')
+
+    def test_mark_stale_import_failed(self):
+        cloud_acc_id = self._create_cloud_acc_object(import_period=0)
+        db = DBFactory(DBType.Test, None).db
+        session = BaseDB.session(db.engine)()
+        outdated_ts = opttime.utcnow_timestamp() - (
+            DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS + 1)
+        stale_import = ReportImport(
+            cloud_account_id=cloud_acc_id,
+            state=ImportStates.IN_PROGRESS,
+            updated_at=outdated_ts
+        )
+        session.add(stale_import)
+        session.commit()
+        session.close()
+
+        code, ret = self.client.schedule_import(0)
+        self.assertEqual(code, 201)
+        self.assertEqual(len(ret['report_imports']), 1)
+        self.assertNotEqual(ret['report_imports'][0]['id'], stale_import.id)
+
+        session = BaseDB.session(db.engine)()
+        updated = session.query(ReportImport).filter(
+            ReportImport.id == stale_import.id
+        ).one()
+        self.assertEqual(updated.state, ImportStates.FAILED)
+        self.assertEqual(updated.state_reason, IMPORT_TIMEOUT_REASON)
+        session.close()
 
     def test_create_scheduled_duplicate(self):
         code, org2 = self.client.organization_create({'name': 'org2'})

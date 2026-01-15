@@ -24,6 +24,7 @@ from rest_api.rest_api_server.utils import (raise_unexpected_exception,
 ACTIVE_IMPORT_THRESHOLD = 1800  # 30 min
 DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS = 10800  # 3 hrs
 DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS = 10800  # 3 hrs
+IMPORT_TIMEOUT_REASON = 'Import timed out while waiting in queue'
 LOG = logging.getLogger(__name__)
 
 
@@ -47,10 +48,41 @@ class ReportImportBaseController(BaseController):
                 report_import, 'recalculation_started')
         return report_import
 
+    def _fail_timed_out_imports(self, cloud_account_id, settings, now=None):
+        if now is None:
+            now = opttime.utcnow().timestamp()
+        message_ttl = int(settings.get(
+            'message_expiration_secs',
+            DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS
+        ))
+        if message_ttl <= 0:
+            return
+        timeout_ts = now - message_ttl
+        timed_out_imports = self.session.query(ReportImport).filter(
+            ReportImport.cloud_account_id == cloud_account_id,
+            ReportImport.deleted_at.is_(False),
+            or_(
+                and_(ReportImport.state == ImportStates.IN_PROGRESS,
+                     ReportImport.updated_at < timeout_ts),
+                and_(ReportImport.state == ImportStates.SCHEDULED,
+                     ReportImport.created_at < timeout_ts)
+            )
+        ).all()
+        for report_import in timed_out_imports:
+            LOG.warning(
+                'Marking report import %s as failed due to queue timeout',
+                report_import.id
+            )
+            self.edit(report_import.id, state=ImportStates.FAILED.value,
+                      state_reason=IMPORT_TIMEOUT_REASON)
+
     def check_unprocessed_imports(self, cloud_account_id):
         dt = opttime.utcnow().timestamp()
+        report_import_settings = self._config.report_imports_setting()
+        self._fail_timed_out_imports(cloud_account_id, report_import_settings,
+                                     now=dt)
         scheduled_threshold = dt - int(
-            self._config.report_imports_setting().get(
+            report_import_settings.get(
                 'not_processed_threshold_secs',
                 DEFAULT_NOT_PROCESSED_REPORT_THRESHOLD_SECONDS
             )
