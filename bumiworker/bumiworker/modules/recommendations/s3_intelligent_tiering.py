@@ -1,4 +1,6 @@
+import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Union, Optional
 from datetime import datetime, date, timedelta
 
@@ -310,8 +312,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             resource_id, size_gb_value, access_tier, object_count
         )
 
+        bucket_region = resource.get("region")
+        
         it_cost_breakdown = self._calculate_it_cost(
-            size_gb_value, access_tier, object_count, cloud_account
+            size_gb_value, access_tier, object_count, cloud_account, bucket_region
         )
         if it_cost_breakdown is None:
             LOG.warning(
@@ -391,87 +395,153 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         return total
 
 
+    def _load_prices_file(self) -> Optional[Dict[str, Any]]:
+        """
+        Carrega o arquivo de preços uma vez e retorna os dados.
+        Usa cache de classe para evitar múltiplas leituras.
+        """
+        if not hasattr(self.__class__, '_prices_file_cache'):
+            prices_file = Path(__file__).parent / "s3_it_prices_all_regions.json"
+            
+            if not prices_file.exists():
+                LOG.error(
+                    "[IT] Arquivo de preços não encontrado: %s. "
+                    "Execute o script fetch_s3_it_prices_direct.py para gerar o arquivo.",
+                    prices_file
+                )
+                self.__class__._prices_file_cache = None
+                return None
+
+            try:
+                LOG.info("[IT] Lendo preços de Intelligent Tiering do arquivo: %s", prices_file)
+                with open(prices_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                self.__class__._prices_file_cache = data
+                return data
+                
+            except json.JSONDecodeError as exc:
+                LOG.error(
+                    "[IT] Erro ao fazer parse do arquivo JSON de preços: %s",
+                    str(exc), exc_info=True
+                )
+                self.__class__._prices_file_cache = None
+                return None
+            except Exception as exc:
+                LOG.error(
+                    "[IT] Erro ao ler arquivo de preços: %s",
+                    str(exc), exc_info=True
+                )
+                self.__class__._prices_file_cache = None
+                return None
+        
+        return self.__class__._prices_file_cache
+
     def _get_intelligent_tiering_prices(
         self,
-        cloud_account: Dict[str, Any]
-    ) -> Dict[str, float]:
+        cloud_account: Dict[str, Any],
+        region: Optional[str] = None
+    ) -> Optional[Dict[str, float]]:
         """
-        Fetch Intelligent-Tiering prices per tier using the CloudAdapter Pricing API.
-        Returns a dict with prices for each tier (FA, IA, AIA, DAA) or uses constants as fallback.
-        Uses cache to avoid repeated API calls.
+        Lê os preços de Intelligent-Tiering de um arquivo JSON hardcoded para uma região específica.
+        Retorna um dict com preços para cada tier (FA, IA, AIA, DAA).
+        Usa preços padrão como fallback se a região não estiver disponível.
+        
+        Args:
+            cloud_account: Configuração da conta cloud
+            region: Região do bucket (ex: us-east-1). Se None, usa preços padrão.
+        
+        Para atualizar os preços, execute o script externo:
+        python bumiworker/bumiworker/modules/recommendations/fetch_s3_it_prices_direct.py
+        com as credenciais AWS apropriadas.
         """
         cloud_account_id = self._extract_cloud_account_id(cloud_account)
         if not cloud_account_id:
             LOG.warning("[IT] Cannot fetch prices: cloud_account_id is empty")
             return None
 
-        cached = self._it_price_cache.get(cloud_account_id)
+        cache_key = f"{cloud_account_id}:{region or 'default'}"
+        cached = self._it_price_cache.get(cache_key)
         if cached is not None:
-            LOG.info("[IT] Using cached prices for cloud_account_id=%s", cloud_account_id)
+            LOG.debug("[IT] Using cached prices for cloud_account_id=%s, region=%s", cloud_account_id, region)
             return cached
 
-        LOG.info("[IT] Fetching IT prices from API for cloud_account_id=%s", cloud_account_id)
-        adapter = self._cloud_adapter_for_account(cloud_account_id, cloud_account)
-        if not adapter:
-            LOG.error(
-                "[IT] Cannot fetch prices: failed to get adapter for cloud_account_id=%s",
-                cloud_account_id
-            )
+        data = self._load_prices_file()
+        if data is None:
             return None
-
-        prices = {}
-        tier_mappings = {
-            "FA": ["Intelligent-Tiering Frequent Access", "Intelligent Tiering - Frequent"],
-            "IA": ["Intelligent-Tiering Infrequent Access", "Intelligent Tiering - Infrequent"],
-            "AIA": ["Intelligent-Tiering Archive Instant Access", "Intelligent Tiering - Archive Access"],
-            "DAA": ["Intelligent-Tiering Deep Archive Access", "Intelligent Tiering - Deep Archive Access"],
-        }
-
-        for tier_key, storage_class_names in tier_mappings.items():
-            tier_price = None
-            for storage_class_name in storage_class_names:
-                try:
-                    price_payload = adapter.get_prices({
-                        "resource_type": "Bucket",
-                        "storage_class": storage_class_name,
-                    })
-                    if isinstance(price_payload, list) and price_payload:
-                        entry = price_payload[0]
-                        tier_price = self._normalize_price_value(entry.get("price"))
-                        if tier_price is not None:
-                            LOG.info(
-                                "[IT] Found price for tier %s (%s): %.6f",
-                                tier_key, storage_class_name, tier_price
-                            )
-                            break
-                except Exception as exc:
-                    LOG.warning(
-                        "[IT] Price lookup failed for tier %s (%s): %s",
-                        tier_key, storage_class_name, str(exc)
-                    )
-                    continue
-            if tier_price is None:
-                LOG.error(
-                    "[IT] Failed to get price for tier %s (tried %d storage class names)",
-                    tier_key, len(storage_class_names)
+        
+        prices_by_region = data.get("prices_by_region", {})
+        default_prices = data.get("default_prices", {})
+        
+        prices = None
+        if region and region in prices_by_region:
+            region_prices = prices_by_region[region]
+            if region_prices:
+                prices = region_prices.copy()
+                LOG.debug("[IT] Usando preços específicos da região %s", region)
+        
+        if not prices:
+            if default_prices:
+                prices = default_prices.copy()
+                LOG.info(
+                    "[IT] Região %s não encontrada, usando preços padrão",
+                    region or "desconhecida"
                 )
-                return None 
-            prices[tier_key] = tier_price
-
-        # Cache the results
-        self._it_price_cache[cloud_account_id] = prices
+            else:
+                # Fallback: tenta pegar de qualquer região disponível
+                for region_name, region_prices in prices_by_region.items():
+                    if region_prices:
+                        prices = region_prices.copy()
+                        LOG.info(
+                            "[IT] Usando preços da região %s como fallback para %s",
+                            region_name, region or "desconhecida"
+                        )
+                        break
+        
+        if not prices:
+            LOG.error("[IT] Nenhum preço disponível no arquivo")
+            return None
+        
+        required_tiers = ["FA", "IA", "AIA", "DAA"]
+        missing_tiers = [tier for tier in required_tiers if tier not in prices]
+        if missing_tiers:
+            LOG.warning(
+                "[IT] Alguns tiers estão faltando: %s. Usando valores disponíveis.",
+                ", ".join(missing_tiers)
+            )
+        
+        validated_prices = {}
+        for tier, price in prices.items():
+            try:
+                validated_prices[tier] = float(price)
+            except (TypeError, ValueError):
+                LOG.warning(
+                    "[IT] Preço inválido para tier %s: %s (ignorando)",
+                    tier, price
+                )
+        
+        if not validated_prices:
+            LOG.error("[IT] Nenhum preço válido encontrado")
+            return None
+        
+        last_updated = data.get("last_updated", "desconhecida")
         LOG.info(
-            "[IT] Successfully fetched and cached prices for cloud_account_id=%s: %s",
-            cloud_account_id, ", ".join(f"{k}=${v:.6f}" for k, v in prices.items())
+            "[IT] Preços carregados (região=%s, última atualização: %s): %s",
+            region or "padrão",
+            last_updated,
+            ", ".join(f"{k}=${v:.6f}" for k, v in validated_prices.items())
         )
-        return prices
+        
+        self._it_price_cache[cache_key] = validated_prices
+        return validated_prices
 
     def _calculate_it_cost(
         self,
         size_gb: float,
         access_tier: str,
         object_count: int,
-        cloud_account: Dict[str, Any]
+        cloud_account: Dict[str, Any],
+        region: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate Intelligent Tiering cost considering:
@@ -488,16 +558,22 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             )
             return None
 
-        tier_prices = self._get_intelligent_tiering_prices(cloud_account)
+        tier_prices = self._get_intelligent_tiering_prices(cloud_account, region)
         if tier_prices is None:
             LOG.error("[IT] Cannot calculate IT cost: failed to get tier prices")
             return None
         
-        price_per_gb = tier_prices.get(access_tier, 0.0)
+        access_tier_to_price_tier = {
+            "frequent": "FA",
+            "infrequent": "IA",
+            "archive": "AIA",  # Archive Instant Access
+        }
+        price_tier = access_tier_to_price_tier.get(access_tier, "FA")
+        price_per_gb = tier_prices.get(price_tier, 0.0)
         if price_per_gb == 0.0:
             LOG.warning(
-                "[IT] No price found for access_tier=%s in tier_prices. Available tiers: %s",
-                access_tier, list(tier_prices.keys())
+                "[IT] No price found for access_tier=%s (mapped to price_tier=%s). Available tiers: %s",
+                access_tier, price_tier, list(tier_prices.keys())
             )
         total_storage_cost = size_gb * price_per_gb
 
