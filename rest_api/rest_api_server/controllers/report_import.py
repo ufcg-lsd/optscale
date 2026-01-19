@@ -69,11 +69,12 @@ class ReportImportBaseController(BaseController):
             )
         ).all()
         for report_import in timed_out_imports:
+            report_id = report_import.id
             LOG.warning(
                 'Marking report import %s as failed due to queue timeout',
-                report_import.id
+                report_id
             )
-            self.edit(report_import.id, state=ImportStates.FAILED.value,
+            self.edit(report_id, state=ImportStates.FAILED.value,
                       state_reason=IMPORT_TIMEOUT_REASON)
 
     def check_unprocessed_imports(self, cloud_account_id):
