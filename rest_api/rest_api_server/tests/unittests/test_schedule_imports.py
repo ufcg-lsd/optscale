@@ -213,16 +213,17 @@ class TestScheduleImportsApi(TestApiBase):
         )
         session.add(stale_import)
         session.commit()
+        stale_import_id = stale_import.id
         session.close()
 
         code, ret = self.client.schedule_import(0)
         self.assertEqual(code, 201)
         self.assertEqual(len(ret['report_imports']), 1)
-        self.assertNotEqual(ret['report_imports'][0]['id'], stale_import.id)
+        self.assertNotEqual(ret['report_imports'][0]['id'], stale_import_id)
 
         session = BaseDB.session(db.engine)()
         updated = session.query(ReportImport).filter(
-            ReportImport.id == stale_import.id
+            ReportImport.id == stale_import_id
         ).one()
         self.assertEqual(updated.state, ImportStates.FAILED)
         self.assertEqual(updated.state_reason, IMPORT_TIMEOUT_REASON)
