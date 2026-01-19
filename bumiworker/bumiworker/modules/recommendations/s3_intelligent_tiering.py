@@ -147,7 +147,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             )
             return []
         return resources
-    
+
 
     def _classify_wrong_access_tier(self, category_bucket: str, last_checked: List[Any]) -> bool:
         """
@@ -170,7 +170,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         - Archive    → ["glacier", "glacier ir", "glacier instant retrieval",
                         "glacier flexible retrieval", "deep archive",
                         "glacier deep archive"]
-        
+
         Handles variations in tier names as they appear in the database:
         - "Standard-IA" → infrequent
         - "Glacier IR" → archive
@@ -183,12 +183,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             return "unknown"
 
         tier_norm = tier.strip().lower()
-        
+
         # Skip overhead tiers (not real storage) - check before matching
         if "overhead" in tier_norm:
             LOG.info("[IT] Tier '%s' classified as 'unknown' (overhead tier)", tier)
             return "unknown"
-        
+
         # Exact match with CATEGORY_MAP
         for category, aws_tiers in CATEGORY_MAP.items():
             if tier_norm in (t.lower() for t in aws_tiers):
@@ -197,7 +197,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         LOG.warning("[IT] Tier '%s' not found in CATEGORY_MAP, returning 'unknown'", tier)
         return "unknown"
-
 
     def _is_candidate(self, resource: Dict[str, Any]) -> bool:
         """
@@ -230,12 +229,12 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         if has_lifecycle_flag or (isinstance(lifecycle_rules, list) and len(lifecycle_rules) > 0):
             LOG.info("[IT] Bucket %s is not a candidate: has lifecycle policies", resource_id)
             return False
-        
+
         object_count = int(resource.get("object_count") or 0)
         if object_count <= 0:
             LOG.info("[IT] Bucket %s is not a candidate: object_count=%d", resource_id, object_count)
             return False
-        
+
         tiers_gb = _parse_tiers_gb(resource.get("tiers") or [])
         category_bucket = "unknown"
         if tiers_gb:
@@ -245,7 +244,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             else:
                 largest_tier = max(tiers_gb, key=lambda x: x["gb"])
                 category_bucket = self._classify_category_from_tier(largest_tier["name"])
-        
+
         wrong_access_tier = self._classify_wrong_access_tier(category_bucket, resource.get("last_checked"))
         if not wrong_access_tier:
             LOG.info(
@@ -253,14 +252,13 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 resource_id, category_bucket
             )
             return False
-        
+
         LOG.info(
             "[IT] Bucket %s is a candidate: category=%s, total_gb=%.2f, objects=%d",
             resource_id, category_bucket, total_gb, object_count
         )
         return True
 
-   
     def _real_saving_payload(
         self,
         resource: Dict[str, Any],
@@ -314,7 +312,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         )
 
         bucket_region = resource.get("region")
-        
+
         it_cost_breakdown = self._calculate_it_cost(
             size_gb_value, access_tier, object_count, cloud_account, bucket_region
         )
@@ -329,9 +327,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         saving_real = real_cost - cost_if_it
         LOG.info(
             "[IT] Bucket %s savings calculated: current_cost=%.2f, it_cost=%.2f, saving=%.2f",
-            resource_id, real_cost, cost_if_it, saving_real
+            resource_id, real_cost, cost_if_it,             saving_real
         )
-
 
         result = {
             "saving": max(0.0, saving_real),
@@ -395,7 +392,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         LOG.info("[IT] Total monthly cost for bucket %s: %.2f", resource_id, total)
         return total
 
-
     def _load_prices_file(self) -> Optional[Dict[str, Any]]:
         """
         Loads the prices file once and returns the data.
@@ -403,7 +399,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         """
         if not hasattr(self.__class__, '_prices_file_cache'):
             prices_file = Path(__file__).parent / "s3_it_prices_all_regions.json"
-            
+
             if not prices_file.exists():
                 LOG.error(
                     "[IT] Arquivo de preços não encontrado: %s. "
@@ -417,10 +413,10 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 LOG.info("[IT] Lendo preços de Intelligent Tiering do arquivo: %s", prices_file)
                 with open(prices_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                
+
                 self.__class__._prices_file_cache = data
                 return data
-                
+
             except json.JSONDecodeError as exc:
                 LOG.error(
                     "[IT] Erro ao fazer parse do arquivo JSON de preços: %s",
@@ -435,7 +431,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 )
                 self.__class__._prices_file_cache = None
                 return None
-        
+
         return self.__class__._prices_file_cache
 
     def _get_intelligent_tiering_prices(
@@ -466,7 +462,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         data = self._load_prices_file()
         if data is None:
             return None
-        
+
         prices_by_region = data.get("prices_by_region", {})
         default_prices = data.get("default_prices", {})
         
@@ -476,7 +472,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             if region_prices:
                 prices = region_prices.copy()
                 LOG.debug("[IT] Usando preços específicos da região %s", region)
-        
+
         if not prices:
             if default_prices:
                 prices = default_prices.copy()
@@ -484,7 +480,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "[IT] Região %s não encontrada, usando preços padrão",
                     region or "desconhecida"
                 )
-        
+
         if not prices:
             LOG.error("[IT] Nenhum preço disponível no arquivo")
             return None
@@ -496,7 +492,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "[IT] Alguns tiers estão faltando: %s. Usando valores disponíveis.",
                 ", ".join(missing_tiers)
             )
-        
+
         validated_prices = {}
         for tier, price in prices.items():
             try:
@@ -506,7 +502,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "[IT] Preço inválido para tier %s: %s (ignorando)",
                     tier, price
                 )
-        
+
         if not validated_prices:
             LOG.error("[IT] Nenhum preço válido encontrado")
             return None
@@ -518,7 +514,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             last_updated,
             ", ".join(f"{k}=${v:.6f}" for k, v in validated_prices.items())
         )
-        
+
         self._it_price_cache[cache_key] = validated_prices
         return validated_prices
 
@@ -549,7 +545,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         if tier_prices is None:
             LOG.error("[IT] Cannot calculate IT cost: failed to get tier prices")
             return None
-        
+
         price_tier = ACCESS_TIER_TO_PRICE_TIER.get(access_tier, "FA")
         price_per_gb = tier_prices.get(price_tier, 0.0)
         if price_per_gb == 0.0:
@@ -686,23 +682,23 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 "[IT] Processing %d buckets for cloud_account_id=%s",
                 len(resources), ca_id
             )
-            
+
             for resource_data in resources:
                 total_buckets_processed += 1
                 resource_id = resource_data.get("resource_id", "unknown")
-                
+
                 if excluded_pools and resource_data.get("pool_id") in excluded_pools:
                     LOG.info("[IT] Bucket %s excluded (pool_id in excluded_pools)", resource_id)
                     continue
 
                 if not self._is_candidate(resource_data):
                     continue
-                
+
                 total_candidates_found += 1
 
                 tiers_gb = _parse_tiers_gb(resource_data.get("tiers") or [])
                 total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
-                
+
                 saving_data = self._real_saving_payload(resource_data, total_gb, today, ca)
                 if not saving_data or saving_data["saving"] <= 0.0:
                     LOG.info(
@@ -716,7 +712,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 is_with_it = it_status in IT_POSITIVE_STATUS
 
                 item = {
-                    "resource_id": resource_data    .get("resource_id"),
+                    "resource_id": resource_data.get("resource_id"),
                     "resource_name": resource_data.get("bucket_name"),
                     "cloud_resource_id": resource_data.get("bucket_name"),
                     "region": resource_data.get("region"),
@@ -750,7 +746,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     item.get("current_cost_month", 0),
                     item.get("cost_if_intelligent_tiering", 0)
                 )
-        
+
         LOG.info(
             "[IT] Recommendation processing completed: "
             "processed=%d buckets, candidates=%d, recommendations=%d",
