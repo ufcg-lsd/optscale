@@ -30,3 +30,9 @@ FREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 30
 INFREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 60
 
 IT_MONITOR_FEE_PER_1000 = 0.0000025
+
+ACCESS_TIER_TO_PRICE_TIER: Final[Dict[str, str]] = {
+    "frequent": "FA",
+    "infrequent": "IA",
+    "archive": "AIA",  # Archive Instant Access
+}

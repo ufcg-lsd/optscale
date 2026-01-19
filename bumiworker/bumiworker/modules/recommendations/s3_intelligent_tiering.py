@@ -14,6 +14,7 @@ from .constants import (
     FREQUENT_TIER_THRESHOLD_DAYS,
     INFREQUENT_TIER_THRESHOLD_DAYS,
     IT_MONITOR_FEE_PER_1000,
+    ACCESS_TIER_TO_PRICE_TIER,
 )
 
 LOG = logging.getLogger(__name__)
@@ -397,8 +398,8 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
     def _load_prices_file(self) -> Optional[Dict[str, Any]]:
         """
-        Carrega o arquivo de preços uma vez e retorna os dados.
-        Usa cache de classe para evitar múltiplas leituras.
+        Loads the prices file once and returns the data.
+        Uses class cache to avoid multiple reads.
         """
         if not hasattr(self.__class__, '_prices_file_cache'):
             prices_file = Path(__file__).parent / "s3_it_prices_all_regions.json"
@@ -443,17 +444,13 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         region: Optional[str] = None
     ) -> Optional[Dict[str, float]]:
         """
-        Lê os preços de Intelligent-Tiering de um arquivo JSON hardcoded para uma região específica.
-        Retorna um dict com preços para cada tier (FA, IA, AIA, DAA).
-        Usa preços padrão como fallback se a região não estiver disponível.
+        Reads Intelligent-Tiering prices from a hardcoded JSON file for a specific region.
+        Returns a dict with prices for each tier (FA, IA, AIA, DAA).
+        Uses default prices as fallback if the region is not available.
         
         Args:
-            cloud_account: Configuração da conta cloud
-            region: Região do bucket (ex: us-east-1). Se None, usa preços padrão.
-        
-        Para atualizar os preços, execute o script externo:
-        python bumiworker/bumiworker/modules/recommendations/fetch_s3_it_prices_direct.py
-        com as credenciais AWS apropriadas.
+            cloud_account: Cloud account configuration
+            region: Bucket region (e.g., us-east-1). If None, uses default prices.
         """
         cloud_account_id = self._extract_cloud_account_id(cloud_account)
         if not cloud_account_id:
@@ -487,16 +484,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     "[IT] Região %s não encontrada, usando preços padrão",
                     region or "desconhecida"
                 )
-            else:
-                # Fallback: tenta pegar de qualquer região disponível
-                for region_name, region_prices in prices_by_region.items():
-                    if region_prices:
-                        prices = region_prices.copy()
-                        LOG.info(
-                            "[IT] Usando preços da região %s como fallback para %s",
-                            region_name, region or "desconhecida"
-                        )
-                        break
         
         if not prices:
             LOG.error("[IT] Nenhum preço disponível no arquivo")
@@ -563,12 +550,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             LOG.error("[IT] Cannot calculate IT cost: failed to get tier prices")
             return None
         
-        access_tier_to_price_tier = {
-            "frequent": "FA",
-            "infrequent": "IA",
-            "archive": "AIA",  # Archive Instant Access
-        }
-        price_tier = access_tier_to_price_tier.get(access_tier, "FA")
+        price_tier = ACCESS_TIER_TO_PRICE_TIER.get(access_tier, "FA")
         price_per_gb = tier_prices.get(price_tier, 0.0)
         if price_per_gb == 0.0:
             LOG.warning(
@@ -705,25 +687,23 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                 len(resources), ca_id
             )
             
-            for d in resources:
+            for resource_data in resources:
                 total_buckets_processed += 1
-                resource_id = d.get("resource_id", "unknown")
+                resource_id = resource_data.get("resource_id", "unknown")
                 
-                if excluded_pools and d.get("pool_id") in excluded_pools:
+                if excluded_pools and resource_data.get("pool_id") in excluded_pools:
                     LOG.info("[IT] Bucket %s excluded (pool_id in excluded_pools)", resource_id)
                     continue
 
-                # Check if bucket is a candidate
-                if not self._is_candidate(d):
+                if not self._is_candidate(resource_data):
                     continue
                 
                 total_candidates_found += 1
 
-                # Calculate saving with improved IT cost calculation
-                tiers_gb = _parse_tiers_gb(d.get("tiers") or [])
+                tiers_gb = _parse_tiers_gb(resource_data.get("tiers") or [])
                 total_gb = sum(x["gb"] for x in tiers_gb) if tiers_gb else 0.0
                 
-                saving_data = self._real_saving_payload(d, total_gb, today, ca)
+                saving_data = self._real_saving_payload(resource_data, total_gb, today, ca)
                 if not saving_data or saving_data["saving"] <= 0.0:
                     LOG.info(
                         "[IT] Bucket %s excluded: IT would not be cheaper (saving=%.2f)",
@@ -732,24 +712,24 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
                     continue
 
                 # Determine IT status
-                it_status = str(d.get("it_status_bucket", "")).lower()
+                it_status = str(resource_data.get("it_status_bucket", "")).lower()
                 is_with_it = it_status in IT_POSITIVE_STATUS
 
                 item = {
-                    "resource_id": d.get("resource_id"),
-                    "resource_name": d.get("bucket_name"),
-                    "cloud_resource_id": d.get("bucket_name"),
-                    "region": d.get("region"),
-                    "cloud_account_id": d.get("cloud_account_id"),
+                    "resource_id": resource_data    .get("resource_id"),
+                    "resource_name": resource_data.get("bucket_name"),
+                    "cloud_resource_id": resource_data.get("bucket_name"),
+                    "region": resource_data.get("region"),
+                    "cloud_account_id": resource_data.get("cloud_account_id"),
                     "cloud_type": "aws_cnr",
                     "owner": self._extract_owner(
-                        d.get("owner_id") or d.get("employee_id"), employees),
+                        resource_data.get("owner_id") or resource_data.get("employee_id"), employees),
                     "pool": self._extract_pool(
-                        d.get("pool_id"), pools),
-                    "is_excluded": d.get("pool_id") in excluded_pools,
+                        resource_data.get("pool_id"), pools),
+                    "is_excluded": resource_data.get("pool_id") in excluded_pools,
                     "is_with_intelligent_tiering": is_with_it,
                     "detected_at": self.created_at,
-                    "cloud_account_name": ca_names.get(d.get("cloud_account_id")),
+                    "cloud_account_name": ca_names.get(resource_data.get("cloud_account_id")),
                     "saving": round(saving_data["saving"], 2),
                 }
                 if "current_cost_month" in saving_data:
