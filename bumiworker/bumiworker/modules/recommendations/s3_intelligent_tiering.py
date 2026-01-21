@@ -148,7 +148,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
             return []
         return resources
 
-
     def _classify_wrong_access_tier(self, category_bucket: str, last_checked: List[Any]) -> bool:
         """
         Classify the access tier of the bucket.
@@ -443,7 +442,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         Reads Intelligent-Tiering prices from a hardcoded JSON file for a specific region.
         Returns a dict with prices for each tier (FA, IA, AIA, DAA).
         Uses default prices as fallback if the region is not available.
-        
+
         Args:
             cloud_account: Cloud account configuration
             region: Bucket region (e.g., us-east-1). If None, uses default prices.
@@ -465,7 +464,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
 
         prices_by_region = data.get("prices_by_region", {})
         default_prices = data.get("default_prices", {})
-        
+
         prices = None
         if region and region in prices_by_region:
             region_prices = prices_by_region[region]
@@ -484,7 +483,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         if not prices:
             LOG.error("[IT] Nenhum preço disponível no arquivo")
             return None
-        
+
         required_tiers = ["FA", "IA", "AIA", "DAA"]
         missing_tiers = [tier for tier in required_tiers if tier not in prices]
         if missing_tiers:
@@ -506,7 +505,7 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         if not validated_prices:
             LOG.error("[IT] Nenhum preço válido encontrado")
             return None
-        
+
         last_updated = data.get("last_updated", "desconhecida")
         LOG.info(
             "[IT] Preços carregados (região=%s, última atualização: %s): %s",
@@ -531,7 +530,6 @@ class S3IntelligentTiering(S3AbandonedBucketsBase):
         - Consider the access tier to define the class of the bucket
         - Storage cost
         - Monitoring fee per 1000 objects
-        
         Returns dict with the total cost, storage cost, monitoring cost, monitoring price per 1000 objects.
         """
         if size_gb <= 0.0 or object_count <= 0:
