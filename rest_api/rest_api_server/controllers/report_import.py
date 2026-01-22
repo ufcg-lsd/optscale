@@ -37,6 +37,10 @@ class ReportImportBaseController(BaseController):
                     'interval_step': 1, 'interval_max': 3}
 
     def create(self, cloud_account_id, import_file=None, recalculate=False, priority=1):
+        LOG.info(
+            'Creating report import for cloud account %s (recalculate=%s, priority=%s)',
+            cloud_account_id, recalculate, priority
+        )
         report_import = super().create(
             cloud_account_id=cloud_account_id,
             import_file=import_file,
@@ -56,6 +60,10 @@ class ReportImportBaseController(BaseController):
             DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS
         ))
         if message_ttl <= 0:
+            LOG.info(
+                'Report import timeout disabled (message_expiration_secs=%s) for cloud account %s',
+                message_ttl, cloud_account_id
+            )
             return
         timeout_ts = now - message_ttl
         timed_out_imports = self.session.query(ReportImport).filter(
@@ -68,6 +76,11 @@ class ReportImportBaseController(BaseController):
                      ReportImport.created_at < timeout_ts)
             )
         ).all()
+        if timed_out_imports:
+            LOG.info(
+                'Found %s timed out imports for cloud account %s (timeout_ts=%s)',
+                len(timed_out_imports), cloud_account_id, timeout_ts
+            )
         for report_import in timed_out_imports:
             report_id = report_import.id
             LOG.warning(
@@ -247,6 +260,10 @@ class ReportImportScheduleController(ReportImportBaseController):
         cloud_account_type = kwargs.pop("cloud_account_type", None)
         cloud_account_id = kwargs.pop("cloud_account_id", None)
         priority = kwargs.pop("priority", 1)
+        LOG.info(
+            'Scheduling imports (period=%s, organization_id=%s, cloud_account_id=%s, cloud_account_type=%s, priority=%s)',
+            period, organization_id, cloud_account_id, cloud_account_type, priority
+        )
         if period is not None:
             # if import period is set there should be no other parameters
             if (organization_id is not None or
@@ -271,9 +288,23 @@ class ReportImportScheduleController(ReportImportBaseController):
             if ca.type == CloudTypes.AWS_CNR:
                 decoded_cfg = ca.decoded_config
                 if decoded_cfg.get('linked', False):
+                    LOG.info(
+                        'Skipping linked AWS cloud account %s (%s) from scheduling',
+                        ca.id, ca.organization_id
+                    )
                     continue
             if not self.check_unprocessed_imports(ca.id):
-                result.append(self.create(ca.id, priority=priority))
+                report_import = self.create(ca.id, priority=priority)
+                LOG.info(
+                    'Scheduled report import %s for cloud account %s (priority=%s)',
+                    report_import.id, ca.id, priority
+                )
+                result.append(report_import)
+            else:
+                LOG.info(
+                    'Active or recent import found for cloud account %s; skipping scheduling',
+                    ca.id
+                )
         return result
 
 

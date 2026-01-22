@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime, timedelta
 from unittest.mock import patch
 from freezegun import freeze_time
@@ -17,6 +18,8 @@ from rest_api.rest_api_server.models.enums import (
 from rest_api.rest_api_server.tests.unittests.test_api_base import TestApiBase
 from rest_api.rest_api_server.utils import MAX_32_INT, encode_config
 import tools.optscale_time as opttime
+
+LOG = logging.getLogger(__name__)
 
 
 class TestScheduleImportsApi(TestApiBase):
@@ -38,6 +41,7 @@ class TestScheduleImportsApi(TestApiBase):
                 'message_expiration_secs': DEFAULT_QUEUE_MESSAGE_EXPIRATION_SECONDS,
             }
         ).start()
+        LOG.info('Initialized TestScheduleImportsApi (orgs: %s, %s)', self.org_id, self.org_id2)
 
     def test_schedule_imports_without_cloud_acc(self):
         code, ret = self.client.schedule_import(0)
@@ -106,6 +110,10 @@ class TestScheduleImportsApi(TestApiBase):
         )
         session.add(cloud_acc)
         session.commit()
+        LOG.info(
+            'Created cloud account %s (org=%s, import_period=%s, auto_import=%s, cloud_type=%s)',
+            cloud_acc.id, org_id, import_period, auto_import, cloud_type
+        )
         return cloud_acc.id
 
     def test_schedule_imports(self):
@@ -116,6 +124,7 @@ class TestScheduleImportsApi(TestApiBase):
         code, ret = self.client.schedule_import(0)
         self.assertEqual(code, 201)
         self.assertEqual(len(ret['report_imports']), 2)
+        LOG.info('Scheduled imports for period 0: %s', ret['report_imports'])
         for _import in ret['report_imports']:
             self.assertIn(_import['cloud_account_id'], [cloud_acc1, cloud_acc3])
 
@@ -126,6 +135,7 @@ class TestScheduleImportsApi(TestApiBase):
         self.assertEqual(len(ret['report_imports']), 1)
         self.assertEqual(
             ret['report_imports'][0]['cloud_account_id'], cloud_acc2)
+        LOG.info('Scheduled imports for period 6: %s', ret['report_imports'])
 
     def test_schedule_imports_org_id(self):
         self._create_cloud_acc_object(org_id=self.org_id)
