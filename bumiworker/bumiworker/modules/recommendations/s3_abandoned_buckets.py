@@ -30,6 +30,7 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
     def get_metric_threshold_map(self):
         # Buckets are considered abandoned if both GetObject and PutObject
         # operations are zero (no read or write activity)
+        LOG.debug(f'AB - GET_OBJECT_KEY: {GET_OBJECT_KEY}, PUT_OBJECT_KEY: {PUT_OBJECT_KEY}')
         return {
             GET_OBJECT_KEY: False,
             PUT_OBJECT_KEY: False
@@ -66,6 +67,8 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         ]
         api_requests = self.mongo_client.restapi.raw_expenses.aggregate(
             api_request_pipeline)
+        
+        LOG.debug(f'AB - API Requests aggregation result: {list(api_requests)}')
         resource_meter_value = {}
         # Initialize all resources with no recorded activity
         for res_id in cloud_resource_ids:
@@ -85,6 +88,8 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
             elif operation == 'PutObject':
                 resource_meter_value[cloud_resource_id][
                     PUT_OBJECT_KEY] = has_usage
+                
+        LOG.debug(f'AB - Resource meter values: {resource_meter_value}')
         return resource_meter_value
 
     @staticmethod
