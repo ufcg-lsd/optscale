@@ -261,7 +261,8 @@ class ReportImportScheduleController(ReportImportBaseController):
         cloud_account_id = kwargs.pop("cloud_account_id", None)
         priority = kwargs.pop("priority", 1)
         LOG.info(
-            'Scheduling imports (period=%s, organization_id=%s, cloud_account_id=%s, cloud_account_type=%s, priority=%s)',
+            'Scheduling imports (period=%s, organization_id=%s, cloud_account_id=%s, '
+            'cloud_account_type=%s, priority=%s)',
             period, organization_id, cloud_account_id, cloud_account_type, priority
         )
         if period is not None:
