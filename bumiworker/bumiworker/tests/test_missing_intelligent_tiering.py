@@ -95,12 +95,14 @@ class TestIsCandidate:
     """Tests for `_is_candidate` method."""
     
     def test_no_metrics_and_standard(self, module_factory):
+        """Test that standard tier bucket without metrics is a candidate."""
         mod = module_factory()
         resource = aggregate_resource(RESOURCE_BUCKET)
         assert mod._is_candidate(resource) is True
 
     
     def test_no_metrics_and_express_one_zone(self, module_factory):
+        """Test that express one zone tier bucket without metrics is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["express one zone", 7.451]]
@@ -109,6 +111,7 @@ class TestIsCandidate:
 
     
     def test_no_metrics_and_standard_ia(self, module_factory):
+        """Test that standard-ia tier bucket without metrics is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["standard-ia", 7.451]]
@@ -117,6 +120,7 @@ class TestIsCandidate:
 
     
     def test_no_metrics_and_one_zone_ia(self, module_factory):
+        """Test that one zone-ia tier bucket without metrics is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["one zone-ia", 7.451]]
@@ -124,6 +128,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is True
 
     def test_no_metrics_and_glacier_instant_retrieval(self, module_factory):
+        """Test that glacier instant retrieval tier bucket without metrics is not a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["glacier ir", 7.451]]
@@ -131,6 +136,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is False
 
     def test_no_metrics_and_glacier_flexible_retrieval(self, module_factory):
+        """Test that glacier flexible retrieval tier bucket without metrics is not a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["glacier", 7.451]]
@@ -138,6 +144,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is False
 
     def test_no_metrics_and_deep_archive(self, module_factory):
+        """Test that deep archive tier bucket without metrics is not a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["deep archive", 7.451]]
@@ -145,6 +152,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is False
 
     def test_last_checked_less_than_30_days_ago_standard(self, module_factory):
+        """Test that standard tier bucket with last checked less than 30 days ago is not a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
@@ -152,6 +160,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is False
 
     def test_last_checked_less_than_30_days_ago_express_one_zone(self, module_factory):
+        """Test that express one zone tier bucket with last checked less than 30 days ago is not a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["express one zone", 7.451]]
@@ -160,6 +169,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is False
 
     def test_last_checked_less_than_30_days_ago_standard_ia(self, module_factory):
+        """Test that standard-ia tier bucket with last checked less than 30 days ago is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["standard-ia", 7.451]]
@@ -168,6 +178,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is True
 
     def test_last_checked_less_than_30_days_ago_one_zone_ia(self, module_factory):
+        """Test that one zone-ia tier bucket with last checked less than 30 days ago is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["one zone-ia", 7.451]]
@@ -176,6 +187,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is True
 
     def test_last_checked_less_than_30_days_ago_glacier_instant_retrieval(self, module_factory):
+        """Test that glacier instant retrieval tier bucket with last checked less than 30 days ago is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["glacier ir", 7.451]]
@@ -184,6 +196,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is True
 
     def test_last_checked_less_than_30_days_ago_glacier_flexible_retrieval(self, module_factory):
+        """Test that glacier flexible retrieval tier bucket with last checked less than 30 days ago is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["glacier", 7.451]]
@@ -192,6 +205,7 @@ class TestIsCandidate:
         assert mod._is_candidate(resource) is True
 
     def test_last_checked_less_than_30_days_ago_deep_archive(self, module_factory):
+        """Test that deep archive tier bucket with last checked less than 30 days ago is a candidate."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
         r["meta"]["tiers"] = [["deep archive", 7.451]]
@@ -542,6 +556,7 @@ class TestCalculateITCost:
     """Tests for `_calculate_it_cost` method."""
 
     def test_calculate_it_cost_frequent(self, module_factory):
+        """Test IT cost calculation for frequent access tier."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -560,6 +575,7 @@ class TestCalculateITCost:
         }
 
     def test_calculate_it_cost_infrequent(self, module_factory):
+        """Test IT cost calculation for infrequent access tier."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -578,6 +594,7 @@ class TestCalculateITCost:
         }
 
     def test_calculate_it_cost_archive(self, module_factory):
+        """Test IT cost calculation for archive access tier."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -596,6 +613,7 @@ class TestCalculateITCost:
         }
 
     def test_calculate_it_cost_size_zero(self, module_factory):
+        """Test that IT cost calculation with size_gb=0 returns None."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -608,6 +626,7 @@ class TestCalculateITCost:
         assert result is None
 
     def test_calculate_it_cost_size_negative(self, module_factory):
+        """Test that IT cost calculation with negative size_gb returns None."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -620,6 +639,7 @@ class TestCalculateITCost:
         assert result is None
 
     def test_calculate_it_cost_object_count_zero(self, module_factory):
+        """Test that IT cost calculation with object_count=0 returns None."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -632,6 +652,7 @@ class TestCalculateITCost:
         assert result is None
 
     def test_calculate_it_cost_object_count_negative(self, module_factory):
+        """Test that IT cost calculation with negative object_count returns None."""
         mod = module_factory()
 
         result = mod._calculate_it_cost(
@@ -860,9 +881,9 @@ class TestGetIntelligentTieringPrices:
     """Tests for `_get_intelligent_tiering_prices` method."""
 
     def test_region_exists_in_json(self, module_factory, monkeypatch):
-        """IT-PRICE-01: Região existente no JSON."""
+        """IT-PRICE-01: Test that existing region in JSON returns correct prices."""
         mod = module_factory()
-        # Remove o mock para usar o método real
+        # Remove mock to use real method
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
         cloud_account = {"id": "a1"}
@@ -877,32 +898,32 @@ class TestGetIntelligentTieringPrices:
         assert "AIA" in result
         assert "DAA" in result
         assert all(isinstance(v, float) and v > 0 for v in result.values())
-        # Valores esperados do JSON para us-east-1
+        # Expected values from JSON for us-east-1
         assert result["FA"] == 0.023
         assert result["IA"] == 0.0125
         assert result["AIA"] == 0.004
         assert result["DAA"] == 0.00099
 
     def test_region_not_exists_uses_fallback(self, module_factory, monkeypatch):
-        """IT-PRICE-02: Região inexistente (fallback)."""
+        """IT-PRICE-02: Test that non-existent region uses fallback to default prices."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
         cloud_account = {"id": "a1"}
-        region = "xx-unknown-1"  # Região fictícia
+        region = "xx-unknown-1"  # Fictional region
         
         result = mod._get_intelligent_tiering_prices(cloud_account, region)
         
         assert result is not None
         assert isinstance(result, dict)
-        # Deve usar default_prices do JSON
+        # Should use default_prices from JSON
         assert "FA" in result
         assert "IA" in result
         assert "AIA" in result
         assert "DAA" in result
 
     def test_region_none_uses_default(self, module_factory, monkeypatch):
-        """IT-PRICE-03: Região nula."""
+        """IT-PRICE-03: Test that None region uses default prices."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -913,11 +934,11 @@ class TestGetIntelligentTieringPrices:
         
         assert result is not None
         assert isinstance(result, dict)
-        # Cache key deve ser "a1:default"
+        # Cache key should be "a1:default"
         assert mod._it_price_cache.get("a1:default") is not None
 
     def test_cloud_account_invalid(self, module_factory, monkeypatch):
-        """IT-PRICE-04: Cloud account inválido."""
+        """IT-PRICE-04: Test that invalid cloud account returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -929,17 +950,17 @@ class TestGetIntelligentTieringPrices:
         assert result is None
 
     def test_price_cache(self, module_factory, monkeypatch):
-        """IT-PRICE-05: Cache de preços."""
+        """IT-PRICE-05: Test that price cache works correctly."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
         cloud_account = {"id": "a1"}
         region = "us-east-1"
         
-        # Primeira chamada
+        # First call
         result1 = mod._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Mock _load_prices_file para verificar se é chamado novamente
+        # Mock _load_prices_file to verify if it's called again
         load_calls = []
         original_load = mod._load_prices_file
         
@@ -949,26 +970,26 @@ class TestGetIntelligentTieringPrices:
         
         monkeypatch.setattr(mod, "_load_prices_file", tracked_load)
         
-        # Segunda chamada
+        # Second call
         result2 = mod._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Deve usar cache, não chamar _load_prices_file novamente
+        # Should use cache, not call _load_prices_file again
         assert len(load_calls) == 0
         assert result1 == result2
         assert result1 is not None
 
     def test_json_file_not_exists(self, module_factory, monkeypatch):
-        """IT-PRICE-06: Arquivo JSON não existe."""
+        """IT-PRICE-06: Test that missing JSON file returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Mock _load_prices_file para simular arquivo não encontrado
+        # Mock _load_prices_file to simulate file not found
         def mock_load_prices_file():
             mod.__class__._prices_file_cache = None
             return None
         
         monkeypatch.setattr(mod, "_load_prices_file", mock_load_prices_file)
-        # Força o cache de classe a None
+        # Force class cache to None
         if hasattr(mod.__class__, '_prices_file_cache'):
             delattr(mod.__class__, '_prices_file_cache')
         
@@ -980,19 +1001,19 @@ class TestGetIntelligentTieringPrices:
         assert result is None
 
     def test_json_invalid_format(self, module_factory, monkeypatch):
-        """IT-PRICE-07: JSON inválido (malformado)."""
+        """IT-PRICE-07: Test that invalid JSON format returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Mock _load_prices_file para simular JSON inválido
-        # O código trata JSONDecodeError e retorna None, então o mock também retorna None
+        # Mock _load_prices_file to simulate invalid JSON
+        # Code handles JSONDecodeError and returns None, so mock also returns None
         def mock_load_prices_file():
-            # Simula que o código tratou o JSONDecodeError e retornou None
+            # Simulates that code handled JSONDecodeError and returned None
             mod.__class__._prices_file_cache = None
             return None
         
         monkeypatch.setattr(mod, "_load_prices_file", mock_load_prices_file)
-        # Força o cache de classe a None
+        # Force class cache to None
         if hasattr(mod.__class__, '_prices_file_cache'):
             delattr(mod.__class__, '_prices_file_cache')
         
@@ -1004,11 +1025,11 @@ class TestGetIntelligentTieringPrices:
         assert result is None
 
     def test_prices_with_invalid_values(self, module_factory, monkeypatch):
-        """IT-PRICE-08: Preços com valores inválidos (não numéricos)."""
+        """IT-PRICE-08: Test that prices with invalid (non-numeric) values are filtered out."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Mock _load_prices_file para retornar dados com valores inválidos
+        # Mock _load_prices_file to return data with invalid values
         invalid_data = {
             "prices_by_region": {
                 "us-east-1": {
@@ -1032,19 +1053,19 @@ class TestGetIntelligentTieringPrices:
         
         result = mod._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Deve retornar apenas tiers válidos
+        # Should return only valid tiers
         assert result is not None
-        assert "FA" not in result  # Inválido, ignorado
+        assert "FA" not in result  # Invalid, ignored
         assert "IA" in result
         assert "AIA" in result
         assert "DAA" in result
 
     def test_region_exists_but_empty_prices(self, module_factory, monkeypatch):
-        """IT-PRICE-09: Região existe mas prices_by_region[region] está vazio."""
+        """IT-PRICE-09: Test that region exists but prices_by_region[region] is empty uses default prices."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Mock _load_prices_file para retornar região com dict vazio
+        # Mock _load_prices_file to return region with empty dict
         data_with_empty_region = {
             "prices_by_region": {
                 "us-east-1": {}
@@ -1068,23 +1089,23 @@ class TestGetIntelligentTieringPrices:
         
         result = mod._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Deve usar default_prices
+        # Should use default_prices
         assert result is not None
-        assert result["FA"] == 0.024  # Valor do default_prices
+        assert result["FA"] == 0.024  # Value from default_prices
 
     def test_class_cache(self, module_factory, monkeypatch):
-        """IT-PRICE-10: Cache de classe (_prices_file_cache)."""
+        """IT-PRICE-10: Test that class cache (_prices_file_cache) works across instances."""
         mod1 = module_factory()
         mod2 = module_factory()
         
-        # Limpa cache de classe
+        # Clear class cache
         if hasattr(S3IntelligentTiering, '_prices_file_cache'):
             delattr(S3IntelligentTiering, '_prices_file_cache')
         
         monkeypatch.delattr(mod1, "_get_intelligent_tiering_prices")
         monkeypatch.delattr(mod2, "_get_intelligent_tiering_prices")
         
-        # Conta chamadas de leitura de arquivo
+        # Count file read calls
         file_reads = []
         original_open = open
         
@@ -1098,13 +1119,13 @@ class TestGetIntelligentTieringPrices:
         cloud_account = {"id": "a1"}
         region = "us-east-1"
         
-        # Primeira instância carrega arquivo
+        # First instance loads file
         result1 = mod1._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Segunda instância usa cache de classe
+        # Second instance uses class cache
         result2 = mod2._get_intelligent_tiering_prices(cloud_account, region)
         
-        # Arquivo deve ser lido apenas uma vez
+        # File should be read only once
         assert len(file_reads) == 1
         assert result1 == result2
         assert result1 is not None
@@ -1114,7 +1135,7 @@ class TestRealSavingPayload:
     """Tests for `_real_saving_payload` method."""
 
     def test_happy_path_complete_flow(self, module_factory, monkeypatch):
-        """IT-SAVE-01: Fluxo feliz completo."""
+        """IT-SAVE-01: Test complete happy path flow."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1149,15 +1170,15 @@ class TestRealSavingPayload:
         assert result["size_gb"] == 7.451
 
     def test_negative_saving_becomes_zero(self, module_factory, monkeypatch):
-        """IT-SAVE-02: Economia negativa (saving não pode ser < 0)."""
+        """IT-SAVE-02: Test that negative saving becomes zero (saving cannot be < 0)."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Mock _bucket_monthly_cost retorna valor menor que IT cost
-        # Para garantir que IT cost seja maior, vamos mockar _calculate_it_cost diretamente
+        # Mock _bucket_monthly_cost returns value less than IT cost
+        # To ensure IT cost is greater, mock _calculate_it_cost directly
         monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=1.00))
         monkeypatch.setattr(mod, "_calculate_it_cost", Mock(return_value={
-            "total_cost": 2.00,  # IT cost maior que custo mensal (1.00)
+            "total_cost": 2.00,  # IT cost greater than monthly cost (1.00)
             "storage_cost": 1.90,
             "monitoring_cost": 0.10,
             "monitoring_price_per_1000": 0.0000025,
@@ -1184,7 +1205,7 @@ class TestRealSavingPayload:
         assert result["cost_if_intelligent_tiering"] == 2.00
 
     def test_invalid_size_gb_uses_fallback(self, module_factory, monkeypatch):
-        """IT-SAVE-03: size_gb inválido no resource."""
+        """IT-SAVE-03: Test that invalid size_gb in resource uses total_gb as fallback."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1205,10 +1226,10 @@ class TestRealSavingPayload:
         result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
         
         assert result is not None
-        assert result["size_gb"] == 7.451  # Usa total_gb como fallback
+        assert result["size_gb"] == 7.451  # Uses total_gb as fallback
 
     def test_size_gb_zero_or_negative(self, module_factory, monkeypatch):
-        """IT-SAVE-04: size_gb <= 0."""
+        """IT-SAVE-04: Test that size_gb <= 0 returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1231,7 +1252,7 @@ class TestRealSavingPayload:
         assert result is None
 
     def test_failed_to_get_monthly_cost(self, module_factory, monkeypatch):
-        """IT-SAVE-05: Falha ao obter custo mensal."""
+        """IT-SAVE-05: Test that failure to get monthly cost returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1254,7 +1275,7 @@ class TestRealSavingPayload:
         assert result is None
 
     def test_failed_to_calculate_it_cost(self, module_factory, monkeypatch):
-        """IT-SAVE-06: Falha no cálculo de IT cost."""
+        """IT-SAVE-06: Test that failure to calculate IT cost returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1278,7 +1299,7 @@ class TestRealSavingPayload:
         assert result is None
 
     def test_region_influences_price(self, module_factory, monkeypatch):
-        """IT-SAVE-07: Região influencia preço."""
+        """IT-SAVE-07: Test that region influences price calculation."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1295,22 +1316,22 @@ class TestRealSavingPayload:
         today = NOW_FIXED.date()
         cloud_account = {"id": "a1"}
         
-        # Teste com us-east-1
+        # Test with us-east-1
         resource1 = {**resource_base, "region": "us-east-1"}
         result1 = mod._real_saving_payload(resource1, total_gb, today, cloud_account)
         
-        # Teste com sa-east-1 (preços diferentes)
+        # Test with sa-east-1 (different prices)
         resource2 = {**resource_base, "region": "sa-east-1"}
         result2 = mod._real_saving_payload(resource2, total_gb, today, cloud_account)
         
         assert result1 is not None
         assert result2 is not None
-        # Preços devem ser diferentes
+        # Prices should be different
         assert result1["price_intelligent_tiering"] != result2["price_intelligent_tiering"]
         assert result1["cost_if_intelligent_tiering"] != result2["cost_if_intelligent_tiering"]
 
     def test_cloud_account_is_none(self, module_factory, monkeypatch):
-        """IT-SAVE-08: cloud_account é None."""
+        """IT-SAVE-08: Test that cloud_account being None returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1331,11 +1352,11 @@ class TestRealSavingPayload:
         assert result is None
 
     def test_missing_resource_id_or_cloud_account_id(self, module_factory, monkeypatch):
-        """IT-SAVE-09: resource_id ou cloud_account_id ausentes."""
+        """IT-SAVE-09: Test that missing resource_id or cloud_account_id returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
-        # Teste sem resource_id
+        # Test without resource_id
         resource1 = {
             "cloud_account_id": "a1",
             "region": "us-east-1",
@@ -1350,7 +1371,7 @@ class TestRealSavingPayload:
         result1 = mod._real_saving_payload(resource1, total_gb, today, cloud_account)
         assert result1 is None
         
-        # Teste sem cloud_account_id
+        # Test without cloud_account_id
         resource2 = {
             "resource_id": "r1",
             "region": "us-east-1",
@@ -1363,13 +1384,13 @@ class TestRealSavingPayload:
         assert result2 is None
 
     def test_object_count_missing_or_invalid(self, module_factory, monkeypatch):
-        """IT-SAVE-10: object_count ausente ou inválido."""
+        """IT-SAVE-10: Test that missing or invalid object_count returns None."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
         monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
         
-        # Teste sem object_count (será 0)
+        # Test without object_count (will be 0)
         resource = {
             "resource_id": "r1",
             "cloud_account_id": "a1",
@@ -1383,11 +1404,11 @@ class TestRealSavingPayload:
         
         result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
         
-        # object_count = 0 faz _calculate_it_cost retornar None
+        # object_count = 0 makes _calculate_it_cost return None
         assert result is None
 
     def test_last_checked_missing_uses_archive(self, module_factory, monkeypatch):
-        """IT-SAVE-11: last_checked ausente (access_tier = "archive")."""
+        """IT-SAVE-11: Test that missing last_checked uses archive access tier."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1399,7 +1420,7 @@ class TestRealSavingPayload:
             "region": "us-east-1",
             "size_gb": 100.0,
             "object_count": 200000,
-            "last_checked": None  # ou []
+            "last_checked": None  # or []
         }
         total_gb = 100.0
         today = NOW_FIXED.date()
@@ -1408,14 +1429,14 @@ class TestRealSavingPayload:
         result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
         
         assert result is not None
-        # access_tier deve ser "archive", então price_tier deve ser "AIA"
-        # Verifica se o preço usado é de AIA (menor que FA e IA)
+        # access_tier should be "archive", so price_tier should be "AIA"
+        # Verify that price used is from AIA (lower than FA and IA)
         assert result["price_intelligent_tiering"] > 0
-        # AIA é mais barato que FA/IA, então o custo deve ser menor
+        # AIA is cheaper than FA/IA, so cost should be lower
         assert result["cost_if_intelligent_tiering"] < 10.00
 
     def test_total_gb_used_as_fallback(self, module_factory, monkeypatch):
-        """IT-SAVE-12: total_gb usado como fallback."""
+        """IT-SAVE-12: Test that total_gb is used as fallback when size_gb is invalid."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1436,10 +1457,10 @@ class TestRealSavingPayload:
         result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
         
         assert result is not None
-        assert result["size_gb"] == 7.451  # Usa total_gb como fallback
+        assert result["size_gb"] == 7.451  # Uses total_gb as fallback
 
     def test_rounding_of_values(self, module_factory, monkeypatch):
-        """IT-SAVE-13: Arredondamento de valores."""
+        """IT-SAVE-13: Test that values are properly rounded and valid."""
         mod = module_factory()
         monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
         
@@ -1460,7 +1481,7 @@ class TestRealSavingPayload:
         result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
         
         assert result is not None
-        # Valores devem ser números válidos (não NaN, não infinito)
+        # Values should be valid numbers (not NaN, not infinite)
         assert all(isinstance(v, (int, float)) and not (v != v) for v in result.values())
-        # saving não pode ser negativo
+        # saving cannot be negative
         assert result["saving"] >= 0.0
