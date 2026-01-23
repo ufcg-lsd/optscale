@@ -1,0 +1,1763 @@
+{
+  "description": "Preços de S3 Intelligent Tiering da AWS por região (obtidos via AWS Pricing API)",
+  "last_updated": "2026-01-14T19:50:11.408018+00:00",
+  "prices_by_region": {
+    "af-south-1": {
+      "AIA": 0.005,
+      "IA": 0.0149,
+      "DAA": 0.0018,
+      "FA": 0.025
+    },
+    "eu-central-2": {
+      "DAA": 0.00198,
+      "AIA": 0.0055,
+      "FA": 0.02695,
+      "IA": 0.01485
+    },
+    "eu-north-1": {
+      "IA": 0.0125,
+      "DAA": 0.00099,
+      "AIA": 0.004,
+      "FA": 0.021
+    },
+    "us-west-1": {
+      "AIA": 0.005,
+      "FA": 0.025,
+      "DAA": 0.002,
+      "IA": 0.0144
+    },
+    "ap-southeast-1": {
+      "AIA": 0.005,
+      "DAA": 0.002,
+      "FA": 0.023,
+      "IA": 0.0138
+    },
+    "eu-west-2": {
+      "FA": 0.024,
+      "IA": 0.0131,
+      "AIA": 0.005,
+      "DAA": 0.0018
+    },
+    "us-gov-west-1": {
+      "AIA": 0.0064,
+      "DAA": 0.0024,
+      "IA": 0.02,
+      "FA": 0.037
+    },
+    "ap-northeast-2": {
+      "IA": 0.0138,
+      "FA": 0.023,
+      "AIA": 0.005,
+      "DAA": 0.002
+    },
+    "sa-east-1": {
+      "IA": 0.0221,
+      "DAA": 0.0032,
+      "FA": 0.039,
+      "AIA": 0.0083
+    },
+    "ap-southeast-4": {
+      "DAA": 0.002,
+      "AIA": 0.005,
+      "IA": 0.0138,
+      "FA": 0.023
+    },
+    "eu-central-1": {
+      "AIA": 0.005,
+      "DAA": 0.0018,
+      "IA": 0.0135,
+      "FA": 0.0235
+    },
+    "ap-southeast-6": {
+      "IA": 0.01449,
+      "FA": 0.0252,
+      "AIA": 0.00525,
+      "DAA": 0.0021
+    },
+    "ap-southeast-5": {
+      "AIA": 0.0045,
+      "DAA": 0.0018,
+      "IA": 0.01242,
+      "FA": 0.0216
+    },
+    "ap-east-1": {
+      "AIA": 0.005,
+      "IA": 0.0138,
+      "DAA": 0.002,
+      "FA": 0.025
+    },
+    "me-central-1": {
+      "AIA": 0.005,
+      "IA": 0.0138,
+      "FA": 0.024,
+      "DAA": 0.0018
+    },
+    "us-east-1": {
+      "DAA": 0.00099,
+      "AIA": 0.004,
+      "IA": 0.0125,
+      "FA": 0.023
+    },
+    "ap-east-2": {
+      "IA": 0.01242,
+      "FA": 0.0225,
+      "DAA": 0.002,
+      "AIA": 0.005
+    },
+    "us-east-2": {
+      "AIA": 0.004,
+      "DAA": 0.00099,
+      "FA": 0.021,
+      "IA": 0.0125
+    },
+    "us-west-2": {
+      "AIA": 0.004,
+      "FA": 0.021,
+      "IA": 0.0125,
+      "DAA": 0.00099
+    },
+    "eu-south-1": {
+      "FA": 0.023,
+      "DAA": 0.0018,
+      "IA": 0.0131,
+      "AIA": 0.005
+    },
+    "ap-southeast-3": {
+      "AIA": 0.005,
+      "FA": 0.024,
+      "IA": 0.0138,
+      "DAA": 0.002
+    },
+    "ap-southeast-7": {
+      "AIA": 0.0045,
+      "IA": 0.01242,
+      "FA": 0.0216,
+      "DAA": 0.0018
+    },
+    "ap-southeast-2": {
+      "IA": 0.0138,
+      "FA": 0.024,
+      "DAA": 0.002,
+      "AIA": 0.005
+    },
+    "ap-south-1": {
+      "DAA": 0.002,
+      "FA": 0.024,
+      "IA": 0.0138,
+      "AIA": 0.005
+    },
+    "us-gov-east-1": {
+      "FA": 0.0355,
+      "AIA": 0.0064,
+      "IA": 0.02,
+      "DAA": 0.0024
+    },
+    "il-central-1": {
+      "IA": 0.0138,
+      "AIA": 0.005,
+      "DAA": 0.0018,
+      "FA": 0.023
+    },
+    "me-south-1": {
+      "IA": 0.0138,
+      "FA": 0.023,
+      "AIA": 0.005,
+      "DAA": 0.0018
+    },
+    "ca-west-1": {
+      "AIA": 0.005,
+      "DAA": 0.0018,
+      "IA": 0.0138,
+      "FA": 0.025
+    },
+    "mx-central-1": {
+      "IA": 0.013125,
+      "DAA": 0.002,
+      "AIA": 0.0042,
+      "FA": 0.0231
+    },
+    "ap-northeast-1": {
+      "DAA": 0.002,
+      "IA": 0.0138,
+      "FA": 0.023,
+      "AIA": 0.005
+    },
+    "eu-south-2": {
+      "DAA": 0.0018,
+      "IA": 0.0125,
+      "FA": 0.022,
+      "AIA": 0.005
+    },
+    "eu-west-3": {
+      "AIA": 0.005,
+      "IA": 0.0131,
+      "FA": 0.024,
+      "DAA": 0.0018
+    },
+    "ap-northeast-3": {
+      "DAA": 0.002,
+      "FA": 0.024,
+      "AIA": 0.005,
+      "IA": 0.0138
+    },
+    "eu-west-1": {
+      "AIA": 0.004,
+      "FA": 0.023,
+      "DAA": 0.00099,
+      "IA": 0.0125
+    },
+    "ap-south-2": {
+      "IA": 0.0138,
+      "DAA": 0.002,
+      "AIA": 0.005,
+      "FA": 0.025
+    },
+    "ca-central-1": {
+      "AIA": 0.005,
+      "DAA": 0.0018,
+      "IA": 0.0138,
+      "FA": 0.024
+    }
+  },
+  "detailed_prices_by_region": {
+    "af-south-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "2B7XCP742QU5WX8W",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Africa (Cape Town)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "AFS1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0149,
+        "sku": "HBA7WEA66SWY8JTS",
+        "description": "$0.0149 per GB-Mo for TimedStorage-INT-IA-ByteHrs in Cape Town",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Africa (Cape Town)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "AFS1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "PJZ7UN5T8Y3594W5",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs in Africa (Cape Town)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Africa (Cape Town)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "AFS1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.025,
+        "sku": "WJBC3H48BBCS7ZQJ",
+        "description": "$0.025 per GB-Mo for TimedStorage-INT-FA-ByteHrs in Cape Town",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Africa (Cape Town)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "AFS1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "eu-central-2": {
+      "DAA": {
+        "price_per_unit_usd": 0.00198,
+        "sku": "2ED6JM23Q3K7JNFN",
+        "description": "$0.00198 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Europe (Zurich)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Zurich)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.0055,
+        "sku": "C3BDAARZUAMHNSSH",
+        "description": "$0.0055 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Zurich)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.02695,
+        "sku": "SV4DNZDDDF4NCBGX",
+        "description": "$0.02695 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Zurich)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.01485,
+        "sku": "XUVVMETTHM2QY2P9",
+        "description": "$0.01485 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Zurich)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-north-1": {
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "2EYGY6USDPFA44K4",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Stockholm)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUN1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.00099,
+        "sku": "CVM5GQYURBD635D6",
+        "description": "$0.00099 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (Stockholm)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Stockholm)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUN1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.004,
+        "sku": "T5W3RAYJ6CAPZRYX",
+        "description": "$0.004 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Stockholm)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUN1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.021,
+        "sku": "T7F9VM7B9SNA5ZJA",
+        "description": "$0.021 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Stockholm)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUN1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "us-west-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "2JKRWEVH8B8XCZPP",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (N. California)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.025,
+        "sku": "358YXGGXWV4YQSEA",
+        "description": "$0.025 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (N. California)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "D7GKU8V7GRTRXXDB",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in US West (N. California)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (N. California)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0144,
+        "sku": "MV39K25HZ6YARFWD",
+        "description": "$0.0144 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (N. California)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-southeast-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "2VBANZF63URVJ24V",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Singapore)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "EY8E2HAU43ESY4TN",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Singapore)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Singapore)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "QJ87CM3WHUAZ5ZY7",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Singapore)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "TEYPNTZ3UYQCJ5S6",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Singapore)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-west-2": {
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "3G6H2XNKM6FA6W9Z",
+        "description": "$0.024 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (London)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0131,
+        "sku": "MGQKH8S92QXYV2Y8",
+        "description": "$0.0131 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (London)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "RF53RFB7TEJPQNXS",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (London)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "SXTWCNFTRND3DYK2",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (London)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (London)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "us-gov-west-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.0064,
+        "sku": "3TWREEWW2KYKHPDS",
+        "description": "$0.0064 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-West)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGW1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0024,
+        "sku": "NH3NXQX2H5B28VSB",
+        "description": "$0.0024 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in AWS GovCloud (US-West)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-West)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGW1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.02,
+        "sku": "RZXSVBXYGG36U34V",
+        "description": "$0.02 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-West)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGW1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.037,
+        "sku": "SKTSP9DF792B265U",
+        "description": "$0.037 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-West)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGW1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ap-northeast-2": {
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "3VRJ8HPKAKMFY489",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Seoul)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "N47Y9V6N8CADBP7X",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Seoul)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "QMB3MHEN4UFQ6BVD",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Seoul)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "XRC7YDWWERQ32MJK",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Seoul)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Seoul)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "sa-east-1": {
+      "IA": {
+        "price_per_unit_usd": 0.0221,
+        "sku": "4KCK7UABT6NJNYAF",
+        "description": "$0.0221 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "South America (Sao Paulo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "SAE1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0032,
+        "sku": "BWPTDUNJMP69SRY4",
+        "description": "$0.0032 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in South America (Sao Paulo)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "South America (Sao Paulo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "SAE1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.039,
+        "sku": "FV8B7M9MW6M3S9EQ",
+        "description": "$0.039 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "South America (Sao Paulo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "SAE1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.0083,
+        "sku": "SAAHRFQRM7YXAM4W",
+        "description": "$0.0083 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "South America (Sao Paulo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "SAE1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-southeast-4": {
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "53YC8WW3J3YXWCU3",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Melbourne)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Melbourne)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS6-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "9DY73JGDT3BS23YN",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Melbourne)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS6-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "FV7DUW7RJ4VB9HEJ",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Melbourne)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS6-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "MEVHY6M8MHBC3S6Q",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Melbourne)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS6-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "eu-central-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "59EKA2BVNMDBBTB6",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Frankfurt)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "C97H9JA9CS6ND8GE",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (Frankfurt)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Frankfurt)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0135,
+        "sku": "QZFPVD8C6A8MTCX5",
+        "description": "$0.0135 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Frankfurt)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0235,
+        "sku": "YGSYYBP4NVAB45MW",
+        "description": "$0.0235 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Frankfurt)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUC1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ap-southeast-6": {
+      "IA": {
+        "price_per_unit_usd": 0.01449,
+        "sku": "5GXC76ATKHRPXPN9",
+        "description": "$0.01449 per GB-Mo of Storage in Intelligent-Tiering Infrequent Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (New Zealand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS8-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0252,
+        "sku": "A2BXVBCZ59KR62F4",
+        "description": "$0.0252 per GB-Mo for Next 450 TB of Storage in Intelligent-Tiering Frequent Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (New Zealand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS8-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.00525,
+        "sku": "KR4S5XQK639H7MGU",
+        "description": "$0.00525 per GB-Mo of Storage in Intelligent-Tiering Archive Instant Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (New Zealand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS8-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0021,
+        "sku": "TE2ZGR7D7M9KPB68",
+        "description": "$0.0021 per GB-Mo of Object Overhead Storage in Intelligent-Tiering Deep Archive Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (New Zealand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS8-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 2
+      }
+    },
+    "ap-southeast-5": {
+      "AIA": {
+        "price_per_unit_usd": 0.0045,
+        "sku": "5J84PUV7DUGEEG7T",
+        "description": "$0.0045 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Malaysia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS7-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "DFFJ9UENAKJG9J4S",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Malaysia)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Malaysia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS7-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.01242,
+        "sku": "TRQ2PNQC7QMPFTJ9",
+        "description": "$0.01242 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Malaysia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS7-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0216,
+        "sku": "ZHE84QNJSF2N55QQ",
+        "description": "$0.0216 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Malaysia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS7-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ap-east-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "7RANBUG9GVCF2N9C",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hong Kong)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "8UUGK2KCRZCRS4AR",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hong Kong)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "D2XEEE5UN2MWAVYQ",
+        "description": "$0.002 per GB-month for TimedStorage-INT-DAA-ByteHrs in Asia Pacific (Hong Kong)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hong Kong)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.025,
+        "sku": "TFSMAFN6NUX6F26U",
+        "description": "$0.025 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hong Kong)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "me-central-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "7YU48S7HUEZZWHTH",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (UAE)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MEC1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "EH9UPXR7Q3YPPZ9C",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (UAE)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MEC1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "FADE9NRDWU8HSVM4",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (UAE)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MEC1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "TTYR8HHV5QABCD2C",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Middle East (UAE)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (UAE)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MEC1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "us-east-1": {
+      "DAA": {
+        "price_per_unit_usd": 0.00099,
+        "sku": "82TFRVR9729PGTNP",
+        "description": "$0.00099 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in US East (N. Virginia)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (N. Virginia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.004,
+        "sku": "J5H5J7F2H2NJEZZN",
+        "description": "$0.004 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (N. Virginia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "M7WA952JTYFHTE64",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (N. Virginia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "T5CD4UDRVV44YE2T",
+        "description": "$0.023 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (N. Virginia)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ap-east-2": {
+      "IA": {
+        "price_per_unit_usd": 0.01242,
+        "sku": "89276386TTSVZNZ6",
+        "description": "$0.01242 per GB-Mo of Storage in Intelligent-Tiering Infrequent Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Taipei)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0225,
+        "sku": "JSCYRP5J2JYF396P",
+        "description": "$0.0225 per GB-Mo for First 50 TB of Storage in Intelligent-Tiering Frequent Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Taipei)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "R9BF4K66WC9V4UDN",
+        "description": "$0.002 per GB-Mo of Storage in Intelligent-Tiering Deep Archive Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Taipei)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "VYFHQCU5YHWJR2HU",
+        "description": "$0.005 per GB-Mo of Storage in Intelligent-Tiering Archive Instant Access Tier ",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Taipei)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APE2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "us-east-2": {
+      "AIA": {
+        "price_per_unit_usd": 0.004,
+        "sku": "8D4A6VZF6Z8PDUU7",
+        "description": "$0.004 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (Ohio)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USE2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.00099,
+        "sku": "BATZTMZR53HJXZ68",
+        "description": "$0.00099 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in US East (Ohio)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (Ohio)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USE2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.021,
+        "sku": "H3VW4CSWD5JU46EF",
+        "description": "$0.021 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (Ohio)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USE2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "HQRCGYDND9S83W9B",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US East (Ohio)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USE2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "us-west-2": {
+      "AIA": {
+        "price_per_unit_usd": 0.004,
+        "sku": "8SDCX486EBF27GDB",
+        "description": "$0.004 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (Oregon)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.021,
+        "sku": "S7HAUA7UKS78X9TV",
+        "description": "$0.021 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (Oregon)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "XPQ9U9D9H7YNXTQ7",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (Oregon)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.00099,
+        "sku": "Z3YGEMNV63CKZJXP",
+        "description": "$0.00099 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in US West (Oregon)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "US West (Oregon)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "USW2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-south-1": {
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "8UXUTS4E8P6CF4CE",
+        "description": "$0.023 per GB-Mo for TimedStorage-INT-FA-ByteHrs in Milan",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Milan)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "APFBAMJG3MBZYQTF",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (Milan)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Milan)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0131,
+        "sku": "H23R6U5U3XJ5HC2Y",
+        "description": "$0.0131 per GB-Mo for TimedStorage-INT-IA-ByteHrs in Milan",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Milan)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "PRGH56CEUC3B4C4Z",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Milan)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-southeast-3": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "8VGZFH4PDH5ABCYZ",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Jakarta)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS4-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "CRVAR4CCUVB9R5BV",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Jakarta)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS4-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "J7VEE5UAQHZV6T9J",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Jakarta)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS4-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "VKG9WT9UWPKC8JQJ",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Jakarta)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Jakarta)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS4-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-southeast-7": {
+      "AIA": {
+        "price_per_unit_usd": 0.0045,
+        "sku": "95DRZRX58QF65VUH",
+        "description": "$0.0045 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Thailand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS9-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.01242,
+        "sku": "EXS33M7RAPDZR552",
+        "description": "$0.01242 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Thailand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS9-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0216,
+        "sku": "MZTK4VJUJMXF5TVQ",
+        "description": "$0.0216 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Thailand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS9-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "YGNKG3GRJ2TQYZ88",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Thailand)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Thailand)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS9-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-southeast-2": {
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "9P336824MTSR8WDE",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Sydney)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "JBGUHN8JUC27MU5K",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Sydney)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "TMR7R4GZEBAQB2P4",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Sydney)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Sydney)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "XJTVCFH99F57965R",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Sydney)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-south-1": {
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "9PDXBPMVKGWD2QDB",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Mumbai)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Mumbai)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS3-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "H35VNXQRRU2NMJCD",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Mumbai)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS3-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "MDDK4BTVFFXS6P84",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Mumbai)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS3-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "V77WC7TPCH6VPBGY",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Mumbai)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS3-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "us-gov-east-1": {
+      "FA": {
+        "price_per_unit_usd": 0.0355,
+        "sku": "9YREZV4SWTBWVUUH",
+        "description": "$0.0355 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-East)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGE1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.0064,
+        "sku": "MZGWNJGBCFXK9Y9E",
+        "description": "$0.0064 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-East)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGE1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.02,
+        "sku": "UN42QWUK8P6F3DTJ",
+        "description": "$0.02 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-East)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGE1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0024,
+        "sku": "VK8Q36CKGNCDEB5F",
+        "description": "$0.0024 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in AWS GovCloud (US-East)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "AWS GovCloud (US-East)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "UGE1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "il-central-1": {
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "9ZY7C8T29QY9M43B",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Israel (Tel Aviv)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "ILC1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "BCMGFDMT5R46NW5Q",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Israel (Tel Aviv)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "ILC1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "CZ46RUF9ZRCS59M3",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Israel (Tel Aviv)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Israel (Tel Aviv)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "ILC1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "FJXY8J826FKPBGC2",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Israel (Tel Aviv)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "ILC1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "me-south-1": {
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "BA6PSX6VRU69E67N",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (Bahrain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MES1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "P96BMSH2T4JMDSEJ",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (Bahrain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MES1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "QTU7GXN5RSV4E2NK",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (Bahrain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MES1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "ZHKGXTCS3X92G289",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Middle East (Bahrain)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Middle East (Bahrain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MES1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ca-west-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "BBJA3YVWNMQ5927N",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada West (Calgary)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "C9QGX749E8N6JTNK",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Canada West (Calgary)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada West (Calgary)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "FRNJCKY3A5A848VJ",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada West (Calgary)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.025,
+        "sku": "UJGF88CWBWDXQ6E8",
+        "description": "$0.025 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada West (Calgary)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "mx-central-1": {
+      "IA": {
+        "price_per_unit_usd": 0.013125,
+        "sku": "BDEHH3H57VGG7VUT",
+        "description": "$0.013125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Mexico (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MXC1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "HYNGZV7EG47HRY8N",
+        "description": "$0.002 per GB-Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Mexico (Central)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Mexico (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MXC1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.0042,
+        "sku": "SQXZSNJRSQU9NRNT",
+        "description": "$0.0042 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Mexico (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MXC1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.0231,
+        "sku": "Z9ESVEWPPY43395N",
+        "description": "$0.0231 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Mexico (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "MXC1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ap-northeast-1": {
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "BMMXB7CWKXZNJ9YS",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Tokyo)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Tokyo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "CQVQS96FNJQ9KXP4",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Tokyo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "DTV95CWCGR46UTN3",
+        "description": "$0.023 per GB - over 500 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Tokyo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "Y6MBJMWWVFEPFPWS",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Tokyo)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-south-2": {
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "BQXGTBEUXCCN8A7V",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Europe (Spain)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Spain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS2-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "DS9GEE356QNB5X2X",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier in Spain",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Spain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS2-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.022,
+        "sku": "HQE23GP88T5QBAAF",
+        "description": "$0.022 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier in Spain",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Spain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS2-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "SSJHGZBBP2RCZN4X",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier in Spain",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Europe (Spain)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUS2-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-west-3": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "CG7J64UAYBT2ET85",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Paris)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW3-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0131,
+        "sku": "Q4PSUN2XH7NU3NB8",
+        "description": "$0.0131 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Paris)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW3-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "W3PRUYSD8Q9U2EMP",
+        "description": "$0.024 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Paris)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW3-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "XKSBY9FKSUU63978",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (Paris)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Paris)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EUW3-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-northeast-3": {
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "CRAY22XUV5AUA8N5",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Asia Pacific (Osaka)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Osaka)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN3-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "MBDVYJMWK8QXURQ9",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Osaka)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN3-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "THD2GQYJGYQFG9AN",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Osaka)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN3-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "UWTUTVD8HUA5E695",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Osaka)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APN3-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "eu-west-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.004,
+        "sku": "HARRGTVE2Z4NW7ZR",
+        "description": "$0.004 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Ireland)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EU-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.023,
+        "sku": "RRP5WVFAQ2KSKZAP",
+        "description": "$0.023 per GB - first 50 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Ireland)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EU-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.00099,
+        "sku": "UZRMVRP8RP4V8ZAR",
+        "description": "$0.00099 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in EU (Ireland)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Ireland)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EU-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0125,
+        "sku": "VZAJWBAMDG6N3JNB",
+        "description": "$0.0125 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "EU (Ireland)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "EU-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      }
+    },
+    "ap-south-2": {
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "HVZMBMQHDTH5SVSZ",
+        "description": "$0.0138 per GB-Mo for TimedStorage-INT-IA-ByteHrs in Asia Pacific (Hyderabad)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hyderabad)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS5-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.002,
+        "sku": "Q6M9NFB68J8QF3MU",
+        "description": "$0.002 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs in Asia Pacific (Hyderabad)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hyderabad)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS5-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "R63FEPT9CVUR2WE4",
+        "description": "$0.005 per GB-Mo for TimedStorage-INT-AIA-ByteHrs in Asia Pacific (Hyderabad)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hyderabad)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS5-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.025,
+        "sku": "UH46PWBEY65E4XUD",
+        "description": "$0.025 per GB-Mo for TimedStorage-INT-FA-ByteHrs in Asia Pacific (Hyderabad)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Asia Pacific (Hyderabad)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "APS5-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    },
+    "ca-central-1": {
+      "AIA": {
+        "price_per_unit_usd": 0.005,
+        "sku": "MNVNKQFVJ2RC25V5",
+        "description": "$0.005 per GB-Month of storage used in Intelligent-Tiering, Archive Instant Access tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN1-TimedStorage-INT-AIA-ByteHrs",
+        "all_items_count": 1
+      },
+      "DAA": {
+        "price_per_unit_usd": 0.0018,
+        "sku": "QFXSVY32P5GDU8N6",
+        "description": "$0.0018 per Gigabyte Month for TimedStorage-INT-DAA-ByteHrs:IntelligentTieringDAAStorage in Canada (Central)",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN1-TimedStorage-INT-DAA-ByteHrs",
+        "all_items_count": 1
+      },
+      "IA": {
+        "price_per_unit_usd": 0.0138,
+        "sku": "TF3CZY44ATXA7H4U",
+        "description": "$0.0138 per GB-Month of storage used in Intelligent-Tiering, Infrequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN1-TimedStorage-INT-IA-ByteHrs",
+        "all_items_count": 1
+      },
+      "FA": {
+        "price_per_unit_usd": 0.024,
+        "sku": "X46QDPG7T8HTN57T",
+        "description": "$0.024 per GB - next 450 TB / month of storage used in Intelligent-Tiering, Frequent Access Tier",
+        "effective_date": "2025-11-01T00:00:00Z",
+        "region_name": "Canada (Central)",
+        "storage_class": "Intelligent-Tiering",
+        "usagetype": "CAN1-TimedStorage-INT-FA-ByteHrs",
+        "all_items_count": 3
+      }
+    }
+  },
+  "default_prices": {
+    "AIA": 0.005001388888888892,
+    "IA": 0.014053472222222217,
+    "DAA": 0.0018452777777777786,
+    "FA": 0.024581944444444455
+  },
+  "tier_mappings": {
+    "FA": "Frequent Access",
+    "IA": "Infrequent Access",
+    "AIA": "Archive Instant Access",
+    "DAA": "Deep Archive Access"
+  },
+  "access_tier_to_price_tier": {
+    "frequent": "FA",
+    "infrequent": "IA",
+    "archive": "AIA"
+  },
+  "statistics": {
+    "total_regions": 36,
+    "total_tier_prices": 144,
+    "tiers_found": [
+      "AIA",
+      "DAA",
+      "IA",
+      "FA"
+    ]
+  }
+}

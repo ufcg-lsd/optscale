@@ -8,11 +8,15 @@ CATEGORY_MAP: Final[Dict[str, List[str]]] = {
             "infrequent": [
                 "standard-ia",
                 "one zone-infrequent access",
+                "one zone-ia",
             ],
             "archive": [
                 "glacier instant retrieval",
                 "glacier flexible retrieval",
                 "glacier deep archive",
+                "glacier ir",
+                "glacier",
+                "deep archive",
             ],
         }
 
@@ -26,3 +30,9 @@ FREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 30
 INFREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 60
 
 IT_MONITOR_FEE_PER_1000 = 0.0000025
+
+ACCESS_TIER_TO_PRICE_TIER: Final[Dict[str, str]] = {
+    "frequent": "FA",
+    "infrequent": "IA",
+    "archive": "AIA"
+}

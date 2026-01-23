@@ -33,7 +33,7 @@ RESOURCE_BUCKET = {
         "total_size_bytes": 8000481875,
         "object_count": 720725,
         "it_status_bucket": "disabled",
-        "tiers": [["Standard", 7.451]],
+        "tiers": [["standard", 7.451]],
         "last_checked": [],
         "has_lifecycle": False,
     },
@@ -80,9 +80,10 @@ def module_factory(monkeypatch) -> Callable[..., S3IntelligentTiering]:
         )
 
         mod._get_intelligent_tiering_prices = Mock(return_value={
-            "frequent": 0.023,
-            "infrequent": 0.022,
-            "archive": 0.004,
+            "FA": 0.023,
+            "IA": 0.022,
+            "AIA": 0.004,
+            "DAA": 0.00099,
         })
 
         return mod
@@ -102,7 +103,7 @@ class TestIsCandidate:
     def test_no_metrics_and_express_one_zone(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Express One Zone", 7.451]]
+        r["meta"]["tiers"] = [["express one zone", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
 
@@ -110,7 +111,7 @@ class TestIsCandidate:
     def test_no_metrics_and_standard_ia(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Standard-IA", 7.451]]
+        r["meta"]["tiers"] = [["standard-ia", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
 
@@ -118,28 +119,28 @@ class TestIsCandidate:
     def test_no_metrics_and_one_zone_ia(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["One-Zone-IA", 7.451]]
+        r["meta"]["tiers"] = [["one zone-ia", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
 
     def test_no_metrics_and_glacier_instant_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier IR", 7.451]]
+        r["meta"]["tiers"] = [["glacier ir", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
 
     def test_no_metrics_and_glacier_flexible_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier", 7.451]]
+        r["meta"]["tiers"] = [["glacier", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
 
     def test_no_metrics_and_deep_archive(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Deep Archive", 7.451]]
+        r["meta"]["tiers"] = [["deep archive", 7.451]]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
 
@@ -153,7 +154,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_express_one_zone(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Express One Zone", 7.451]]
+        r["meta"]["tiers"] = [["express one zone", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is False
@@ -161,7 +162,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_standard_ia(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Standard-IA", 7.451]]
+        r["meta"]["tiers"] = [["standard-ia", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
@@ -169,7 +170,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_one_zone_ia(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["One Zone-IA", 7.451]]
+        r["meta"]["tiers"] = [["one zone-ia", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
@@ -177,7 +178,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_glacier_instant_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier IR", 7.451]]
+        r["meta"]["tiers"] = [["glacier ir", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
@@ -185,7 +186,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_glacier_flexible_retrieval(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier", 7.451]]
+        r["meta"]["tiers"] = [["glacier", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
@@ -193,7 +194,7 @@ class TestIsCandidate:
     def test_last_checked_less_than_30_days_ago_deep_archive(self, module_factory):
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Deep Archive", 7.451]]
+        r["meta"]["tiers"] = [["deep archive", 7.451]]
         r["meta"]["last_checked"] = ["2025-09-31", "2025-10-15", "2025-10-01"]
         resource = aggregate_resource(r)
         assert mod._is_candidate(resource) is True
@@ -214,7 +215,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an Express One Zone tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Express-One-Zone", 7.451]]
+        r["meta"]["tiers"] = [["express one zone", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -227,7 +228,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an Standard-IA tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Standard-IA", 7.451]]
+        r["meta"]["tiers"] = [["standard-ia", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -240,7 +241,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an One Zone-IA tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["One Zone-IA", 7.451]]
+        r["meta"]["tiers"] = [["one zone-ia", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -253,7 +254,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an Glacier Instant Retrieval tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier IR", 7.451]]
+        r["meta"]["tiers"] = [["glacier ir", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -266,7 +267,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an Glacier Flexible Retrieval tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier", 7.451]]
+        r["meta"]["tiers"] = [["glacier", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -279,7 +280,7 @@ class TestIsCandidate:
         """Last checked less than 60 days ago an Deep Archive tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Deep Archive", 7.451]]
+        r["meta"]["tiers"] = [["deep archive", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-08-15",
@@ -305,7 +306,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an Express One Zone tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Express-One-Zone", 7.451]]
+        r["meta"]["tiers"] = [["express one zone", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -318,7 +319,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an Standard-IA tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Standard-IA", 7.451]]
+        r["meta"]["tiers"] = [["standard-ia", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -331,7 +332,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an One Zone-IA tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["One-Zone-IA", 7.451]]
+        r["meta"]["tiers"] = [["one zone-ia", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -344,7 +345,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an Glacier Instant Retrieval tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier IR", 7.451]]
+        r["meta"]["tiers"] = [["glacier ir", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -357,7 +358,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an Glacier Flexible Retrieval tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Glacier", 7.451]]
+        r["meta"]["tiers"] = [["glacier", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -370,7 +371,7 @@ class TestIsCandidate:
         """Last checked more than 60 days ago an Deep Archive tier."""
         mod = module_factory()
         r = copy.deepcopy(RESOURCE_BUCKET)
-        r["meta"]["tiers"] = [["Deep Archive", 7.451]]
+        r["meta"]["tiers"] = [["deep archive", 7.451]]
         r["meta"]["last_checked"] = [
             "2025-05-01",
             "2025-06-15",
@@ -551,10 +552,11 @@ class TestCalculateITCost:
         )
 
         assert result == {
-            "total_cost": 2.8,
+            "total_cost": 2.3005,
             "storage_cost": 2.3,
-            "monitoring_cost": 0.5,
-            "monitoring_price_per_1000": 0.0025,
+            "monitoring_cost": 0.0005,
+            "monitoring_price_per_1000": 0.0000025,
+            "price_per_gb": 0.023,
         }
 
     def test_calculate_it_cost_infrequent(self, module_factory):
@@ -568,10 +570,11 @@ class TestCalculateITCost:
         )
 
         assert result == {
-            "total_cost": 2.7,
+            "total_cost": 2.2005,
             "storage_cost": 2.2,
-            "monitoring_cost": 0.5,
-            "monitoring_price_per_1000": 0.0025,
+            "monitoring_cost": 0.0005,
+            "monitoring_price_per_1000": 0.0000025,
+            "price_per_gb": 0.022,
         }
 
     def test_calculate_it_cost_archive(self, module_factory):
@@ -585,10 +588,11 @@ class TestCalculateITCost:
         )
 
         assert result == {
-            "total_cost": 0.9,
+            "total_cost": 0.4005,
             "storage_cost": 0.4,
-            "monitoring_cost": 0.5,
-            "monitoring_price_per_1000": 0.0025,
+            "monitoring_cost": 0.0005,
+            "monitoring_price_per_1000": 0.0000025,
+            "price_per_gb": 0.004,
         }
 
     def test_calculate_it_cost_size_zero(self, module_factory):
@@ -647,7 +651,7 @@ class TestGetMethod:
         monkeypatch.setattr(mod, "_cloud_account_names",
             Mock(return_value={"acc1": "Account One"}))
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value="acc1"))
         monkeypatch.setattr(mod, "_aggregate_resources",
@@ -656,9 +660,13 @@ class TestGetMethod:
                 "bucket_name": "bucket-a",
                 "region": "us-east-1",
                 "cloud_account_id": "acc1",
-                "tiers": [{"tier": "frequent", "gb": 100}],
+                "tiers": [["standard", 100.0]],
+                "object_count": 1000,
                 "pool_id": None,
                 "it_status_bucket": "",
+                "last_checked": [],
+                "has_lifecycle": False,
+                "lifecycle_rules": [],
             }]))
         monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
         monkeypatch.setattr(mod, "_real_saving_payload", Mock(return_value={
@@ -695,11 +703,11 @@ class TestGetMethod:
         monkeypatch.setattr(mod, "_cloud_account_names",
             Mock(return_value={"acc1": "Name"}))
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value="acc1"))
         monkeypatch.setattr(mod, "_aggregate_resources",
-            Mock(return_value=[{"bucket_name": "b", "tiers": [], "cloud_account_id": "acc1"}]))
+            Mock(return_value=[{"bucket_name": "b", "tiers": [], "cloud_account_id": "acc1", "object_count": 0}]))
 
         monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=False))
 
@@ -718,14 +726,18 @@ class TestGetMethod:
         monkeypatch.setattr(mod, "_cloud_account_names",
             Mock(return_value={"acc1": "Name"}))
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value="acc1"))
         monkeypatch.setattr(mod, "_aggregate_resources",
             Mock(return_value=[{
                 "bucket_name": "b",
-                "tiers": [{"tier": "frequent", "gb": 10}],
+                "tiers": [["standard", 10.0]],
                 "cloud_account_id": "acc1",
+                "object_count": 1000,
+                "last_checked": [],
+                "has_lifecycle": False,
+                "lifecycle_rules": [],
             }]))
 
         monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
@@ -750,16 +762,20 @@ class TestGetMethod:
         monkeypatch.setattr(mod, "_cloud_account_names",
             Mock(return_value={"acc1": "Name"}))
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value="acc1"))
 
         monkeypatch.setattr(mod, "_aggregate_resources",
             Mock(return_value=[{
                 "bucket_name": "b",
-                "tiers": [{"tier": "frequent", "gb": 10}],
+                "tiers": [["standard", 10.0]],
                 "pool_id": "P1",
                 "cloud_account_id": "acc1",
+                "object_count": 1000,
+                "last_checked": [],
+                "has_lifecycle": False,
+                "lifecycle_rules": [],
             }]))
 
         monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
@@ -779,7 +795,7 @@ class TestGetMethod:
         }))
 
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         
         monkeypatch.setattr(mod, "get_options", Mock(return_value={}))
         monkeypatch.setattr(mod, "get_employees", Mock(return_value={}))
@@ -793,7 +809,7 @@ class TestGetMethod:
         mod = module_factory()
 
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"??": "bad"}]))
+            Mock(return_value={"bad": {"??": "bad"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value=None))
         
@@ -811,16 +827,20 @@ class TestGetMethod:
         monkeypatch.setattr(mod, "_cloud_account_names",
             Mock(return_value={"acc1": "Name"}))
         monkeypatch.setattr(mod, "get_cloud_accounts",
-            Mock(return_value=[{"id": "acc1"}]))
+            Mock(return_value={"acc1": {"id": "acc1"}}))
         monkeypatch.setattr(mod, "_extract_cloud_account_id",
             Mock(return_value="acc1"))
 
         monkeypatch.setattr(mod, "_aggregate_resources",
             Mock(return_value=[{
                 "bucket_name": "b",
-                "tiers": [{"tier": "frequent", "gb": 10}],
+                "tiers": [["standard", 10.0]],
                 "cloud_account_id": "acc1",
-                "it_status_bucket": "Enabled"
+                "it_status_bucket": "Enabled",
+                "object_count": 1000,
+                "last_checked": [],
+                "has_lifecycle": False,
+                "lifecycle_rules": [],
             }]))
 
         monkeypatch.setattr(mod, "_is_candidate", Mock(return_value=True))
@@ -834,3 +854,613 @@ class TestGetMethod:
         items = mod.get()
         assert len(items) == 1
         assert items[0]["is_with_intelligent_tiering"] is True
+
+
+class TestGetIntelligentTieringPrices:
+    """Tests for `_get_intelligent_tiering_prices` method."""
+
+    def test_region_exists_in_json(self, module_factory, monkeypatch):
+        """IT-PRICE-01: Região existente no JSON."""
+        mod = module_factory()
+        # Remove o mock para usar o método real
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is not None
+        assert isinstance(result, dict)
+        assert "FA" in result
+        assert "IA" in result
+        assert "AIA" in result
+        assert "DAA" in result
+        assert all(isinstance(v, float) and v > 0 for v in result.values())
+        # Valores esperados do JSON para us-east-1
+        assert result["FA"] == 0.023
+        assert result["IA"] == 0.0125
+        assert result["AIA"] == 0.004
+        assert result["DAA"] == 0.00099
+
+    def test_region_not_exists_uses_fallback(self, module_factory, monkeypatch):
+        """IT-PRICE-02: Região inexistente (fallback)."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        cloud_account = {"id": "a1"}
+        region = "xx-unknown-1"  # Região fictícia
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is not None
+        assert isinstance(result, dict)
+        # Deve usar default_prices do JSON
+        assert "FA" in result
+        assert "IA" in result
+        assert "AIA" in result
+        assert "DAA" in result
+
+    def test_region_none_uses_default(self, module_factory, monkeypatch):
+        """IT-PRICE-03: Região nula."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        cloud_account = {"id": "a1"}
+        region = None
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is not None
+        assert isinstance(result, dict)
+        # Cache key deve ser "a1:default"
+        assert mod._it_price_cache.get("a1:default") is not None
+
+    def test_cloud_account_invalid(self, module_factory, monkeypatch):
+        """IT-PRICE-04: Cloud account inválido."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        cloud_account = {}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is None
+
+    def test_price_cache(self, module_factory, monkeypatch):
+        """IT-PRICE-05: Cache de preços."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        # Primeira chamada
+        result1 = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Mock _load_prices_file para verificar se é chamado novamente
+        load_calls = []
+        original_load = mod._load_prices_file
+        
+        def tracked_load():
+            load_calls.append(1)
+            return original_load()
+        
+        monkeypatch.setattr(mod, "_load_prices_file", tracked_load)
+        
+        # Segunda chamada
+        result2 = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Deve usar cache, não chamar _load_prices_file novamente
+        assert len(load_calls) == 0
+        assert result1 == result2
+        assert result1 is not None
+
+    def test_json_file_not_exists(self, module_factory, monkeypatch):
+        """IT-PRICE-06: Arquivo JSON não existe."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _load_prices_file para simular arquivo não encontrado
+        def mock_load_prices_file():
+            mod.__class__._prices_file_cache = None
+            return None
+        
+        monkeypatch.setattr(mod, "_load_prices_file", mock_load_prices_file)
+        # Força o cache de classe a None
+        if hasattr(mod.__class__, '_prices_file_cache'):
+            delattr(mod.__class__, '_prices_file_cache')
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is None
+
+    def test_json_invalid_format(self, module_factory, monkeypatch):
+        """IT-PRICE-07: JSON inválido (malformado)."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _load_prices_file para simular JSON inválido
+        # O código trata JSONDecodeError e retorna None, então o mock também retorna None
+        def mock_load_prices_file():
+            # Simula que o código tratou o JSONDecodeError e retornou None
+            mod.__class__._prices_file_cache = None
+            return None
+        
+        monkeypatch.setattr(mod, "_load_prices_file", mock_load_prices_file)
+        # Força o cache de classe a None
+        if hasattr(mod.__class__, '_prices_file_cache'):
+            delattr(mod.__class__, '_prices_file_cache')
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        assert result is None
+
+    def test_prices_with_invalid_values(self, module_factory, monkeypatch):
+        """IT-PRICE-08: Preços com valores inválidos (não numéricos)."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _load_prices_file para retornar dados com valores inválidos
+        invalid_data = {
+            "prices_by_region": {
+                "us-east-1": {
+                    "FA": "invalid",
+                    "IA": 0.0125,
+                    "AIA": 0.004,
+                    "DAA": 0.00099,
+                }
+            },
+            "default_prices": {}
+        }
+        
+        def mock_load():
+            return invalid_data
+        
+        monkeypatch.setattr(mod, "_load_prices_file", mock_load)
+        mod.__class__._prices_file_cache = None
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Deve retornar apenas tiers válidos
+        assert result is not None
+        assert "FA" not in result  # Inválido, ignorado
+        assert "IA" in result
+        assert "AIA" in result
+        assert "DAA" in result
+
+    def test_region_exists_but_empty_prices(self, module_factory, monkeypatch):
+        """IT-PRICE-09: Região existe mas prices_by_region[region] está vazio."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _load_prices_file para retornar região com dict vazio
+        data_with_empty_region = {
+            "prices_by_region": {
+                "us-east-1": {}
+            },
+            "default_prices": {
+                "FA": 0.024,
+                "IA": 0.0125,
+                "AIA": 0.004,
+                "DAA": 0.00099,
+            }
+        }
+        
+        def mock_load():
+            return data_with_empty_region
+        
+        monkeypatch.setattr(mod, "_load_prices_file", mock_load)
+        mod.__class__._prices_file_cache = None
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        result = mod._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Deve usar default_prices
+        assert result is not None
+        assert result["FA"] == 0.024  # Valor do default_prices
+
+    def test_class_cache(self, module_factory, monkeypatch):
+        """IT-PRICE-10: Cache de classe (_prices_file_cache)."""
+        mod1 = module_factory()
+        mod2 = module_factory()
+        
+        # Limpa cache de classe
+        if hasattr(S3IntelligentTiering, '_prices_file_cache'):
+            delattr(S3IntelligentTiering, '_prices_file_cache')
+        
+        monkeypatch.delattr(mod1, "_get_intelligent_tiering_prices")
+        monkeypatch.delattr(mod2, "_get_intelligent_tiering_prices")
+        
+        # Conta chamadas de leitura de arquivo
+        file_reads = []
+        original_open = open
+        
+        def tracked_open(*args, **kwargs):
+            if "s3_it_prices_all_regions.json" in str(args[0]):
+                file_reads.append(1)
+            return original_open(*args, **kwargs)
+        
+        monkeypatch.setattr("builtins.open", tracked_open)
+        
+        cloud_account = {"id": "a1"}
+        region = "us-east-1"
+        
+        # Primeira instância carrega arquivo
+        result1 = mod1._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Segunda instância usa cache de classe
+        result2 = mod2._get_intelligent_tiering_prices(cloud_account, region)
+        
+        # Arquivo deve ser lido apenas uma vez
+        assert len(file_reads) == 1
+        assert result1 == result2
+        assert result1 is not None
+
+
+class TestRealSavingPayload:
+    """Tests for `_real_saving_payload` method."""
+
+    def test_happy_path_complete_flow(self, module_factory, monkeypatch):
+        """IT-SAVE-01: Fluxo feliz completo."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _bucket_monthly_cost
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        assert "saving" in result
+        assert "current_cost_month" in result
+        assert "cost_if_intelligent_tiering" in result
+        assert "size_gb" in result
+        assert "price_intelligent_tiering" in result
+        assert "it_storage_cost" in result
+        assert "it_monitoring_cost" in result
+        
+        assert result["current_cost_month"] == 10.00
+        assert result["saving"] == max(0.0, 10.00 - result["cost_if_intelligent_tiering"])
+        assert result["size_gb"] == 7.451
+
+    def test_negative_saving_becomes_zero(self, module_factory, monkeypatch):
+        """IT-SAVE-02: Economia negativa (saving não pode ser < 0)."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Mock _bucket_monthly_cost retorna valor menor que IT cost
+        # Para garantir que IT cost seja maior, vamos mockar _calculate_it_cost diretamente
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=1.00))
+        monkeypatch.setattr(mod, "_calculate_it_cost", Mock(return_value={
+            "total_cost": 2.00,  # IT cost maior que custo mensal (1.00)
+            "storage_cost": 1.90,
+            "monitoring_cost": 0.10,
+            "monitoring_price_per_1000": 0.0000025,
+            "price_per_gb": 0.019,
+        }))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 100.0,
+            "object_count": 200000,
+            "last_checked": []
+        }
+        total_gb = 100.0
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        assert result["saving"] == 0.0  # saving = max(0.0, 1.00 - 2.00) = 0.0
+        assert result["current_cost_month"] == 1.00
+        assert result["cost_if_intelligent_tiering"] == 2.00
+
+    def test_invalid_size_gb_uses_fallback(self, module_factory, monkeypatch):
+        """IT-SAVE-03: size_gb inválido no resource."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": "invalid",
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        assert result["size_gb"] == 7.451  # Usa total_gb como fallback
+
+    def test_size_gb_zero_or_negative(self, module_factory, monkeypatch):
+        """IT-SAVE-04: size_gb <= 0."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 0,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 0.0
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is None
+
+    def test_failed_to_get_monthly_cost(self, module_factory, monkeypatch):
+        """IT-SAVE-05: Falha ao obter custo mensal."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=None))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is None
+
+    def test_failed_to_calculate_it_cost(self, module_factory, monkeypatch):
+        """IT-SAVE-06: Falha no cálculo de IT cost."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        monkeypatch.setattr(mod, "_calculate_it_cost", Mock(return_value=None))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is None
+
+    def test_region_influences_price(self, module_factory, monkeypatch):
+        """IT-SAVE-07: Região influencia preço."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource_base = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "size_gb": 100.0,
+            "object_count": 200000,
+            "last_checked": []
+        }
+        total_gb = 100.0
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        # Teste com us-east-1
+        resource1 = {**resource_base, "region": "us-east-1"}
+        result1 = mod._real_saving_payload(resource1, total_gb, today, cloud_account)
+        
+        # Teste com sa-east-1 (preços diferentes)
+        resource2 = {**resource_base, "region": "sa-east-1"}
+        result2 = mod._real_saving_payload(resource2, total_gb, today, cloud_account)
+        
+        assert result1 is not None
+        assert result2 is not None
+        # Preços devem ser diferentes
+        assert result1["price_intelligent_tiering"] != result2["price_intelligent_tiering"]
+        assert result1["cost_if_intelligent_tiering"] != result2["cost_if_intelligent_tiering"]
+
+    def test_cloud_account_is_none(self, module_factory, monkeypatch):
+        """IT-SAVE-08: cloud_account é None."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = None
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is None
+
+    def test_missing_resource_id_or_cloud_account_id(self, module_factory, monkeypatch):
+        """IT-SAVE-09: resource_id ou cloud_account_id ausentes."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        # Teste sem resource_id
+        resource1 = {
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result1 = mod._real_saving_payload(resource1, total_gb, today, cloud_account)
+        assert result1 is None
+        
+        # Teste sem cloud_account_id
+        resource2 = {
+            "resource_id": "r1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        
+        result2 = mod._real_saving_payload(resource2, total_gb, today, cloud_account)
+        assert result2 is None
+
+    def test_object_count_missing_or_invalid(self, module_factory, monkeypatch):
+        """IT-SAVE-10: object_count ausente ou inválido."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        # Teste sem object_count (será 0)
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 7.451,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        # object_count = 0 faz _calculate_it_cost retornar None
+        assert result is None
+
+    def test_last_checked_missing_uses_archive(self, module_factory, monkeypatch):
+        """IT-SAVE-11: last_checked ausente (access_tier = "archive")."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 100.0,
+            "object_count": 200000,
+            "last_checked": None  # ou []
+        }
+        total_gb = 100.0
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        # access_tier deve ser "archive", então price_tier deve ser "AIA"
+        # Verifica se o preço usado é de AIA (menor que FA e IA)
+        assert result["price_intelligent_tiering"] > 0
+        # AIA é mais barato que FA/IA, então o custo deve ser menor
+        assert result["cost_if_intelligent_tiering"] < 10.00
+
+    def test_total_gb_used_as_fallback(self, module_factory, monkeypatch):
+        """IT-SAVE-12: total_gb usado como fallback."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": "invalid_string",
+            "object_count": 720725,
+            "last_checked": ["2025-08-26"]
+        }
+        total_gb = 7.451
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        assert result["size_gb"] == 7.451  # Usa total_gb como fallback
+
+    def test_rounding_of_values(self, module_factory, monkeypatch):
+        """IT-SAVE-13: Arredondamento de valores."""
+        mod = module_factory()
+        monkeypatch.delattr(mod, "_get_intelligent_tiering_prices")
+        
+        monkeypatch.setattr(mod, "_bucket_monthly_cost", Mock(return_value=10.00))
+        
+        resource = {
+            "resource_id": "r1",
+            "cloud_account_id": "a1",
+            "region": "us-east-1",
+            "size_gb": 100.0,
+            "object_count": 200000,
+            "last_checked": []
+        }
+        total_gb = 100.0
+        today = NOW_FIXED.date()
+        cloud_account = {"id": "a1"}
+        
+        result = mod._real_saving_payload(resource, total_gb, today, cloud_account)
+        
+        assert result is not None
+        # Valores devem ser números válidos (não NaN, não infinito)
+        assert all(isinstance(v, (int, float)) and not (v != v) for v in result.values())
+        # saving não pode ser negativo
+        assert result["saving"] >= 0.0

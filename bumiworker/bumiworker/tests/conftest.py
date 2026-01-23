@@ -26,8 +26,7 @@ sys.modules.setdefault("bumiworker.bumiworker", sys.modules["bumiworker"])
 
 # Provide lightweight stubs for external libs only needed at import time.
 # This avoids requiring full environment setup just to collect tests.
-if "requests" not in sys.modules:
-    sys.modules["requests"] = types.SimpleNamespace()
+# Note: requests is not stubbed as it's needed for actual imports in cloud_adapter
 
 #
 # kombu stubs: Connection, Exchange, and pools.producers
