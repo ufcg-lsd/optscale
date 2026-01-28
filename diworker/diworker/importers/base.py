@@ -104,6 +104,7 @@ class BaseReportImporter:
                 for f in self.get_unique_field_list()}
 
     def update_raw_records(self, chunk):
+        phase_started_at = time.time()
         update_fields = self.get_update_fields()
         upsert_bulk = []
         for e in chunk:
@@ -119,6 +120,10 @@ class BaseReportImporter:
             ))
         r = retry_mongo_upsert(self.mongo_raw.bulk_write, upsert_bulk)
         LOG.debug('updated: %s', r.bulk_api_result)
+        LOG.info(
+            'Write phase: upserted %s raw records in %.2fs',
+            len(chunk), time.time() - phase_started_at
+        )
 
     @staticmethod
     def _get_fake_cad_extras(expense):
@@ -647,6 +652,8 @@ class CSVBaseReportImporter(BaseReportImporter):
         return
 
     def _download_report_files(self, current_reports, last_import_modified_at):
+        download_started_at = time.time()
+        downloaded = 0
         for date, reports in current_reports.items():
             for report in reports:
                 if last_import_modified_at < report['LastModified']:
@@ -665,6 +672,11 @@ class CSVBaseReportImporter(BaseReportImporter):
                         self.cloud_adapter.download_report_file(report['Key'],
                                                                 f_report)
                 self.report_files[date].append(target_path)
+                downloaded += 1
+        LOG.info(
+            'Download phase: downloaded %s report files in %.2fs',
+            downloaded, time.time() - download_started_at
+        )
         return last_import_modified_at
 
     @staticmethod

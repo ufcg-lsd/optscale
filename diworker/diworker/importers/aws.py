@@ -436,7 +436,9 @@ class AWSReportImporter(CSVBaseReportImporter):
 
     def load_csv_report(self, report_path, account_id_ca_id_map,
                         billing_period, skipped_accounts):
+        parse_started_at = time.time()
         date_start = opttime.utcnow()
+        imported_rows = 0
         with open(report_path, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             reader.fieldnames = self._convert_to_legacy_csv_columns(
@@ -498,18 +500,26 @@ class AWSReportImporter(CSVBaseReportImporter):
                 self._set_resource_id(row)
                 row['created_at'] = self.import_start_ts
                 chunk.append(row)
+                imported_rows += 1
 
             if chunk:
                 self.update_raw_records(chunk)
+        LOG.info(
+            'Parse phase (CSV): %s raw rows, %s imported rows from %s in %.2fs',
+            record_number, imported_rows, report_path,
+            time.time() - parse_started_at
+        )
         return billing_period, skipped_accounts
 
     def load_parquet_report(self, report_path, account_id_ca_id_map,
                             billing_period, skipped_accounts):
+        parse_started_at = time.time()
         date_start = opttime.utcnow()
         dataframe = pq.read_pandas(report_path).to_pandas()
         new_columns = self._convert_to_legacy_csv_columns(
             dataframe.columns, dict_format=True)
         dataframe.rename(columns=new_columns, inplace=True)
+        imported_rows = 0
         for i in range(0, dataframe.shape[0], CHUNK_SIZE):
             expense_chunk = self._extract_nested_objects(
                 dataframe.iloc[i:i + CHUNK_SIZE, :].to_dict(), parquet=True)
@@ -576,10 +586,15 @@ class AWSReportImporter(CSVBaseReportImporter):
                 self._set_resource_id(expense)
             if expenses:
                 self.update_raw_records(expenses)
+                imported_rows += len(expenses)
                 now = opttime.utcnow()
                 if (now - date_start).total_seconds() > 60:
                     LOG.info('report %s: processed %s rows', report_path, i)
                     date_start = now
+        LOG.info(
+            'Parse phase (Parquet): %s imported rows from %s in %.2fs',
+            imported_rows, report_path, time.time() - parse_started_at
+        )
         return billing_period, skipped_accounts
 
     def collect_tags(self, expense):
