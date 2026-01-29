@@ -710,8 +710,8 @@ class CSVBaseReportImporter(BaseReportImporter):
             current_reports = defaultdict(list)
             report_groups_keys = list(reports_groups.keys())
             report_groups_keys.sort()
-            # to get reports for the current and three previous months
-            num_last_reports = 4 if self.need_extend_report_interval else 1
+            # fetch only the most recent month on first import
+            num_last_reports = 1
             report_groups_keys = report_groups_keys[-num_last_reports:]
             for key in report_groups_keys:
                 current_reports[key].extend(reports_groups[key])
