@@ -64,16 +64,17 @@ class DIWorker(ConsumerMixin):
         )
 
     def heartbeat(self, config_params):
-        config_cl = self.get_config_cl(config_params)
-        rest_cl = self.get_rest_cl(config_cl)
+        config_client = self.get_config_cl(config_params)
+        rest_cl = self.get_rest_cl(config_client)
         while self.running:
             with self.active_reports_lock:
                 report_import_ids = list(self.active_report_import_ids)
             for report_import_id in report_import_ids:
                 try:
                     rest_cl.report_import_update(report_import_id, {})
-                except Exception as e:
-                    LOG.warning("Heartbeat update failed for %s: %s", report_import_id, e)
+                except Exception as exc:  # pylint: disable=broad-except
+                    LOG.warning("Heartbeat update failed for %s: %s",
+                                report_import_id, exc)
             time.sleep(HEARTBEAT_INTERVAL)
         rest_cl.close()
 
@@ -82,20 +83,20 @@ class DIWorker(ConsumerMixin):
         return ConfigClient(**config_params)
 
     @staticmethod
-    def get_rest_cl(config_cl):
-        url = config_cl.restapi_url()
-        secret = config_cl.cluster_secret()
+    def get_rest_cl(config_client):
+        url = config_client.restapi_url()
+        secret = config_client.cluster_secret()
         return RestClient(url=url, verify=False, secret=secret)
 
     @staticmethod
-    def get_mongo_cl(config_cl):
-        mongo_params = config_cl.mongo_params()
+    def get_mongo_cl(config_client):
+        mongo_params = config_client.mongo_params()
         return MongoClient(mongo_params[0])
 
     @staticmethod
-    def get_clickhouse_cl(config_cl):
+    def get_clickhouse_cl(config_client):
         user, password, host, db_name, port, secure = (
-            config_cl.clickhouse_params())
+            config_client.clickhouse_params())
         return clickhouse_connect.get_client(
             host=host, password=password, database=db_name, user=user,
             port=port, secure=secure)
@@ -110,13 +111,13 @@ class DIWorker(ConsumerMixin):
             'meta': meta
         }
         queue_conn = QConnection(self.rabbitmq_conn_str)
-        task_exchange = Exchange(ACTIVITIES_EXCHANGE_NAME, type='topic')
+        activities_exchange = Exchange(ACTIVITIES_EXCHANGE_NAME, type='topic')
         with producers[queue_conn].acquire(block=True) as producer:
             producer.publish(
                 task,
                 serializer='json',
-                exchange=task_exchange,
-                declare=[task_exchange],
+                exchange=activities_exchange,
+                declare=[activities_exchange],
                 routing_key=routing_key,
                 retry=True
             )
@@ -134,10 +135,11 @@ class DIWorker(ConsumerMixin):
             ),
         )]
 
-    def report_import(self, task, config_cl, rest_cl, mongo_cl, clickhouse_cl):
+    def report_import(self, task, config_client, rest_cl, mongo_cl,
+                      clickhouse_cl):
         report_import_id = task.get('report_import_id')
         if not report_import_id:
-            raise Exception('invalid task received: {}'.format(task))
+            raise Exception(f'invalid task received: {task}')
 
         with self.active_reports_lock:
             self.active_report_import_ids.add(report_import_id)
@@ -148,7 +150,7 @@ class DIWorker(ConsumerMixin):
         imports = list(filter(
             lambda x: x['id'] != report_import_id, resp['report_imports']))
         if imports:
-            reason = 'Import cancelled due another import: %s' % imports[0]['id']
+            reason = f"Import cancelled due another import: {imports[0]['id']}"
             rest_cl.report_import_update(
                 report_import_id,
                 {'state': 'failed', 'state_reason': reason}
@@ -162,7 +164,7 @@ class DIWorker(ConsumerMixin):
         importer_params = {
             'cloud_account_id': cloud_acc_id,
             'rest_cl': rest_cl,
-            'config_cl': config_cl,
+            'config_cl': config_client,
             'mongo_raw': mongo_cl.restapi['raw_expenses'],
             'mongo_resources': mongo_cl.restapi['resources'],
             'clickhouse_cl': clickhouse_cl,
@@ -177,8 +179,10 @@ class DIWorker(ConsumerMixin):
             organization_id = ca.get('organization_id')
             _, org = rest_cl.organization_get(organization_id)
             if org.get('disabled'):
-                reason = ('Import cancelled due to disabled '
-                          'organization: %s') % report_import_id
+                reason = (
+                    f"Import cancelled due to disabled "
+                    f"organization: {report_import_id}"
+                )
                 rest_cl.report_import_update(
                     report_import_id,
                     {'state': 'failed', 'state_reason': reason}
@@ -206,7 +210,7 @@ class DIWorker(ConsumerMixin):
                         organization_id, organization_id, 'organization',
                         'report_import_passed',
                         'organization.report_import.passed')
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             if hasattr(exc, 'details'):
                 # pylint: disable=E1101
                 LOG.error('Mongo exception details: %s', exc.details)
@@ -244,14 +248,14 @@ class DIWorker(ConsumerMixin):
         self.executor.submit(self._process_task, body, message)
 
     def _process_task(self, body, message):
-        config_cl = self.get_config_cl(self.config_cl_params)
-        rest_cl = self.get_rest_cl(config_cl)
-        mongo_cl = self.get_mongo_cl(config_cl)
-        clickhouse_cl = self.get_clickhouse_cl(config_cl)
+        config_client = self.get_config_cl(self.config_cl_params)
+        rest_cl = self.get_rest_cl(config_client)
+        mongo_cl = self.get_mongo_cl(config_client)
+        clickhouse_cl = self.get_clickhouse_cl(config_client)
         try:
-            self.report_import(body, config_cl=config_cl, rest_cl=rest_cl,
+            self.report_import(body, config_client=config_client, rest_cl=rest_cl,
                                mongo_cl=mongo_cl, clickhouse_cl=clickhouse_cl)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             LOG.exception('Data import failed: %s', str(exc))
         finally:
             mongo_cl.close()
@@ -273,17 +277,20 @@ if __name__ == '__main__':
         'host': os.environ.get('HX_ETCD_HOST'),
         'port': int(os.environ.get('HX_ETCD_PORT'))
     }
-    config_cl = ConfigClient(**config_cl_params)
-    config_cl.wait_configured()
-    migrator = Migrator(config_cl, 'restapi', 'diworker/diworker/migrations')
+    config_client = ConfigClient(**config_cl_params)
+    config_client.wait_configured()
+    migrator = Migrator(config_client, 'restapi', 'diworker/diworker/migrations')
     # Use lock to avoid migration problems with several diworkers
     # starting at the same time on cluster
-    with EtcdLock(config_cl, 'diworker_migrations'):
+    with EtcdLock(config_client, 'diworker_migrations'):
         migrator.migrate()
     LOG.info("starting worker")
-    conn_str = 'amqp://{user}:{pass}@{host}:{port}'.format(
-        **config_cl.read_branch('/rabbit'))
-    dw_settings = config_cl.diworker_settings()
+    rabbit_params = config_client.read_branch('/rabbit')
+    conn_str = (
+        f"amqp://{rabbit_params['user']}:{rabbit_params['pass']}"
+        f"@{rabbit_params['host']}:{rabbit_params['port']}"
+    )
+    dw_settings = config_client.diworker_settings()
     with QConnection(conn_str) as conn:
         try:
             worker = DIWorker(conn, conn_str, dw_settings, config_cl_params)

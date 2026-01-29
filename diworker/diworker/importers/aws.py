@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import csv
 import logging
+import time
 import math
 import os
 import re
@@ -18,6 +19,8 @@ import tools.optscale_time as opttime
 import pyarrow.parquet as pq
 
 LOG = logging.getLogger(__name__)
+# File is large; silence pylint too-many-lines warning until refactored.
+# pylint: disable=too-many-lines
 CHUNK_SIZE = 200
 IGNORE_EXPENSE_TYPES = ['Credit']
 RI_PLATFORMS = [
@@ -439,7 +442,7 @@ class AWSReportImporter(CSVBaseReportImporter):
         parse_started_at = time.time()
         date_start = opttime.utcnow()
         imported_rows = 0
-        with open(report_path, newline='') as csvfile:
+        with open(report_path, newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             reader.fieldnames = self._convert_to_legacy_csv_columns(
                 reader.fieldnames)

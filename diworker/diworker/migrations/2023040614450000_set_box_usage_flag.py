@@ -54,12 +54,13 @@ class Migration(BaseMigration):
     def upgrade(self):
         cloud_accounts_ids = self.get_cloud_accounts_ids()
         for i, cloud_account_id in enumerate(cloud_accounts_ids):
-            LOG.info('Started processing for cloud account: %s (%s/%s)' % (
-                cloud_account_id, i+1, len(cloud_accounts_ids)))
+            LOG.info('Started processing for cloud account: %s (%s/%s)',
+                     cloud_account_id, i + 1, len(cloud_accounts_ids))
             is_processed = self.mongo_temp_table.find({
                 'cloud_account_id': cloud_account_id})
             if is_processed:
-                LOG.info('Cloud account %s already processed' % cloud_account_id)
+                LOG.info('Cloud account %s already processed',
+                         cloud_account_id)
                 continue
             update_bulk = []
             raw_expenses = self.mongo_raw.find({
@@ -83,17 +84,18 @@ class Migration(BaseMigration):
         try:
             self.mongo_temp_table.drop()
         except Exception as exc:
-            LOG.warning('Failed to drop temp table: %s' % str(exc))
+            LOG.warning('Failed to drop temp table: %s', exc)
 
     def downgrade(self):
         cloud_accounts_ids = self.get_cloud_accounts_ids()
         for i, cloud_account_id in enumerate(cloud_accounts_ids):
-            LOG.info('Started processing for cloud account: %s (%s/%s)' % (
-                cloud_account_id, i+1, len(cloud_accounts_ids)))
+            LOG.info('Started processing for cloud account: %s (%s/%s)',
+                     cloud_account_id, i + 1, len(cloud_accounts_ids))
             is_processed = self.mongo_temp_table.find({
                 'cloud_account_id': cloud_account_id})
             if is_processed:
-                LOG.info('Cloud account %s already processed' % cloud_account_id)
+                LOG.info('Cloud account %s already processed',
+                         cloud_account_id)
                 continue
             update_bulk = []
             raw_expenses = self.mongo_raw.find({
@@ -116,4 +118,4 @@ class Migration(BaseMigration):
         try:
             self.mongo_temp_table.drop()
         except Exception as exc:
-            LOG.warning('Failed to drop temp table: %s' % str(exc))
+            LOG.warning('Failed to drop temp table: %s', exc)
