@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag rabbit-bibi
+tag: &tag mit
 
 global:
   storageclass: gp3-tagged
@@ -144,7 +144,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: Always
-    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:rabbit-bibi
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:mit
     tag: *tag
 databases:
 - auth-db
