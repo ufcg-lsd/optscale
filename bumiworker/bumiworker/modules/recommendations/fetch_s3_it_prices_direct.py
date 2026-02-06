@@ -8,7 +8,7 @@ or environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 
 Usage:
     python fetch_s3_it_prices_direct.py
-    
+
 Or with environment variables:
     export AWS_ACCESS_KEY_ID=<KEY>
     export AWS_SECRET_ACCESS_KEY=<SECRET>
@@ -73,45 +73,45 @@ REGION_CODE_MAPPING = {
 def normalize_storage_class(storage_class: str, usagetype: str = "") -> Optional[str]:
     """
     Normalizes the storage class name to identify the tier.
-    
+
     Uses regex and pattern matching to identify different variations:
     - Frequent Access / FA
     - Infrequent Access / IA
     - Archive Instant Access / AIA
     - Deep Archive Access / DAA
-    
+
     Args:
         storage_class: Storage class name (may come in various formats)
         usagetype: AWS usage type (used as fallback)
-        
+    
     Returns:
         Normalized tier code (FA, IA, AIA, DAA) or None
     """
     # Combines storage_class and usagetype for analysis
     text_to_analyze = f"{storage_class or ''} {usagetype or ''}".strip()
-    
+
     if not text_to_analyze:
         return None
-    
+
     # Normalizes to lowercase and removes extra spaces/hyphens
     normalized = re.sub(r'[\s\-_]+', '', text_to_analyze.lower())
-    
+
     # Patterns for Deep Archive Access (must come BEFORE Archive Instant Access)
     if re.search(r'deeparchive|daa|deep.*archive', normalized, re.IGNORECASE):
         return "DAA"
-    
+
     # Patterns for Archive Instant Access
     if re.search(r'archiveinstant|aia|archive.*instant', normalized, re.IGNORECASE):
         return "AIA"
-    
+
     # Patterns for Frequent Access
     if re.search(r'frequent|fa(?!a)', normalized, re.IGNORECASE):
         return "FA"
-    
+
     # Patterns for Infrequent Access (must come after Frequent)
     if re.search(r'infrequent|ia(?!a)', normalized, re.IGNORECASE):
         return "IA"
-    
+
     # Tries to identify by specific usagetype patterns
     # Examples: IntelligentTieringFAStorage, IntelligentTieringIAStorage, etc.
     if re.search(r'intelligenttieringfastorage|it.*fa', normalized, re.IGNORECASE):
@@ -122,81 +122,81 @@ def normalize_storage_class(storage_class: str, usagetype: str = "") -> Optional
         return "AIA"
     if re.search(r'intelligenttieringdaastorage|it.*daa', normalized, re.IGNORECASE):
         return "DAA"
-    
+
     return None
 
 
 def normalize_region_code(region_code: str) -> Optional[str]:
     """
     Normalizes the region code to standard format.
-    
+
     Args:
         region_code: AWS region code (may vary)
-        
+    
     Returns:
         Normalized region code or None
     """
     if not region_code:
         return None
-    
+
     # Normalizes to lowercase
     normalized = region_code.lower().strip()
-    
+
     # Returns if already in mapping
     if normalized in REGION_CODE_MAPPING:
         return normalized
-    
+
     # Tries to find partial match
     for key, value in REGION_CODE_MAPPING.items():
         if key.startswith(normalized) or normalized.startswith(key):
             return value
-    
+
     return normalized  # Returns original value if no match found
 
 
 def filter_pricing_item(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Filters an AWS pricing item to extract relevant information.
-    
+
     Args:
         raw: Raw product data returned by the API
-        
+    
     Returns:
         List of filtered items with price information
     """
     product = raw.get("product", {})
     attrs = product.get("attributes", {})
     filtered_items = []
-    
+
     terms = raw.get("terms", {}).get("OnDemand", {})
-    
+
     for term in terms.values():
         effective_date = term.get("effectiveDate")
-        
+    
         for dim in term.get("priceDimensions", {}).values():
             # Filters only items with GB-Mo unit (GB per month)
             # Accepts variations like "GB-Month", "GB-Mo", etc.
             unit = dim.get("unit", "")
             if not unit or "GB" not in unit.upper() or "MO" not in unit.upper():
                 continue
-            
+
             price = dim.get("pricePerUnit", {}).get("USD")
             if not price:
                 continue
-            
+
             # Extracts product information
             region_code = attrs.get("regionCode")
             region_name = attrs.get("location")
             storage_class = attrs.get("storageClass")
             usagetype = attrs.get("usagetype", "")
-            
+
             # Normalizes storage class to identify tier
             # Passes both storage_class and usagetype for better identification
             tier = normalize_storage_class(storage_class or "", usagetype)
-            
+
             # Normalizes region code
             normalized_region = normalize_region_code(region_code) if region_code else None
-            
+
             filtered_items.append({
                 "region_code": normalized_region or region_code,
                 "region_name": region_name,
@@ -209,14 +209,14 @@ def filter_pricing_item(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "description": dim.get("description"),
                 "effective_date": effective_date
             })
-    
+
     return filtered_items
 
 
 def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
     """
     Fetches all S3 Intelligent Tiering prices from AWS Pricing API.
-    
+
     Returns:
         Dict organized by region and tier: {
             "us-east-1": {
@@ -229,7 +229,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
     """
     LOG.info("Creating AWS Pricing client...")
     pricing = boto3.client("pricing", region_name="us-east-1")
-    
+
     filters = [
         {
             "Type": "TERM_MATCH",
@@ -242,7 +242,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
             "Value": "Intelligent-Tiering",
         },
     ]
-    
+
     LOG.info("Fetching products from AWS Pricing API...")
     paginator = pricing.get_paginator("get_products")
     page_iterator = paginator.paginate(
@@ -250,26 +250,26 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
         Filters=filters,
         FormatVersion="aws_v1"
     )
-    
+
     # Organizes prices by region and tier
     prices_by_region_tier: Dict[str, Dict[str, List[Dict[str, Any]]]] = defaultdict(
         lambda: defaultdict(list)
     )
-    
+
     total_items = 0
     processed_items = 0
     items_without_tier = []
     items_without_region = []
     sample_raw_items = []  # For debugging
-    
+
     for page_num, page in enumerate(page_iterator, 1):
         LOG.debug(f"Processing page {page_num}...")
-        
+    
         for price_item in page["PriceList"]:
             total_items += 1
             try:
                 raw = json.loads(price_item)
-                
+    
                 # Saves first raw items for debugging
                 if total_items <= 5:
                     attrs = raw.get("product", {}).get("attributes", {})
@@ -285,9 +285,9 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             for d in term.get("priceDimensions", {}).values()
                         ]
                     })
-                
+    
                 filtered = filter_pricing_item(raw)
-                
+    
                 if not filtered:
                     # Logs first items without filters for debugging
                     if total_items <= 5:
@@ -296,7 +296,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                         for term in raw.get("terms", {}).get("OnDemand", {}).values():
                             for d in term.get("priceDimensions", {}).values():
                                 units.append(d.get("unit"))
-                        
+            
                         LOG.warning(
                             f"Item {total_items} without filters - "
                             f"storageClass: '{attrs.get('storageClass')}', "
@@ -306,11 +306,11 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             f"units: {units}"
                         )
                     continue
-                
+    
                 for item in filtered:
                     region = item.get("region_code")
                     tier = item.get("tier")
-                    
+        
                     # Logs all filtered items for debugging (first 10)
                     if total_items <= 10:
                         LOG.info(
@@ -319,11 +319,11 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             f"usagetype='{item.get('usagetype')}', "
                             f"price=${item.get('price_per_unit_usd')}"
                         )
-                    
+        
                     if region and tier:
                         prices_by_region_tier[region][tier].append(item)
                         processed_items += 1
-                        
+            
                         if processed_items <= 5:  # Logs first 5 valid items
                             LOG.info(
                                 f"✓ Valid price: {region} - {tier} = "
@@ -346,11 +346,11 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                                 "location": raw.get("product", {}).get("attributes", {}).get("location"),
                                 "price": item.get("price_per_unit_usd")
                             })
-                        
+            
             except Exception as exc:
                 LOG.warning(f"Error processing item {total_items}: {exc}", exc_info=True)
                 continue
-    
+
     # Logs debug statistics
     if items_without_tier:
         LOG.warning(f"Found {len(items_without_tier)} items without identified tier")
@@ -365,7 +365,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 f"  Example without tier: storage_class='{example.get('storage_class')}', "
                 f"usagetype='{example.get('usagetype')}'"
             )
-    
+
     if items_without_region:
         LOG.warning(f"Found {len(items_without_region)} items without identified region")
         for example in items_without_region[:5]:
@@ -373,23 +373,27 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 f"  Example without region: tier={example.get('tier')}, "
                 f"region_code_raw='{example.get('region_code_raw')}'"
             )
-    
+
     LOG.info(f"Processed {processed_items} valid items out of {total_items} total")
-    
+
     # Logs examples of raw items for debugging
     if sample_raw_items:
         LOG.info("Examples of raw items from API:")
         for sample in sample_raw_items[:3]:
-            LOG.info(f"  Item {sample['item_num']}: storageClass='{sample['storageClass']}', "
-                    f"usagetype='{sample['usagetype']}', regionCode='{sample['regionCode']}', "
-                    f"units={sample['units']}")
-    
+            LOG.info(
+                f"  Item {sample['item_num']}: "
+                f"storageClass='{sample['storageClass']}', "
+                f"usagetype='{sample['usagetype']}', "
+                f"regionCode='{sample['regionCode']}', "
+                f"units={sample['units']}"
+            )
+
     # Organizes data more cleanly, taking the most recent price per region/tier
     organized_prices: Dict[str, Dict[str, Any]] = {}
-    
+
     for region, tiers in prices_by_region_tier.items():
         organized_prices[region] = {}
-        
+    
         for tier, items in tiers.items():
             # If there are multiple items, takes the most recent (by effective_date)
             if items:
@@ -401,7 +405,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 )
                 # Takes the first (most recent)
                 latest_item = sorted_items[0]
-                
+    
                 organized_prices[region][tier] = {
                     "price_per_unit_usd": latest_item["price_per_unit_usd"],
                     "sku": latest_item["sku"],
@@ -413,12 +417,12 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                     # Includes all found items for reference
                     "all_items_count": len(items)
                 }
-    
+
     LOG.info(
         f"Prices organized for {len(organized_prices)} regions with "
         f"{sum(len(tiers) for tiers in organized_prices.values())} region/tier combinations"
     )
-    
+
     return organized_prices
 
 
@@ -428,7 +432,7 @@ def save_prices(
 ):
     """
     Saves prices to a structured JSON file.
-    
+
     Args:
         prices_by_region: Dict organized by region and tier
         output_file: Output file path
@@ -437,30 +441,30 @@ def save_prices(
     default_prices = {}
     tier_counts = defaultdict(int)
     tier_sums = defaultdict(float)
-    
+
     for region_prices in prices_by_region.values():
         for tier, data in region_prices.items():
             if isinstance(data, dict) and "price_per_unit_usd" in data:
                 tier_sums[tier] += data["price_per_unit_usd"]
                 tier_counts[tier] += 1
-    
+
     for tier in tier_sums:
         if tier_counts[tier] > 0:
             default_prices[tier] = tier_sums[tier] / tier_counts[tier]
-    
+
     # Creates simplified structure for compatibility with existing code
     simplified_prices = {}
     detailed_prices = {}
-    
+
     for region, tiers in prices_by_region.items():
         simplified_prices[region] = {}
         detailed_prices[region] = {}
-        
+    
         for tier, data in tiers.items():
             if isinstance(data, dict) and "price_per_unit_usd" in data:
                 simplified_prices[region][tier] = data["price_per_unit_usd"]
                 detailed_prices[region][tier] = data
-    
+
     output_data = {
         "description": "S3 Intelligent Tiering prices from AWS by region (obtained via AWS Pricing API)",
         "last_updated": datetime.now(timezone.utc).isoformat(),
@@ -487,10 +491,10 @@ def save_prices(
             ))
         }
     }
-    
+
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    
+
     LOG.info(f"Prices saved to {output_file}")
 
 
@@ -500,29 +504,29 @@ def main():
         LOG.info("=" * 60)
         LOG.info("Starting S3 Intelligent Tiering price fetch")
         LOG.info("=" * 60)
-        
+    
         prices_by_region = fetch_all_prices()
-        
+    
         # Defines output file
         script_dir = Path(__file__).parent
         output_file = script_dir / "s3_it_prices_all_regions.json"
-        
+    
         save_prices(prices_by_region, output_file)
-        
+    
         LOG.info("=" * 60)
         LOG.info("Prices fetched successfully!")
         LOG.info(f"Total regions processed: {len(prices_by_region)}")
-        
+    
         # Shows some examples
         regions_with_prices = [
             r for r, prices in prices_by_region.items()
             if prices
         ]
-        
+    
         if regions_with_prices:
             LOG.info(f"\nRegions with prices found: {len(regions_with_prices)}")
             sample_regions = regions_with_prices[:5]
-            
+
             for region in sample_regions:
                 if prices_by_region[region]:
                     LOG.info(f"\nExample - {region}:")
@@ -536,10 +540,10 @@ def main():
                             )
         else:
             LOG.warning("No prices found for any region")
-        
+    
         LOG.info("=" * 60)
         LOG.info(f"File saved to: {output_file}")
-        
+    
     except Exception as exc:
         LOG.error(f"Error fetching prices: {exc}", exc_info=True)
         sys.exit(1)
