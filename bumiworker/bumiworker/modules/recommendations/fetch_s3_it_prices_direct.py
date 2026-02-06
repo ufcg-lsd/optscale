@@ -83,7 +83,7 @@ def normalize_storage_class(storage_class: str, usagetype: str = "") -> Optional
     Args:
         storage_class: Storage class name (may come in various formats)
         usagetype: AWS usage type (used as fallback)
-    
+
     Returns:
         Normalized tier code (FA, IA, AIA, DAA) or None
     """
@@ -132,7 +132,7 @@ def normalize_region_code(region_code: str) -> Optional[str]:
 
     Args:
         region_code: AWS region code (may vary)
-    
+
     Returns:
         Normalized region code or None
     """
@@ -160,7 +160,7 @@ def filter_pricing_item(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     Args:
         raw: Raw product data returned by the API
-    
+
     Returns:
         List of filtered items with price information
     """
@@ -172,7 +172,7 @@ def filter_pricing_item(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     for term in terms.values():
         effective_date = term.get("effectiveDate")
-    
+
         for dim in term.get("priceDimensions", {}).values():
             # Filters only items with GB-Mo unit (GB per month)
             # Accepts variations like "GB-Month", "GB-Mo", etc.
@@ -264,12 +264,12 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
 
     for page_num, page in enumerate(page_iterator, 1):
         LOG.debug(f"Processing page {page_num}...")
-    
+
         for price_item in page["PriceList"]:
             total_items += 1
             try:
                 raw = json.loads(price_item)
-    
+
                 # Saves first raw items for debugging
                 if total_items <= 5:
                     attrs = raw.get("product", {}).get("attributes", {})
@@ -285,9 +285,9 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             for d in term.get("priceDimensions", {}).values()
                         ]
                     })
-    
+
                 filtered = filter_pricing_item(raw)
-    
+
                 if not filtered:
                     # Logs first items without filters for debugging
                     if total_items <= 5:
@@ -296,7 +296,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                         for term in raw.get("terms", {}).get("OnDemand", {}).values():
                             for d in term.get("priceDimensions", {}).values():
                                 units.append(d.get("unit"))
-            
+
                         LOG.warning(
                             f"Item {total_items} without filters - "
                             f"storageClass: '{attrs.get('storageClass')}', "
@@ -306,11 +306,11 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             f"units: {units}"
                         )
                     continue
-    
+
                 for item in filtered:
                     region = item.get("region_code")
                     tier = item.get("tier")
-        
+
                     # Logs all filtered items for debugging (first 10)
                     if total_items <= 10:
                         LOG.info(
@@ -319,11 +319,11 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             f"usagetype='{item.get('usagetype')}', "
                             f"price=${item.get('price_per_unit_usd')}"
                         )
-        
+
                     if region and tier:
                         prices_by_region_tier[region][tier].append(item)
                         processed_items += 1
-            
+
                         if processed_items <= 5:  # Logs first 5 valid items
                             LOG.info(
                                 f"✓ Valid price: {region} - {tier} = "
@@ -346,7 +346,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                                 "location": raw.get("product", {}).get("attributes", {}).get("location"),
                                 "price": item.get("price_per_unit_usd")
                             })
-            
+
             except Exception as exc:
                 LOG.warning(f"Error processing item {total_items}: {exc}", exc_info=True)
                 continue
@@ -393,7 +393,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
 
     for region, tiers in prices_by_region_tier.items():
         organized_prices[region] = {}
-    
+
         for tier, items in tiers.items():
             # If there are multiple items, takes the most recent (by effective_date)
             if items:
@@ -405,7 +405,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 )
                 # Takes the first (most recent)
                 latest_item = sorted_items[0]
-    
+
                 organized_prices[region][tier] = {
                     "price_per_unit_usd": latest_item["price_per_unit_usd"],
                     "sku": latest_item["sku"],
@@ -459,7 +459,7 @@ def save_prices(
     for region, tiers in prices_by_region.items():
         simplified_prices[region] = {}
         detailed_prices[region] = {}
-    
+
         for tier, data in tiers.items():
             if isinstance(data, dict) and "price_per_unit_usd" in data:
                 simplified_prices[region][tier] = data["price_per_unit_usd"]
@@ -504,25 +504,25 @@ def main():
         LOG.info("=" * 60)
         LOG.info("Starting S3 Intelligent Tiering price fetch")
         LOG.info("=" * 60)
-    
+
         prices_by_region = fetch_all_prices()
-    
+
         # Defines output file
         script_dir = Path(__file__).parent
         output_file = script_dir / "s3_it_prices_all_regions.json"
-    
+
         save_prices(prices_by_region, output_file)
-    
+
         LOG.info("=" * 60)
         LOG.info("Prices fetched successfully!")
         LOG.info(f"Total regions processed: {len(prices_by_region)}")
-    
+
         # Shows some examples
         regions_with_prices = [
             r for r, prices in prices_by_region.items()
             if prices
         ]
-    
+
         if regions_with_prices:
             LOG.info(f"\nRegions with prices found: {len(regions_with_prices)}")
             sample_regions = regions_with_prices[:5]
@@ -540,10 +540,10 @@ def main():
                             )
         else:
             LOG.warning("No prices found for any region")
-    
+
         LOG.info("=" * 60)
         LOG.info(f"File saved to: {output_file}")
-    
+
     except Exception as exc:
         LOG.error(f"Error fetching prices: {exc}", exc_info=True)
         sys.exit(1)
