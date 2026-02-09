@@ -31,6 +31,14 @@ class S3IntelligentTiering(ArchiveBase, S3IntelligentTieringRecommendation):
             return False
         return str(status).lower() in IT_POSITIVE_STATUS
 
+    def _candidate_and_saving(self, bucket_doc: Dict) -> Dict:
+        """
+        Check if bucket is a candidate for Intelligent-Tiering.
+        Returns dict with 'is_candidate' boolean.
+        """
+        is_candidate = self._is_candidate(bucket_doc)
+        return {"is_candidate": is_candidate}
+
     def _get(self, previous_options, optimizations, cloud_accounts_map, **kwargs):
         current_options = self.get_options()
         current_excluded_pools = set(
