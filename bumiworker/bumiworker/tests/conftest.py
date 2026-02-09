@@ -112,18 +112,42 @@ if pkg + ".client_v2" not in sys.modules:
 #
 # tools subpackages stubs
 #
+if "tools" not in sys.modules:
+    tools_mod = types.ModuleType("tools")
+    sys.modules["tools"] = tools_mod
+
 if "tools.optscale_time" not in sys.modules:
     time_mod = types.ModuleType("tools.optscale_time")
     from time import time as _time
-    def utcnow_timestamp(): return int(_time())
-    def utcnow(): return utcnow_timestamp()
-    def utcfromtimestamp(ts): return ts
-    def startday(ts): return ts
+    from datetime import datetime, timezone
+    
+    def utcnow_timestamp(): 
+        return int(_time())
+    
+    def utcnow(): 
+        return datetime.now(timezone.utc)
+    
+    def utcfromtimestamp(ts): 
+        return datetime.fromtimestamp(ts, tz=timezone.utc)
+    
+    def startday(ts): 
+        if isinstance(ts, datetime):
+            return datetime(ts.year, ts.month, ts.day, tzinfo=ts.tzinfo)
+        return ts
+    
     time_mod.utcnow_timestamp = utcnow_timestamp
     time_mod.utcnow = utcnow
     time_mod.utcfromtimestamp = utcfromtimestamp
     time_mod.startday = startday
     sys.modules["tools.optscale_time"] = time_mod
+    # Make it accessible as tools.optscale_time attribute
+    sys.modules["tools"].optscale_time = time_mod
+
+if "tools.optscale_data" not in sys.modules:
+    data_mod = types.ModuleType("tools.optscale_data")
+    sys.modules["tools.optscale_data"] = data_mod
+    # Make it accessible as tools.optscale_data attribute
+    sys.modules["tools"].optscale_data = data_mod
 
 if "tools.optscale_data.clickhouse" not in sys.modules:
     ch_mod = types.ModuleType("tools.optscale_data.clickhouse")
@@ -132,3 +156,5 @@ if "tools.optscale_data.clickhouse" not in sys.modules:
             pass
     ch_mod.ExternalDataConverter = ExternalDataConverter
     sys.modules["tools.optscale_data.clickhouse"] = ch_mod
+    # Make it accessible as tools.optscale_data.clickhouse attribute
+    sys.modules["tools.optscale_data"].clickhouse = ch_mod

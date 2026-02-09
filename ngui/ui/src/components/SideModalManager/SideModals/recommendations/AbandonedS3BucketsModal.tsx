@@ -1,4 +1,5 @@
 import { FormProvider } from "react-hook-form";
+import { FormattedMessage } from "react-intl";
 import { SETTINGS_TYPE_SUCCESS_MESSAGE, COMMON_YEAR_LENGTH } from "utils/constants";
 import { lessOrEqual } from "utils/validation";
 import BaseSideModal from "../BaseSideModal";
@@ -9,10 +10,7 @@ import TextWithInlineInput from "./components/TextWithInlineInput";
 import { useCommonSettingsData, useFormWithValuesFromOptions } from "./hooks";
 
 const VALUE_KEYS = Object.freeze({
-  [THRESHOLD_INPUT_NAMES.DAYS_THRESHOLD]: "days_threshold",
-  [THRESHOLD_INPUT_NAMES.DATA_SIZE_THRESHOLD]: "data_size_threshold",
-  [THRESHOLD_INPUT_NAMES.TIER_1_REQUESTS_QUANTITY_THRESHOLD]: "tier_1_request_quantity_threshold",
-  [THRESHOLD_INPUT_NAMES.TIER_2_REQUESTS_QUANTITY_THRESHOLD]: "tier_2_request_quantity_threshold"
+  [THRESHOLD_INPUT_NAMES.DAYS_THRESHOLD]: "days_threshold"
 });
 
 const AbandonedS3BucketsForm = ({ recommendationType, onSuccess }) => {
@@ -32,31 +30,7 @@ const AbandonedS3BucketsForm = ({ recommendationType, onSuccess }) => {
           lessOrEqualValidation={lessOrEqual(COMMON_YEAR_LENGTH)}
           name={THRESHOLD_INPUT_NAMES.DAYS_THRESHOLD}
         />
-        <ul>
-          <li>
-            <TextWithInlineInput
-              messageId="thresholds.abandonedS3Buckets.dataSizeThreshold"
-              name={THRESHOLD_INPUT_NAMES.DATA_SIZE_THRESHOLD}
-              isLoading={isGetDataLoading}
-            />
-          </li>
-          <li>
-            <TextWithInlineInput
-              messageId="thresholds.abandonedS3Buckets.tier1RequestsQuantityThreshold"
-              maxWidth="60px"
-              name={THRESHOLD_INPUT_NAMES.TIER_1_REQUESTS_QUANTITY_THRESHOLD}
-              isLoading={isGetDataLoading}
-            />
-          </li>
-          <li>
-            <TextWithInlineInput
-              messageId="thresholds.abandonedS3Buckets.getRequestsQuantityThreshold"
-              maxWidth="60px"
-              name={THRESHOLD_INPUT_NAMES.TIER_2_REQUESTS_QUANTITY_THRESHOLD}
-              isLoading={isGetDataLoading}
-            />
-          </li>
-        </ul>
+        <FormattedMessage id="thresholds.abandonedS3Buckets.activityDescription" />
         <SaveButton
           isGetDataLoading={isGetDataLoading}
           isChangeSettingsAllowed={isChangeSettingsAllowed}
