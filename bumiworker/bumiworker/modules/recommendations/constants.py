@@ -1,18 +1,24 @@
 from typing import Final, Dict, List, Set
 
-PRICES: Final[Dict[str, float]] = {
-    "Standard": 0.023,
-    "IT_FA": 0.023,
-    "IT_IA": 0.0125,
-    "IT_AIA": 0.0040,
-    "Glacier": 0.0036,
-    "Glacier Flexible Retrieval": 0.0036,
-    "Glacier Instant Retrieval": 0.0040,
-    "Glacier Deep Archive": 0.00099,
-    "Deep Archive": 0.00099,
-}
-
-IT_MONITOR_FEE_PER_1000: Final[float] = 0.0000025
+CATEGORY_MAP: Final[Dict[str, List[str]]] = {
+            "frequent": [
+                "standard",
+                "express one zone",
+            ],
+            "infrequent": [
+                "standard-ia",
+                "one zone-ia",
+                "one zone-infrequent access",
+            ],
+            "archive": [
+                "glacier",
+                "glacier ir",  # Glacier Instant Retrieval (as stored in DB)
+                "glacier instant retrieval",
+                "glacier flexible retrieval",
+                "deep archive",  # Deep Archive (as stored in DB)
+                "glacier deep archive",
+            ],
+        }
 
 RETURN_LIMIT: Final[int] = 3
 BYTES_PER_GIB: Final[int] = 1024 ** 3
@@ -22,3 +28,11 @@ IT_POSITIVE_STATUS: Final[Set[str]] = {"enabled", "active", "on", "true"}
 
 FREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 30
 INFREQUENT_TIER_THRESHOLD_DAYS: Final[int] = 60
+
+IT_MONITOR_FEE_PER_1000 = 0.0000025
+
+ACCESS_TIER_TO_PRICE_TIER: Final[Dict[str, str]] = {
+    "frequent": "FA",
+    "infrequent": "IA",
+    "archive": "AIA",  # Archive Instant Access
+}
