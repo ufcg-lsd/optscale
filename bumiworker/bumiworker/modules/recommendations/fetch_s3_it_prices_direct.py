@@ -167,9 +167,7 @@ def filter_pricing_item(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
     product = raw.get("product", {})
     attrs = product.get("attributes", {})
     filtered_items = []
-
     terms = raw.get("terms", {}).get("OnDemand", {})
-
     for term in terms.values():
         effective_date = term.get("effectiveDate")
 
@@ -261,7 +259,6 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
     items_without_tier = []
     items_without_region = []
     sample_raw_items = []  # For debugging
-
     for page_num, page in enumerate(page_iterator, 1):
         LOG.debug(f"Processing page {page_num}...")
 
@@ -269,7 +266,6 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
             total_items += 1
             try:
                 raw = json.loads(price_item)
-
                 # Saves first raw items for debugging
                 if total_items <= 5:
                     attrs = raw.get("product", {}).get("attributes", {})
@@ -285,9 +281,7 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             for d in term.get("priceDimensions", {}).values()
                         ]
                     })
-
                 filtered = filter_pricing_item(raw)
-
                 if not filtered:
                     # Logs first items without filters for debugging
                     if total_items <= 5:
@@ -296,7 +290,6 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                         for term in raw.get("terms", {}).get("OnDemand", {}).values():
                             for d in term.get("priceDimensions", {}).values():
                                 units.append(d.get("unit"))
-
                         LOG.warning(
                             f"Item {total_items} without filters - "
                             f"storageClass: '{attrs.get('storageClass')}', "
@@ -310,7 +303,6 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 for item in filtered:
                     region = item.get("region_code")
                     tier = item.get("tier")
-
                     # Logs all filtered items for debugging (first 10)
                     if total_items <= 10:
                         LOG.info(
@@ -331,21 +323,29 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                             )
                     else:
                         if not tier:
-                            items_without_tier.append({
-                                "region": region,
-                                "storage_class": item.get("storage_class"),
-                                "usagetype": item.get("usagetype"),
-                                "price": item.get("price_per_unit_usd")
-                            })
+                            items_without_tier.append(
+                                {
+                                    "region": region,
+                                    "storage_class": item.get("storage_class"),
+                                    "usagetype": item.get("usagetype"),
+                                    "price": item.get("price_per_unit_usd"),
+                                }
+                            )
                         if not region:
-                            items_without_region.append({
-                                "tier": tier,
-                                "storage_class": item.get("storage_class"),
-                                "usagetype": item.get("usagetype"),
-                                "region_code_raw": raw.get("product", {}).get("attributes", {}).get("regionCode"),
-                                "location": raw.get("product", {}).get("attributes", {}).get("location"),
-                                "price": item.get("price_per_unit_usd")
-                            })
+                            items_without_region.append(
+                                {
+                                    "tier": tier,
+                                    "storage_class": item.get("storage_class"),
+                                    "usagetype": item.get("usagetype"),
+                                    "region_code_raw": raw.get(
+                                        "product", {}
+                                    ).get("attributes", {}).get("regionCode"),
+                                    "location": raw.get(
+                                        "product", {}
+                                    ).get("attributes", {}).get("location"),
+                                    "price": item.get("price_per_unit_usd"),
+                                }
+                            )
 
             except Exception as exc:
                 LOG.warning(f"Error processing item {total_items}: {exc}", exc_info=True)
@@ -353,7 +353,10 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
 
     # Logs debug statistics
     if items_without_tier:
-        LOG.warning(f"Found {len(items_without_tier)} items without identified tier")
+        LOG.warning(
+            "Found %d items without identified tier",
+            len(items_without_tier),
+        )
         # Shows unique examples
         unique_examples = {}
         for item in items_without_tier[:10]:
@@ -362,19 +365,28 @@ def fetch_all_prices() -> Dict[str, Dict[str, Any]]:
                 unique_examples[key] = item
         for example in unique_examples.values():
             LOG.warning(
-                f"  Example without tier: storage_class='{example.get('storage_class')}', "
-                f"usagetype='{example.get('usagetype')}'"
+                "  Example without tier: storage_class='%s', usagetype='%s'",
+                example.get("storage_class"),
+                example.get("usagetype"),
             )
 
     if items_without_region:
-        LOG.warning(f"Found {len(items_without_region)} items without identified region")
+        LOG.warning(
+            "Found %d items without identified region",
+            len(items_without_region),
+        )
         for example in items_without_region[:5]:
             LOG.warning(
-                f"  Example without region: tier={example.get('tier')}, "
-                f"region_code_raw='{example.get('region_code_raw')}'"
+                "  Example without region: tier=%s, region_code_raw='%s'",
+                example.get("tier"),
+                example.get("region_code_raw"),
             )
 
-    LOG.info(f"Processed {processed_items} valid items out of {total_items} total")
+    LOG.info(
+        "Processed %d valid items out of %d total",
+        processed_items,
+        total_items,
+    )
 
     # Logs examples of raw items for debugging
     if sample_raw_items:
