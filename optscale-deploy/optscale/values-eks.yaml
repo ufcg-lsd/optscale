@@ -1,6 +1,6 @@
 # Default values for optscale's deploy on EKS
 
-tag: &tag fix-collect
+tag: &tag fix-partitioned
 
 global:
   storageclass: gp3-tagged
@@ -144,7 +144,7 @@ company_name: Hystax
 configurator:
   image:
     pullPolicy: Always
-    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:fix-collect
+    repository: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/configurator:fix-partitioned
     tag: *tag
 databases:
 - auth-db
