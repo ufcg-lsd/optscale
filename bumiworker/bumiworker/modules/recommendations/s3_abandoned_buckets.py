@@ -5,15 +5,9 @@ from bumiworker.bumiworker.modules.abandoned_base import S3AbandonedBucketsBase
 
 LOG = logging.getLogger(__name__)
 
-DEFAULT_DAYS_THRESHOLD = 7
-DATA_SIZE_THRESHOLD = 1024
-DATA_SIZE_KEY = 'data_size'
-TIER_1_REQUESTS_THRESHOLD = 100
-TIER_2_REQUESTS_THRESHOLD = 2000
-MBS_IN_GB = 1024
-AVG_DATA_SIZE_KEY = 'avg_data_size'
-TIER_1_REQUESTS_QUANTITY_KEY = 'tier_1_request_quantity'
-TIER_2_REQUESTS_QUANTITY_KEY = 'tier_2_request_quantity'
+DEFAULT_DAYS_THRESHOLD = 30
+GET_OBJECT_KEY = 'get_object_count'
+PUT_OBJECT_KEY = 'put_object_count'
 
 
 class S3AbandonedBuckets(S3AbandonedBucketsBase):
@@ -26,12 +20,6 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         self.option_ordered_map = OrderedDict({
             'days_threshold': {
                 'default': DEFAULT_DAYS_THRESHOLD},
-            'data_size_threshold': {
-                'default': DATA_SIZE_THRESHOLD},
-            'tier_1_request_quantity_threshold': {
-                'default': TIER_1_REQUESTS_THRESHOLD},
-            'tier_2_request_quantity_threshold': {
-                'default': TIER_2_REQUESTS_THRESHOLD},
             'excluded_pools': {
                 'default': {},
                 'clean_func': self.clean_excluded_pools,
@@ -40,29 +28,28 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         })
 
     def get_metric_threshold_map(self):
-        options = self.get_options()
+        # Buckets are considered abandoned if both GetObject and PutObject
+        # operations are zero (no read or write activity)
+        LOG.debug(f'AB - GET_OBJECT_KEY: {GET_OBJECT_KEY}, PUT_OBJECT_KEY: {PUT_OBJECT_KEY}')
         return {
-            TIER_1_REQUESTS_QUANTITY_KEY: options.get(
-                'tier_1_request_quantity_threshold'),
-            TIER_2_REQUESTS_QUANTITY_KEY: options.get(
-                'tier_2_request_quantity_threshold'),
-            AVG_DATA_SIZE_KEY: options.get('data_size_threshold')
+            GET_OBJECT_KEY: False,
+            PUT_OBJECT_KEY: False
         }
 
     def _get_data_size_request_metrics(self, cloud_account_id,
                                        cloud_resource_ids, start_date,
                                        days_threshold):
-        product_families = ['Data Transfer', 'API Request']
-        tier_1_request_type = 'Requests-Tier1'
-        tier_2_request_type = 'Requests-Tier2'
-        data_api_requests = self.mongo_client.restapi.raw_expenses.aggregate([
+        # Query for GetObject and PutObject operations in API Request product family
+        target_operations = ['GetObject', 'PutObject']
+        api_request_pipeline = [
             {
                 '$match': {
                     '$and': [
                         {'resource_id': {'$in': cloud_resource_ids}},
                         {'cloud_account_id': cloud_account_id},
                         {'start_date': {'$gte': start_date}},
-                        {'product/productFamily': {'$in': product_families}}
+                        {'product/productFamily': 'API Request'},
+                        {'lineItem/Operation': {'$in': target_operations}}
                     ]
                 }
             },
@@ -70,60 +57,46 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                 '$group': {
                     '_id': {
                         '_id': '$resource_id',
-                        'productFamily': '$product/productFamily',
-                        'tier_type': '$lineItem/UsageType',
                         'operation': '$lineItem/Operation'
                     },
-                    'usage_amount': {'$push': '$lineItem/UsageAmount'}
+                    'total_usage': {
+                        '$sum': '$lineItem/UsageAmount'
+                    }
                 }
             }
-        ])
-        resource_data_request_map = {}
-        for data_api_request in data_api_requests:
-            cloud_resource_id = data_api_request['_id']['_id']
-            if not resource_data_request_map.get(cloud_resource_id):
-                resource_data_request_map[cloud_resource_id] = {}
-                resource_data_request_map[cloud_resource_id][
-                    DATA_SIZE_KEY] = 0.0
-                resource_data_request_map[cloud_resource_id][
-                    TIER_1_REQUESTS_QUANTITY_KEY] = 0
-                resource_data_request_map[cloud_resource_id][
-                    TIER_2_REQUESTS_QUANTITY_KEY] = 0
-            total_sum = sum(
-                [float(x) for x in data_api_request['usage_amount']])
-            if data_api_request['_id']['productFamily'] == 'Data Transfer':
-                resource_data_request_map[cloud_resource_id][
-                    DATA_SIZE_KEY] += total_sum
-            else:
-                res_tier_type = data_api_request['_id']['tier_type']
-                res_operation = data_api_request['_id']['operation']
-                if tier_1_request_type in res_tier_type:
-                    resource_data_request_map[cloud_resource_id][
-                        TIER_1_REQUESTS_QUANTITY_KEY] += int(total_sum)
-                elif (tier_2_request_type in res_tier_type and
-                      res_operation == 'GetObject'):
-                    resource_data_request_map[cloud_resource_id][
-                        TIER_2_REQUESTS_QUANTITY_KEY] += int(total_sum)
+        ]
+        api_requests = self.mongo_client.restapi.raw_expenses.aggregate(
+            api_request_pipeline)
+        api_requests_list = list(api_requests)
+        LOG.debug(f'AB - API Requests aggregation result: {api_requests_list}')
         resource_meter_value = {}
-        for res_id, meter_map in resource_data_request_map.items():
-            if not resource_meter_value.get(res_id):
-                resource_meter_value[res_id] = {}
-            for meter_key, total in meter_map.items():
-                if meter_key == DATA_SIZE_KEY:
-                    avg_size = (total / days_threshold) * MBS_IN_GB
-                    resource_meter_value[res_id][AVG_DATA_SIZE_KEY] = avg_size
-                else:
-                    resource_meter_value[res_id][meter_key] = total
+        # Initialize all resources with no recorded activity
+        for res_id in cloud_resource_ids:
+            resource_meter_value[res_id] = {
+                GET_OBJECT_KEY: False,
+                PUT_OBJECT_KEY: False
+            }
+        # Aggregate operation usage (already summed by MongoDB)
+        for api_request in api_requests_list:
+            cloud_resource_id = api_request['_id']['_id']
+            operation = api_request['_id']['operation']
+            total_sum = int(api_request['total_usage'])
+            has_usage = bool(total_sum)
+            if operation == 'GetObject':
+                resource_meter_value[cloud_resource_id][
+                    GET_OBJECT_KEY] = has_usage
+            elif operation == 'PutObject':
+                resource_meter_value[cloud_resource_id][
+                    PUT_OBJECT_KEY] = has_usage
+
+        LOG.debug(f'AB - Resource meter values: {resource_meter_value}')
         return resource_meter_value
 
     @staticmethod
     def metrics_result(data_req_map):
         return {
-            'tier_1_request_quantity': data_req_map.get(
-                TIER_1_REQUESTS_QUANTITY_KEY),
-            'tier_2_request_quantity': data_req_map.get(
-                TIER_2_REQUESTS_QUANTITY_KEY),
-            'avg_data_size': data_req_map.get(AVG_DATA_SIZE_KEY),
+            'get_object_count': data_req_map.get(GET_OBJECT_KEY, False),
+            'put_object_count': data_req_map.get(PUT_OBJECT_KEY, False),
         }
 
 
