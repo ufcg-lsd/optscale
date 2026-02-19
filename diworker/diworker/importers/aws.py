@@ -57,6 +57,9 @@ AWS_CUR_PREFIX_MAP = {
     'cost_category': (False, []),
 }
 EDP_DISCOUNTS = ['discount/EdpDiscount', 'discount/PrivateRateDiscount']
+FORCED_FIRST_IMPORT_AWS_GROUP = '20251101-20251201'
+FORCED_FIRST_IMPORT_BILLING_PERIOD = '2025-11-01T00:00:00Z'
+FORCED_FIRST_IMPORT_MIN_DATE = datetime(2025, 11, 1, tzinfo=timezone.utc)
 
 
 class CloudWatchUtils:
@@ -246,8 +249,37 @@ class AWSReportImporter(CSVBaseReportImporter):
         LOG.info('Selected %s reports', reports_count)
         return current_reports
 
+    def _is_first_import(self):
+        return self.import_file is None and self.cloud_acc.get('last_import_at', 0) == 0
+
+    def download_from_cloud(self):
+        if not self._is_first_import():
+            return super().download_from_cloud()
+
+        reports_groups = self.cloud_adapter.get_report_files()
+        if FORCED_FIRST_IMPORT_AWS_GROUP not in reports_groups:
+            raise Exception(
+                f'Forced first AWS import group {FORCED_FIRST_IMPORT_AWS_GROUP} '
+                f'was not found in available CUR groups: {sorted(reports_groups.keys())}'
+            )
+
+        LOG.info(
+            'Forced first AWS import enabled: importing only group %s',
+            FORCED_FIRST_IMPORT_AWS_GROUP
+        )
+        current_reports = defaultdict(list)
+        current_reports[FORCED_FIRST_IMPORT_AWS_GROUP].extend(
+            reports_groups[FORCED_FIRST_IMPORT_AWS_GROUP]
+        )
+        last_import_modified_at = datetime.min.replace(tzinfo=timezone.utc)
+        last_import_modified_at = self._download_report_files(
+            current_reports, last_import_modified_at)
+        self.last_import_modified_at = int(last_import_modified_at.timestamp())
+
     @cached_property
     def min_date_import_threshold(self) -> datetime:
+        if self._is_first_import():
+            return FORCED_FIRST_IMPORT_MIN_DATE
         last_import_dt = datetime.fromtimestamp(
             self.cloud_acc.get('last_import_modified_at', 0), tz=timezone.utc)
         last_import_dt = last_import_dt.replace(
@@ -445,6 +477,10 @@ class AWSReportImporter(CSVBaseReportImporter):
             record_number = 0
             for row in reader:
                 row = self._extract_nested_objects(row)
+                if (self._is_first_import() and
+                        row.get('bill/BillingPeriodStartDate') !=
+                        FORCED_FIRST_IMPORT_BILLING_PERIOD):
+                    continue
                 if billing_period is None:
                     billing_period = row['bill/BillingPeriodStartDate']
                     LOG.info('detected billing period: %s', billing_period)
@@ -565,6 +601,9 @@ class AWSReportImporter(CSVBaseReportImporter):
             expenses = [x for x in chunk
                         if chunk.index(x) not in skipped_rows and
                         x.get('cloud_account_id') is not None and
+                        (not self._is_first_import() or
+                         x.get('bill/BillingPeriodStartDate') ==
+                         FORCED_FIRST_IMPORT_BILLING_PERIOD) and
                         # RIFee is created once a month and is updated every
                         # day
                         (x['start_date'] >= self.min_date_import_threshold or
