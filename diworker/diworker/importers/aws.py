@@ -252,12 +252,74 @@ class AWSReportImporter(CSVBaseReportImporter):
     def _is_first_import(self):
         return self.import_file is None and self.cloud_acc.get('last_import_at', 0) == 0
 
+    @staticmethod
+    def _parse_group_dates(group):
+        match = re.match(r'^(?P<start>\d{8})-(?P<end>\d{8})$', group)
+        if not match:
+            return None, None
+        start_dt = datetime.strptime(
+            match.group('start'), '%Y%m%d').replace(tzinfo=timezone.utc)
+        end_dt = datetime.strptime(
+            match.group('end'), '%Y%m%d').replace(tzinfo=timezone.utc)
+        return start_dt, end_dt
+
+    def _get_forced_first_import_group(self, reports_groups):
+        if FORCED_FIRST_IMPORT_AWS_GROUP in reports_groups:
+            return FORCED_FIRST_IMPORT_AWS_GROUP
+
+        forced_month = FORCED_FIRST_IMPORT_MIN_DATE
+        billing_period_marker = f'BILLING_PERIOD={forced_month:%Y-%m}/'
+        billing_period_groups = sorted([
+            group for group, reports in reports_groups.items()
+            if any(billing_period_marker in report.get('Key', '')
+                   for report in reports)
+        ])
+        if billing_period_groups:
+            selected_group = billing_period_groups[-1]
+            LOG.warning(
+                'Forced first AWS import group %s not found, selected %s by '
+                'billing period marker %s',
+                FORCED_FIRST_IMPORT_AWS_GROUP, selected_group,
+                billing_period_marker
+            )
+            return selected_group
+
+        end_aligned_groups = sorted([
+            group for group in reports_groups
+            if self._parse_group_dates(group)[1] == forced_month
+        ])
+        if end_aligned_groups:
+            selected_group = end_aligned_groups[-1]
+            LOG.warning(
+                'Forced first AWS import group %s not found, selected %s by '
+                'date range end (%s)',
+                FORCED_FIRST_IMPORT_AWS_GROUP, selected_group,
+                forced_month.strftime('%Y-%m-%d')
+            )
+            return selected_group
+
+        start_aligned_groups = sorted([
+            group for group in reports_groups
+            if self._parse_group_dates(group)[0] == forced_month
+        ])
+        if start_aligned_groups:
+            selected_group = start_aligned_groups[-1]
+            LOG.warning(
+                'Forced first AWS import group %s not found, selected %s by '
+                'date range start (%s)',
+                FORCED_FIRST_IMPORT_AWS_GROUP, selected_group,
+                forced_month.strftime('%Y-%m-%d')
+            )
+            return selected_group
+        return None
+
     def download_from_cloud(self):
         if not self._is_first_import():
             return super().download_from_cloud()
 
         reports_groups = self.cloud_adapter.get_report_files()
-        if FORCED_FIRST_IMPORT_AWS_GROUP not in reports_groups:
+        forced_group = self._get_forced_first_import_group(reports_groups)
+        if forced_group is None:
             raise Exception(
                 f'Forced first AWS import group {FORCED_FIRST_IMPORT_AWS_GROUP} '
                 f'was not found in available CUR groups: {sorted(reports_groups.keys())}'
@@ -265,11 +327,11 @@ class AWSReportImporter(CSVBaseReportImporter):
 
         LOG.info(
             'Forced first AWS import enabled: importing only group %s',
-            FORCED_FIRST_IMPORT_AWS_GROUP
+            forced_group
         )
         current_reports = defaultdict(list)
-        current_reports[FORCED_FIRST_IMPORT_AWS_GROUP].extend(
-            reports_groups[FORCED_FIRST_IMPORT_AWS_GROUP]
+        current_reports[forced_group].extend(
+            reports_groups[forced_group]
         )
         last_import_modified_at = datetime.min.replace(tzinfo=timezone.utc)
         last_import_modified_at = self._download_report_files(
