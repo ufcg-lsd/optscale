@@ -30,11 +30,14 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
     def get_metric_threshold_map(self):
         # Buckets are considered abandoned if both GetObject and PutObject
         # operations are zero (no read or write activity)
-        LOG.debug(f'AB - GET_OBJECT_KEY: {GET_OBJECT_KEY}, PUT_OBJECT_KEY: {PUT_OBJECT_KEY}')
-        return {
+        metric_threshold_map = {
             GET_OBJECT_KEY: False,
             PUT_OBJECT_KEY: False
         }
+        LOG.info(
+            'AB - Metric threshold map loaded: %s (abandoned when both false)',
+            metric_threshold_map)
+        return metric_threshold_map
 
     def _get_data_size_request_metrics(self, cloud_account_id,
                                        cloud_resource_ids, start_date,
@@ -68,7 +71,6 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
         api_requests = self.mongo_client.restapi.raw_expenses.aggregate(
             api_request_pipeline)
         api_requests_list = list(api_requests)
-        LOG.debug(f'AB - API Requests aggregation result: {api_requests_list}')
         resource_meter_value = {}
         # Initialize all resources with no recorded activity
         for res_id in cloud_resource_ids:
@@ -89,15 +91,28 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                 resource_meter_value[cloud_resource_id][
                     PUT_OBJECT_KEY] = has_usage
 
-        LOG.debug(f'AB - Resource meter values: {resource_meter_value}')
+        for resource_id, meter_values in resource_meter_value.items():
+            LOG.info(
+                'AB - Resource %s operations status: get_object=%s put_object=%s',
+                resource_id,
+                meter_values[GET_OBJECT_KEY],
+                meter_values[PUT_OBJECT_KEY],
+            )
+
+        LOG.info(f'AB - Resource meter values: {resource_meter_value}')
         return resource_meter_value
 
     @staticmethod
     def metrics_result(data_req_map):
-        return {
+        result = {
             'get_object_count': data_req_map.get(GET_OBJECT_KEY, False),
             'put_object_count': data_req_map.get(PUT_OBJECT_KEY, False),
         }
+        LOG.info(
+            'AB - metrics_result mapping: %s -> %s',
+            data_req_map,
+            result)
+        return result
 
 
 def main(organization_id, config_client, created_at, **kwargs):
