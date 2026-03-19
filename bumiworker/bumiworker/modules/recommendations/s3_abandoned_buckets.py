@@ -30,14 +30,11 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
     def get_metric_threshold_map(self):
         # Buckets are considered abandoned if both GetObject and PutObject
         # operations are zero (no read or write activity)
-        metric_threshold_map = {
+        LOG.info(f'AB - GET_OBJECT_KEY: {GET_OBJECT_KEY}, PUT_OBJECT_KEY: {PUT_OBJECT_KEY}')
+        return {
             GET_OBJECT_KEY: False,
             PUT_OBJECT_KEY: False
         }
-        LOG.info(
-            'AB - Metric threshold map loaded: %s (abandoned when both false)',
-            metric_threshold_map)
-        return metric_threshold_map
 
     def _get_data_size_request_metrics(self, cloud_account_id,
                                        cloud_resource_ids, start_date,
@@ -104,15 +101,10 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
 
     @staticmethod
     def metrics_result(data_req_map):
-        result = {
+        return {
             'get_object_count': data_req_map.get(GET_OBJECT_KEY, False),
             'put_object_count': data_req_map.get(PUT_OBJECT_KEY, False),
         }
-        LOG.info(
-            'AB - metrics_result mapping: %s -> %s',
-            data_req_map,
-            result)
-        return result
 
 
 def main(organization_id, config_client, created_at, **kwargs):

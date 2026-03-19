@@ -78,20 +78,10 @@ class S3AbandonedBucketsBase(AbandonedBase):
     def _are_below_thresholds(res_data_request_map, metric_threshold_map):
         resource_ids = []
         for res_id, data_request_map in res_data_request_map.items():
-            checks = {
-                key: data_request_map.get(key, 0) <= threshold_value
-                for key, threshold_value in metric_threshold_map.items()
-            }
-            LOG.debug(
-                'AB - Resource %s threshold checks: values=%s thresholds=%s checks=%s',
-                res_id,
-                data_request_map,
-                metric_threshold_map,
-                checks
-            )
-            if all(checks.values()):
+            if all(data_request_map.get(key, 0) <= threshold_value
+                   for key, threshold_value in metric_threshold_map.items()):
                 resource_ids.append(res_id)
-        LOG.debug(f'AB - Resources below thresholds: {resource_ids}')
+        LOG.info(f'AB - Resources below thresholds: {resource_ids}')
         return resource_ids
 
     @staticmethod
