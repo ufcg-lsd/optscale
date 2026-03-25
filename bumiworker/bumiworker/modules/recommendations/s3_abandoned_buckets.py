@@ -30,7 +30,6 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
     def get_metric_threshold_map(self):
         # Buckets are considered abandoned if both GetObject and PutObject
         # operations are zero (no read or write activity)
-        LOG.info(f'AB - GET_OBJECT_KEY: {GET_OBJECT_KEY}, PUT_OBJECT_KEY: {PUT_OBJECT_KEY}')
         return {
             GET_OBJECT_KEY: False,
             PUT_OBJECT_KEY: False
@@ -59,8 +58,8 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                         '_id': '$resource_id',
                         'operation': '$lineItem/Operation'
                     },
-                    'total_usage': {
-                        '$sum': '$lineItem/UsageAmount'
+                    'usage_amount': {
+                        '$push': '$lineItem/UsageAmount'
                     }
                 }
             }
@@ -75,11 +74,13 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                 GET_OBJECT_KEY: False,
                 PUT_OBJECT_KEY: False
             }
-        # Aggregate operation usage (already summed by MongoDB)
+        # Aggregate operation usage by summing the pushed amounts
         for api_request in api_requests_list:
             cloud_resource_id = api_request['_id']['_id']
             operation = api_request['_id']['operation']
-            total_sum = int(api_request['total_usage'])
+            usage_amounts = api_request['usage_amount']
+            total_sum = sum(float(amount) for amount in usage_amounts) if usage_amounts else 0
+            LOG.info(f'AB - Resource {cloud_resource_id} operation {operation} total usage amount: {total_sum}')
             has_usage = bool(total_sum)
             if operation == 'GetObject':
                 resource_meter_value[cloud_resource_id][
