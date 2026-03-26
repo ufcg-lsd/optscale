@@ -80,7 +80,6 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
             operation = api_request['_id']['operation']
             usage_amounts = api_request['usage_amount']
             total_sum = sum(float(amount) for amount in usage_amounts) if usage_amounts else 0
-            LOG.info(f'AB - Resource {cloud_resource_id} operation {operation} total usage amount: {total_sum}')
             has_usage = bool(total_sum)
             if operation == 'GetObject':
                 resource_meter_value[cloud_resource_id][
@@ -89,15 +88,6 @@ class S3AbandonedBuckets(S3AbandonedBucketsBase):
                 resource_meter_value[cloud_resource_id][
                     PUT_OBJECT_KEY] = has_usage
 
-        for resource_id, meter_values in resource_meter_value.items():
-            LOG.info(
-                'AB - Resource %s operations status: get_object=%s put_object=%s',
-                resource_id,
-                meter_values[GET_OBJECT_KEY],
-                meter_values[PUT_OBJECT_KEY],
-            )
-
-        LOG.info(f'AB - Resource meter values: {resource_meter_value}')
         return resource_meter_value
 
     @staticmethod
