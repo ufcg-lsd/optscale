@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from bumiworker.bumiworker.modules.base import (
-    LOG, ArchiveBase, ArchiveReason, ModuleBase, DAYS_IN_MONTH
+    ArchiveBase, ArchiveReason, ModuleBase, DAYS_IN_MONTH
 )
 from tools.optscale_data.clickhouse import ExternalDataConverter
 from tools.optscale_time import utcnow, startday
@@ -81,7 +81,6 @@ class S3AbandonedBucketsBase(AbandonedBase):
             if all(data_request_map.get(key, 0) <= threshold_value
                    for key, threshold_value in metric_threshold_map.items()):
                 resource_ids.append(res_id)
-        LOG.debug(f'AB - Resources below thresholds: {resource_ids}')
         return resource_ids
 
     @staticmethod
@@ -106,8 +105,6 @@ class S3AbandonedBucketsBase(AbandonedBase):
     def _get(self):
         now = utcnow()
         start_date = now - timedelta(days=self.days_threshold)
-
-        LOG.debug(f'AB - Start date for abandoned buckets: {start_date}')
 
         cloud_accounts = self.get_cloud_accounts(self.SUPPORTED_CLOUD_TYPES,
                                                  self.skip_cloud_accounts)
@@ -162,8 +159,6 @@ class S3AbandonedBucketsBase(AbandonedBase):
                         base_result_dict.update(
                             self.metrics_result(data_req_map))
                         result.append(base_result_dict)
-
-        LOG.debug(f'AB - Abandoned buckets result: {result}')
 
         return result
 
