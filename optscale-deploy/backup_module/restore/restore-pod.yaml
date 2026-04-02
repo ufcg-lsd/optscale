@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-restore
+  namespace: default
+spec:
+  restartPolicy: Never
+  containers:
+    - name: restore
+      image: registry-git.lsd.ufcg.edu.br/vtex-lab/mokirana/restore:latest
+      env:
+        - name: S3_BUCKET
+          value: "mokirana-backups"
+        - name: S3_PREFIX
+          value: "full-infrastructure"
+        - name: TIMESTAMP
+          value: "20260320_142016"  # Set to the backup timestamp you want to restore
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: MARIADB_ROOT_PASSWORD
+        - name: MONGO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: MONGO_ROOT_PASSWORD
+        - name: CLICKHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: CLICKHOUSE_PASSWORD
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: RABBITMQ_PASSWORD
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: AWS_SECRET_ACCESS_KEY
+        - name: AWS_SESSION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: multi-db-backup-secrets
+              key: AWS_SESSION_TOKEN
